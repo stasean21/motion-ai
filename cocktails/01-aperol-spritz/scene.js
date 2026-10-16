@@ -1,7 +1,8 @@
 // Апероль Шприц — 30 с, 120 BPM, 15 тактов. Всё считается от времени в seek(t).
 const W=1080,H=1920,cv=document.getElementById('c'),X=cv.getContext('2d');
 const INK='#F1E4CF',SOFT='#C9AE8E',ORANGE='#F58A3A',BG='#2A0B12',BG2='#3D121C',GOLD='#D2AA62';
-const BAR=2; const bar=n=>(n-1)*BAR; // начало такта n
+const BAR=2; const INTRO=4; const bar=n=>n<=1?0:n===2?INTRO:(n-1)*BAR+INTRO; // такты 1–2 по 4 с (название и состав), дальше по 2 с
+const DURATION=34;
 // ---------- математика ----------
 const cl=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)), lerp=(a,b,p)=>a+(b-a)*p, seg=(t,a,d)=>cl((t-a)/d);
 const eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2, eoe=p=>p>=1?1:1-Math.pow(2,-10*p), eie=p=>p<=0?0:Math.pow(2,10*p-10);
@@ -126,17 +127,17 @@ function levelTags(c,t){TAGS=TAGS||tagLayout();const fade=1-seg(t,bar(9),.4);if(
 const SL=[GX+150,0];// фокус на дольке задаётся сдвигом, точка опоры не меняется
 const CAM_KEYS=[
  // t     s     x     y    bs    bx
- [0,    .93, -150,   0, 1.14, -50],
- [2.5,  1.00,  0,    0, 1.00,   0],
- [6,    1.01,  0,    0, 1.00,   0],
- [12,   1.10,  0,    0, 1.04,   0],
- [13.5, 1.11, 30,    0, 1.05,  10],
- [15.2, 1.26,-40,   0, 1.08,  -6],
- [16.6, 1.12,  0,    0, 1.10,   0],
- [20,   1.14,  0,    0, 1.42,   0],
- [24,   1.15,-40,    0, 1.40, -14],
- [28,   1.20,  0,    0, 1.30,   0],
- [30,   1.02,  0,    0, 1.02,   0]];
+ [0    ,    .93, -150,   0, 1.14, -50],
+ [3.5  ,  1.00,  0,    0, 1.00,   0],
+ [10   ,    1.01,  0,    0, 1.00,   0],
+ [16   ,   1.10,  0,    0, 1.04,   0],
+ [17.5 , 1.11, 30,    0, 1.05,  10],
+ [19.2 , 1.26,-40,   0, 1.08,  -6],
+ [20.6 , 1.12,  0,    0, 1.10,   0],
+ [24   ,   1.14,  0,    0, 1.42,   0],
+ [28   ,   1.15,-40,    0, 1.40, -14],
+ [32   ,   1.20,  0,    0, 1.30,   0],
+ [34   ,   1.02,  0,    0, 1.02,   0]];
 function camera(t){const K=CAM_KEYS,n=K.length;let i=0;while(i<n-2&&t>K[i+1][0])i++;
   const t0=K[i][0],t1=K[i+1][0],h=t1-t0,u=cl((t-t0)/h);
   const tan=(j,c)=>{if(j<=0||j>=n-1)return 0;return (K[j+1][c]-K[j-1][c])/(K[j+1][0]-K[j-1][0]);};
@@ -170,8 +171,8 @@ function header(c,t){
   rise(c,TX.need,GX,240,DL(54,12),INK,bar(2),bar(3)-.3,t,'center',70);
   rule(c,t,290,bar(2)+.15,bar(3)-.3,360);
   [[TX.pro,ML(90)],[TX.ape,ML(60)],[TX.soda,ML(30)],[TX.iceList,'']].forEach(([n,a],i)=>{
-    rise(c,n,150,380+i*86,D(52),INK,bar(2)+.4+i*.38,bar(3)-.3+i*.03,t,'left',70);
-    if(a)rise(c,a,930,380+i*86,D(52),i===1?ORANGE:INK,bar(2)+.5+i*.38,bar(3)-.3+i*.03,t,'right',70);});
+    rise(c,n,150,380+i*86,D(52),INK,bar(2)+.5+i*.7,bar(3)-.3+i*.03,t,'left',70);
+    if(a)rise(c,a,930,380+i*86,D(52),i===1?ORANGE:INK,bar(2)+.6+i*.7,bar(3)-.3+i*.03,t,'right',70);});
   // шаги
   const step=(n,a,out)=>{rise(c,TX.step(n),GX,220,DL(34,10),SOFT,a,out,t,'center',50);rule(c,t,250,a+.1,out,240);};
   STEPS.forEach((s,i)=>{const a=bar(s.bar),out=bar(s.bar+1)-.3;step(i+1,a,out);

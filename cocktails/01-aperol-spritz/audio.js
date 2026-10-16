@@ -1,10 +1,11 @@
 // Звук целиком синтезируется: лёгкая музыка 120 BPM + наливание, лёд, газ, ложка, апельсин.
-window.makeAudio=async(D=30.5)=>{
+window.makeAudio=async(D=34.5)=>{
   const SR=44100,ac=new OfflineAudioContext(2,Math.ceil(SR*D),SR);
   const bus=ac.createDynamicsCompressor();bus.threshold.value=-14;bus.ratio.value=3;bus.connect(ac.destination);
   const music=ac.createGain();music.gain.value=.55;music.connect(bus);const fx=ac.createGain();fx.gain.value=1;fx.connect(bus);
   const nb=ac.createBuffer(1,SR*3,SR);{const d=nb.getChannelData(0);let s=1;for(let i=0;i<d.length;i++){s=(s*16807)%2147483647;d[i]=s/1073741823.5-1;}}
-  const bar=n=>(n-1)*2;
+  const bar=n=>n<=1?0:n===2?4:(n-1)*2+4; // такты сцены
+  const mbar=n=>(n-1)*2; // такты музыки, 17 по 2 с
   const env=(g,t,a,v,d)=>{g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);};
   function osc(type,f,t,d,v,dest=music,a=.005){const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;env(g,t,a,v,d);o.connect(g).connect(dest);o.start(t);o.stop(t+d+.05);return o;}
   function noise(t,d,type,f,q,v,dest=fx,a=.005){const s=ac.createBufferSource();s.buffer=nb;s.loop=true;const fl=ac.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;
@@ -12,14 +13,14 @@ window.makeAudio=async(D=30.5)=>{
   // музыка
   const chords=[[261.6,329.6,392,493.9],[220,277.2,329.6,415.3],[174.6,220,261.6,329.6],[196,246.9,293.7,392]];
   const roots=[65.4,55,43.65,49];
-  for(let b=1;b<=15;b++){const t=bar(b),ch=chords[(b-1)%4];
+  for(let b=1;b<=17;b++){const t=mbar(b),ch=chords[(b-1)%4];
     ch.forEach(f=>{osc('sine',f,t,1.9,.05,music,.03);osc('triangle',f*2,t,.6,.012,music);});
     [0,1].forEach(h=>osc('sine',roots[(b-1)%4],t+h,.9,.22,music,.01));
     for(let k=0;k<4;k++){const tb=t+k*.5;
-      if(b>=3&&b<15){const o=ac.createOscillator(),g=ac.createGain();o.frequency.setValueAtTime(110,tb);o.frequency.exponentialRampToValueAtTime(45,tb+.12);env(g,tb,.003,.45,.25);o.connect(g).connect(music);o.start(tb);o.stop(tb+.3);}
+      if(b>=5&&b<17){const o=ac.createOscillator(),g=ac.createGain();o.frequency.setValueAtTime(110,tb);o.frequency.exponentialRampToValueAtTime(45,tb+.12);env(g,tb,.003,.45,.25);o.connect(g).connect(music);o.start(tb);o.stop(tb+.3);}
       noise(tb+.25,.05,'highpass',7500,.7,.08,music);}
     // нота мелодии на сильную долю
-    if(b>=9&&b<=14) osc('sine',[784,659.3,587.3,659.3,784,880][b-9],t,1.2,.05,music,.01);}
+    if(b>=11&&b<=16) osc('sine',[784,659.3,587.3,659.3,784,880][b-11],t,1.2,.05,music,.01);}
   // лёд: стеклянный «дзынь» на каждое касание
   for(let i=0;i<6;i++){const t=bar(3)+.1+i*.25+.32;[2400,3710,5230].forEach((f,k)=>osc('sine',f*(1+i*.02),t,.35-k*.08,.12/(k+1),fx,.001));noise(t,.05,'bandpass',3000,2,.25);}
   // наливание: шум с бульканьем

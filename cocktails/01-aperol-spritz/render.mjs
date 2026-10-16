@@ -1,6 +1,6 @@
 // 60 fps, 3 подкадра на кадр (tmix) → out/video.mp4, затем звук → out/<name>.mp4
 import { chromium } from 'playwright'; import fs from 'fs'; import { spawn, execFileSync } from 'child_process';
-const NAME=process.argv[2]||'video', LANG=process.argv[3]||'ru', DUR=30, FPS=60, SUB=3;
+const NAME=process.argv[2]||'video', LANG=process.argv[3]||'ru', DUR=34, FPS=60, SUB=3;
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});const p=await b.newPage({viewport:{width:1080,height:1920}});
 const errs=[];p.on('pageerror',e=>errs.push(e.message));
 await p.goto('file://'+process.cwd()+'/index.html?lang='+LANG);await p.evaluate(()=>window.ready);
