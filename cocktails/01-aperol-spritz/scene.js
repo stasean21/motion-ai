@@ -48,11 +48,11 @@ function rr(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r);}
 function txt(c,s,x,y,font,col,al='center'){let ls=0;const m=font.match(/^ls(\d+) /);if(m){ls=+m[1];font=font.slice(m[0].length);}c.font=font;c.letterSpacing=ls+'px';c.fillStyle=col;c.textAlign=al;c.fillText(s,x+(al==='center'?ls/2:0),y);c.letterSpacing='0px';}
 function rise(c,s,x,y,font,col,tIn,tOut,t,al='center',h=120){const pi=eoe(seg(t,tIn,.45)),po=eie(seg(t,tOut,.35));if(pi<=0||po>=1)return;
   c.save();c.beginPath();c.rect(0,y-h,W,h*1.28);c.clip();txt(c,s,x,y+(1-pi)*h-po*h,font,col,al);c.restore();}
-function background(c,t){const g=c.createRadialGradient(GX,1100,60,GX,1100,1100);g.addColorStop(0,BG2);g.addColorStop(1,BG);c.fillStyle=g;c.fillRect(0,0,W,H);
+function velvetBg(c,t){const g=c.createRadialGradient(GX,1100,60,GX,1100,1100);g.addColorStop(0,BG2);g.addColorStop(1,BG);c.fillStyle=g;c.fillRect(-600,-600,W+1200,H+1200);
   // ворс бархата: мягкие вертикальные складки
-  for(let i=0;i<14;i++){const x=i*80+40,a=.05+.04*Math.sin(i*1.7);const v=c.createLinearGradient(x-40,0,x+40,0);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(.5,`rgba(255,180,190,${a*.35})`);v.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=v;c.fillRect(x-40,0,80,H);}
-  const sh=c.createRadialGradient(GX,OY+1135*S,5,GX,OY+1135*S,200);sh.addColorStop(0,'rgba(0,0,0,.45)');sh.addColorStop(1,'rgba(0,0,0,0)');c.save();c.translate(GX,OY+1135*S);c.scale(1,.12);c.fillStyle=sh;c.beginPath();c.arc(0,0,200,0,7);c.fill();c.restore();
-  // рамка ар-деко
+  for(let i=-8;i<22;i++){const x=i*80+40,a=.05+.04*Math.sin(i*1.7);const v=c.createLinearGradient(x-40,0,x+40,0);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(.5,`rgba(255,180,190,${a*.35})`);v.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=v;c.fillRect(x-40,-600,80,H+1200);}}
+function glassShadow(c){const sh=c.createRadialGradient(GX,OY+1135*S,5,GX,OY+1135*S,200);sh.addColorStop(0,'rgba(0,0,0,.45)');sh.addColorStop(1,'rgba(0,0,0,0)');c.save();c.translate(GX,OY+1135*S);c.scale(1,.12);c.fillStyle=sh;c.beginPath();c.arc(0,0,200,0,7);c.fill();c.restore();}
+function decoFrame(c){// рамка ар-деко
   c.strokeStyle=GOLD;c.globalAlpha=.85;c.lineWidth=2;c.strokeRect(40,40,W-80,H-80);c.lineWidth=1;c.strokeRect(54,54,W-108,H-108);
   c.save();c.translate(GX,54);for(let r=30;r<=110;r+=20){c.beginPath();c.arc(0,0,r,0,Math.PI);c.stroke();}for(let k=0;k<=8;k++){const a=k/8*Math.PI;c.beginPath();c.moveTo(Math.cos(a)*30,Math.sin(a)*30);c.lineTo(Math.cos(a)*110,Math.sin(a)*110);c.stroke();}c.restore();
   [[54,54,1,1],[W-54,54,-1,1],[54,H-54,1,-1],[W-54,H-54,-1,-1]].forEach(([x,y,sx,sy])=>{c.save();c.translate(x,y);c.scale(sx,sy);c.beginPath();c.moveTo(0,70);c.lineTo(70,0);c.moveTo(0,40);c.lineTo(40,0);c.stroke();c.restore();});
@@ -120,13 +120,39 @@ function levelTags(c,t){TAGS=TAGS||tagLayout();const fade=1-seg(t,bar(9),.4);if(
     c.save();c.globalAlpha=fade;c.strokeStyle=GOLD;c.lineWidth=2;c.beginPath();c.moveTo(x0,ly);c.lineTo(x0+30,ty);c.lineTo(lerp(x0+30,x0+70,p),ty);c.stroke();
     c.beginPath();c.rect(x0+76,ty-46,W,60);c.clip();txt(c,s.amt,x0+80,ty+14+(1-p)*50,'46px Deco',s.key==='ape'?ORANGE:INK,'left');c.restore();}}
 // ---------- кадр ----------
-function frame(t){const c=X;c.setTransform(1,0,0,1,0,0);
-  const z=1+.12*eio(seg(t,bar(9),3.6))-.12*eio(seg(t,bar(15),.9));
-  background(c,t);c.save();c.translate(GX,1350);c.scale(z,z);c.translate(-GX,-1350);
+// камера: s/x — слой бокала, bs/bx — слой бархата (параллакс). Dolly zoom: бархат растёт, бокал держит размер.
+function camera(t){let s=1,x=0,bs=1,bx=0;
+  const pulse=(t0,amp,dec=7)=>t<t0?0:amp*Math.exp(-(t-t0)*dec);
+  // въезд: бокал влетает слева с пружиной, фон с параллаксом и dolly zoom
+  {const p=spring(t-.15,1.5,.62);x+=lerp(-900,0,p);bx+=lerp(-300,0,p);bs*=lerp(1.3,1,eoe(seg(t,.15,1.1)));}
+  // смена шага (такты 3–8): whip pan, направление чередуется
+  for(let b=3;b<=8;b++){const t0=bar(b),dir=b%2?1:-1;if(t>=t0-.12&&t<t0+.6){const p=t<t0?-(t0-t)/.12:eoe(seg(t,t0,.42));
+      if(p<0){x-=dir*520*(-p)**2;bx-=dir*160*(-p)**2;}else{x+=dir*420*(1-p);bx+=dir*130*(1-p);}}}
+  // такты 3–6: наезд во время шага + пульс на каждую долю
+  for(let b=3;b<=6;b++){const p=seg(t,bar(b),2);if(p>0&&p<1){s*=1+.11*eoe(p*.9);bs*=1+.03*p;}
+    for(let k=0;k<4;k++)s*=1+pulse(bar(b)+k*.5,.022);}
+  // такт 7: перемешивание — короткий truck туда-обратно
+  {const p=seg(t,bar(7)+.4,1.4);if(p>0&&p<1){const k=Math.sin(2*Math.PI*eio(p));x+=55*k;bx+=18*k;}}
+  // такт 8: snap-zoom на дольку, пауза, отъезд
+  {const tz=bar(8)+.45;const pin=eoe(seg(t,tz,.28)),pout=eio(seg(t,tz+.95,.5));const k=pin*(1-pout);s*=1+.5*k;bs*=1+.1*k;}
+  // такт 9: быстрый dolly zoom на сильную долю, затем медленный дрейф
+  {const p=eoe(seg(t,bar(9),1.1)),drift=seg(t,bar(9)+1.1,2.9),back=eio(seg(t,bar(15),.9));const k=(p*.8+.2*drift)*(1-back);s*=1+.12*k;bs*=1+.55*k;}
+  // такты 11–12: медленный truck
+  {const p=seg(t,bar(11),4);if(p>0&&p<1){const k=Math.sin(Math.PI*eio(p));x-=60*k;bx-=22*k;}}
+  // такт 13: рывок наезда, потом медленно
+  {const p=eoe(seg(t,bar(13),.45))*.6+.4*seg(t,bar(13)+.45,3.55),back=eio(seg(t,bar(15),.9));s*=1+.07*p*(1-back);}
+  return{s,x,bs,bx};}
+// фокус наезда на дольку смещён вправо-вверх: pivot сцены
+const PIV=[GX,1350],BPIV=[GX,1100];
+function frame(t){const c=X;c.setTransform(1,0,0,1,0,0);const C=camera(t);
+  c.fillStyle=BG;c.fillRect(0,0,W,H);
+  c.save();c.translate(BPIV[0]+C.bx,BPIV[1]);c.scale(C.bs,C.bs);c.translate(-BPIV[0],-BPIV[1]);velvetBg(c,t);c.restore();
+  const z=C.s;const zp=t>=bar(8)&&t<bar(9)?[GX+150,RIM+60]:PIV;
+  c.save();c.translate(zp[0]+C.x,zp[1]);c.scale(z,z);c.translate(-zp[0],-zp[1]);glassShadow(c);
   const ml=liquidMl(t),lvl=levelY(ml),col=liquidColor(t);
   drawLiquid(c,t,lvl,col);drawIce(c,t,lvl);for(const s of STEPS)stream(c,t,s);spoon(c,t);
   glassFront(c,t,seg(t,bar(9),2));orange(c,t);for(const s of STEPS)bottle(c,t,s);levelTags(c,t);
-  c.restore();header(c,t);}
+  c.restore();decoFrame(c);header(c,t);}
 const D=(s)=>`${s}px Deco`, DL=(s,ls=8)=>`ls${ls} ${s}px Deco`, SC=(s)=>`${s}px Script`;
 function rule(c,t,y,tIn,tOut,w=300){const p=eoe(seg(t,tIn,.5))*(1-eie(seg(t,tOut,.35)));if(p<=0)return;const hw2=w*p/2;
   c.save();c.strokeStyle=GOLD;c.lineWidth=2;c.beginPath();c.moveTo(GX-hw2,y);c.lineTo(GX-14,y);c.moveTo(GX+14,y);c.lineTo(GX+hw2,y);c.stroke();
