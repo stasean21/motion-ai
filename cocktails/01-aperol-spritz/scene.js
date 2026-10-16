@@ -8,6 +8,18 @@ const eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2, eoe=p=>p>=1?1:1-Math.pow(2,-10
 function spring(t,f=2,z=.7){if(t<=0)return 0;const w=2*Math.PI*f,wd=w*Math.sqrt(1-z*z);return 1-Math.exp(-z*w*t)*(Math.cos(wd*t)+z*w/wd*Math.sin(wd*t));}
 const hash=n=>{const s=Math.sin(n*127.1+311.7)*43758.5453;return s-Math.floor(s);};
 const mixC=(a,b,p)=>{const A=a.match(/\w\w/g).map(h=>parseInt(h,16)),B=b.match(/\w\w/g).map(h=>parseInt(h,16));return`rgb(${A.map((v,i)=>Math.round(lerp(v,B[i],p))).join(',')})`;};
+// ---------- язык: index.html?lang=en ----------
+const LANG=new URLSearchParams(location.search).get('lang')||'ru';
+const TX={
+ ru:{ml:'мл',ice:'Лёд',iceSub:'кубики доверху',pro:'Просекко',ape:'Апероль',soda:'Содовая',labels:{pro:'ИГРИСТОЕ',ape:'АПЕРИТИВ',soda:'СОДОВАЯ'},
+  t1:'Апероль',t2:'Шприц',sub:'ИТАЛЬЯНСКИЙ АПЕРИТИВ',need:'ПОНАДОБИТСЯ',iceList:'Лёд, долька апельсина',step:(n)=>`ШАГ ${n} ИЗ 6`,
+  stir:'Перемешать',stirSub:'один круг ложкой',orange:'Апельсин',orangeSub:'долька в бокал',ratioT:'ЗАПОМНИ ПРОПОРЦИЮ',ratio:['просекко','апероль','содовая'],
+  name:'Апероль Шприц',short:'ЛЁД · 90 · 60 · 30 · АПЕЛЬСИН',save:'Сохрани рецепт',saveSub:'И ПРИГОТОВЬ НА ВЫХОДНЫХ',age:'18+',warn:'ЧРЕЗМЕРНОЕ УПОТРЕБЛЕНИЕ АЛКОГОЛЯ ВРЕДИТ ВАШЕМУ ЗДОРОВЬЮ'},
+ en:{ml:'ml',ice:'Ice',iceSub:'fill to the top',pro:'Prosecco',ape:'Aperol',soda:'Soda',labels:{pro:'SPARKLING',ape:'APERITIF',soda:'SODA'},
+  t1:'Aperol',t2:'Spritz',sub:'THE ITALIAN APERITIVO',need:'YOU WILL NEED',iceList:'Ice, orange slice',step:(n)=>`STEP ${n} OF 6`,
+  stir:'Stir',stirSub:'one gentle turn',orange:'Orange',orangeSub:'a slice in the glass',ratioT:'REMEMBER THE RATIO',ratio:['prosecco','aperol','soda'],
+  name:'Aperol Spritz',short:'ICE · 90 · 60 · 30 · ORANGE',save:'Save this recipe',saveSub:'AND MAKE IT THIS WEEKEND',age:'18+',warn:'PLEASE DRINK RESPONSIBLY'}}[LANG];
+const ML=n=>`${n} ${TX.ml}`;
 // ---------- бокал (с фото) ----------
 const GIMG=new Image();GIMG.src=window.GLASS_IMG;
 const S=.98,GW=350*S,OX=(W-GW)/2,OY=640,GX=W/2,CXO=175;
@@ -22,10 +34,10 @@ const ICE_ML=70,FULL_ML=180+ICE_ML,K=VOL[TOP_R+Math.round((BOT_R-TOP_R)*.1)]/FUL
 function levelY(ml){if(ml<=0)return BOT;const tg=ml*K;let r=TOP_R;while(r<BOT_R&&VOL[r]>tg)r++;return OY+r*S;}
 // ---------- рецепт и тайминг ----------
 const STEPS=[
- {key:'ice',bar:3,name:'кубики доверху',amt:'Лёд'},
- {key:'pro',bar:4,name:'Просекко',amt:'90 мл',ml:90},
- {key:'ape',bar:5,name:'Апероль',amt:'60 мл',ml:60},
- {key:'soda',bar:6,name:'Содовая',amt:'30 мл',ml:30}];
+ {key:'ice',bar:3,name:TX.iceSub,amt:TX.ice},
+ {key:'pro',bar:4,name:TX.pro,amt:ML(90),ml:90},
+ {key:'ape',bar:5,name:TX.ape,amt:ML(60),ml:60},
+ {key:'soda',bar:6,name:TX.soda,amt:ML(30),ml:30}];
 const POUR=s=>[bar(s.bar)+.25,1.35];
 function poured(t){let ml=0;for(const s of STEPS){if(!s.ml)continue;const[a,d]=POUR(s);ml+=s.ml*eio(seg(t,a,d));}return ml;}
 function liquidMl(t){const ml=poured(t);return ml+(t>=bar(3)?ICE_ML*cl(ml/90):0);}
@@ -87,7 +99,7 @@ function bottle(c,t,s){if(!s.ml)return;const[a,d]=POUR(s);const p=eoe(seg(t,a-.4
   rr(c,L[0],L[1],L[2],L[3],6);c.fillStyle='#F3E6CC';c.fill();c.strokeStyle=GOLD;c.lineWidth=2;c.strokeRect(L[0]+7,L[1]+7,L[2]-14,L[3]-14);
   c.save();c.translate(L[0]+L[2]/2,L[1]+L[3]/2);c.rotate(Math.PI/4);c.fillStyle=GOLD;c.fillRect(-5,-5,10,10);c.restore();
   c.font=`${k==='soda'?22:26}px Deco`;c.letterSpacing='4px';c.fillStyle='#4A1A12';c.textAlign='center';
-  c.fillText({pro:'ИГРИСТОЕ',ape:'АПЕРИТИВ',soda:'СОДОВАЯ'}[k],L[0]+L[2]/2+2,L[1]+L[3]/2-14);c.letterSpacing='0px';c.restore();}
+  c.fillText(TX.labels[k],L[0]+L[2]/2+2,L[1]+L[3]/2-14);c.letterSpacing='0px';c.restore();}
 function stream(c,t,s){if(!s.ml)return;const[a,d]=POUR(s);const end=a+d;if(t<a-.05||t>end+.4)return;const lvl=levelY(liquidMl(t)),S0=MOUTH[1]+4;
   const head=t<a+.25?lerp(S0,lvl,eie(seg(t,a-.05,.3))):lvl,tail=t>end?lerp(S0,lvl,eie(seg(t,end,.35))):S0;if(head<=tail)return;
   const col=s.key==='soda'?'rgba(225,240,245,.85)':s.key==='ape'?'#E9520E':'rgba(242,227,166,.95)';const x=MOUTH[0];
@@ -120,45 +132,45 @@ function rule(c,t,y,tIn,tOut,w=300){const p=eoe(seg(t,tIn,.5))*(1-eie(seg(t,tOut
   c.save();c.strokeStyle=GOLD;c.lineWidth=2;c.beginPath();c.moveTo(GX-hw2,y);c.lineTo(GX-14,y);c.moveTo(GX+14,y);c.lineTo(GX+hw2,y);c.stroke();
   c.fillStyle=GOLD;c.translate(GX,y);c.rotate(Math.PI/4);c.fillRect(-6*p,-6*p,12*p,12*p);c.restore();}
 function header(c,t){
-  c.save();rr(c,76,84,110,56,4);c.strokeStyle=INK;c.lineWidth=2;c.stroke();txt(c,'18+',131,123,D(32),INK);c.restore();
+  c.save();rr(c,76,84,110,56,4);c.strokeStyle=INK;c.lineWidth=2;c.stroke();txt(c,TX.age,131,123,D(32),INK);c.restore();
   // такт 1 — название
   rise(c,'COCKTAIL',GX,205,DL(40,16),SOFT,.1,bar(2)-.35,t,'center',60);
-  rise(c,'Апероль',GX,335,SC(150),INK,.2,bar(2)-.32,t,'center',190);
-  rise(c,'Шприц',GX,460,SC(150),ORANGE,.4,bar(2)-.3,t,'center',190);
+  rise(c,TX.t1,GX,335,SC(150),INK,.2,bar(2)-.32,t,'center',190);
+  rise(c,TX.t2,GX,460,SC(150),ORANGE,.4,bar(2)-.3,t,'center',190);
   rule(c,t,505,.7,bar(2)-.3,420);
-  rise(c,'ИТАЛЬЯНСКИЙ АПЕРИТИВ',GX,565,DL(34,8),SOFT,.8,bar(2)-.25,t,'center',50);
+  rise(c,TX.sub,GX,565,DL(34,8),SOFT,.8,bar(2)-.25,t,'center',50);
   // такт 2 — что нужно
-  rise(c,'ПОНАДОБИТСЯ',GX,240,DL(54,12),INK,bar(2),bar(3)-.3,t,'center',70);
+  rise(c,TX.need,GX,240,DL(54,12),INK,bar(2),bar(3)-.3,t,'center',70);
   rule(c,t,290,bar(2)+.15,bar(3)-.3,360);
-  [['Просекко','90 мл'],['Апероль','60 мл'],['Содовая','30 мл'],['Лёд, долька апельсина','']].forEach(([n,a],i)=>{
+  [[TX.pro,ML(90)],[TX.ape,ML(60)],[TX.soda,ML(30)],[TX.iceList,'']].forEach(([n,a],i)=>{
     rise(c,n,150,380+i*86,D(52),INK,bar(2)+.4+i*.38,bar(3)-.3+i*.03,t,'left',70);
     if(a)rise(c,a,930,380+i*86,D(52),i===1?ORANGE:INK,bar(2)+.5+i*.38,bar(3)-.3+i*.03,t,'right',70);});
   // шаги
-  const step=(n,a,out)=>{rise(c,`ШАГ ${n} ИЗ 6`,GX,220,DL(34,10),SOFT,a,out,t,'center',50);rule(c,t,250,a+.1,out,240);};
+  const step=(n,a,out)=>{rise(c,TX.step(n),GX,220,DL(34,10),SOFT,a,out,t,'center',50);rule(c,t,250,a+.1,out,240);};
   STEPS.forEach((s,i)=>{const a=bar(s.bar),out=bar(s.bar+1)-.3;step(i+1,a,out);
     rise(c,s.amt,GX,420,D(s.key==='ice'?170:180),s.key==='ape'?ORANGE:INK,a+.05,out+.02,t,'center',180);
     rise(c,s.name,GX,520,SC(96),s.key==='ape'?INK:ORANGE,a+.15,out+.04,t,'center',110);});
   step(5,bar(7),bar(8)-.3);
-  rise(c,'Перемешать',GX,410,D(120),INK,bar(7)+.05,bar(8)-.28,t,'center',130);
-  rise(c,'один круг ложкой',GX,515,SC(84),ORANGE,bar(7)+.15,bar(8)-.26,t,'center',100);
+  rise(c,TX.stir,GX,410,D(120),INK,bar(7)+.05,bar(8)-.28,t,'center',130);
+  rise(c,TX.stirSub,GX,515,SC(84),ORANGE,bar(7)+.15,bar(8)-.26,t,'center',100);
   step(6,bar(8),bar(9)-.3);
-  rise(c,'Апельсин',GX,410,D(130),ORANGE,bar(8)+.05,bar(9)-.28,t,'center',140);
-  rise(c,'долька в бокал',GX,515,SC(84),INK,bar(8)+.15,bar(9)-.26,t,'center',100);
+  rise(c,TX.orange,GX,410,D(130),ORANGE,bar(8)+.05,bar(9)-.28,t,'center',140);
+  rise(c,TX.orangeSub,GX,515,SC(84),INK,bar(8)+.15,bar(9)-.26,t,'center',100);
   // такты 11–12 — пропорция
-  rise(c,'ЗАПОМНИ ПРОПОРЦИЮ',GX,240,DL(40,10),SOFT,bar(11),bar(13)-.3,t,'center',60);
+  rise(c,TX.ratioT,GX,240,DL(40,10),SOFT,bar(11),bar(13)-.3,t,'center',60);
   rise(c,'3 : 2 : 1',GX,430,D(190),INK,bar(11)+.15,bar(13)-.28,t,'center',190);
-  const ratio=[['просекко',3,'#E9D48A'],['апероль',2,ORANGE],['содовая',1,'#B9D3DA']];let x=GX-390;
+  const ratio=[[TX.ratio[0],3,'#E9D48A'],[TX.ratio[1],2,ORANGE],[TX.ratio[2],1,'#B9D3DA']];let x=GX-390;
   ratio.forEach(([n,v,col],i)=>{const p=eoe(seg(t,bar(12)+i*.25,.5)),q=eie(seg(t,bar(13)-.3,.3));const w=v*130*(p)*(1-q);if(w<1)return;
     rr(c,x,500,Math.max(0,w-12),10,5);c.fillStyle=col;c.fill();if(p>.8&&q<.5)txt(c,n,x+(v*130-12)/2,560,D(34),INK);x+=v*130;});
   // такты 13–14 — название над готовым коктейлем
-  rise(c,'Апероль Шприц',GX,330,SC(140),INK,bar(13),bar(15)-.3,t,'center',160);
+  rise(c,TX.name,GX,330,SC(140),INK,bar(13),bar(15)-.3,t,'center',160);
   rule(c,t,390,bar(13)+.2,bar(15)-.3,420);
-  rise(c,'ЛЁД · 90 · 60 · 30 · АПЕЛЬСИН',GX,450,DL(34,6),SOFT,bar(13)+.25,bar(15)-.28,t,'center',50);
+  rise(c,TX.short,GX,450,DL(34,6),SOFT,bar(13)+.25,bar(15)-.28,t,'center',50);
   // такт 15 — финал
-  rise(c,'Сохрани рецепт',GX,330,SC(130),ORANGE,bar(15),99,t,'center',150);
+  rise(c,TX.save,GX,330,SC(130),ORANGE,bar(15),99,t,'center',150);
   rule(c,t,390,bar(15)+.15,99,420);
-  rise(c,'И ПРИГОТОВЬ НА ВЫХОДНЫХ',GX,450,DL(34,6),INK,bar(15)+.2,99,t,'center',50);
-  const wp=eoe(seg(t,bar(15)+.4,.4));if(wp>0){c.save();c.globalAlpha=wp;txt(c,'ЧРЕЗМЕРНОЕ УПОТРЕБЛЕНИЕ АЛКОГОЛЯ ВРЕДИТ ВАШЕМУ ЗДОРОВЬЮ',GX,1860,DL(26,2),INK);c.restore();}
+  rise(c,TX.saveSub,GX,450,DL(34,6),INK,bar(15)+.2,99,t,'center',50);
+  const wp=eoe(seg(t,bar(15)+.4,.4));if(wp>0){c.save();c.globalAlpha=wp;txt(c,TX.warn,GX,1860,DL(26,2),INK);c.restore();}
 }
 window.seek=async t=>frame(t);
 window.ready=Promise.all([document.fonts.load('40px Deco'),document.fonts.load('40px Script'),new Promise(r=>GIMG.complete?r():GIMG.onload=r)]);

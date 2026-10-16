@@ -1,3 +1,4 @@
 node_modules/
-*/out/beats/
-*/out/track.wav
+*/out/beats*/
+*/out/track*.wav
+*/out/tmp-*.mp4

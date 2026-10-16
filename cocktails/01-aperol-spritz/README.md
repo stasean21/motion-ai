@@ -38,4 +38,6 @@
 | 13–14 | 24–28 с | Название и короткий рецепт над готовым коктейлем |
 | 15 | 28–30 с | «Сохрани рецепт» и предупреждение о вреде алкоголя |
 
-Файлы: `out/aperol-spritz.mp4`, `out/storyboard.jpg` (кадр на каждый удар).
+Файлы: `out/aperol-spritz.mp4` (RU), `out/aperol-spritz-en.mp4` (EN), `out/storyboard.jpg` и `out/storyboard-en.jpg` (кадр на каждый удар).
+
+В английской версии: Prosecco 90 ml, Aperol 60 ml, Soda 30 ml, «Please drink responsibly».

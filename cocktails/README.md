@@ -23,13 +23,17 @@
 npm i                      # один раз в папке cocktails/
 cd 01-aperol-spritz
 node beats.mjs             # проверить кадры по ударам
-node render.mjs aperol-spritz
+node render.mjs aperol-spritz          # русская версия
+node beats.mjs 0.35 en
+node render.mjs aperol-spritz-en en    # английская версия
 ```
+
+Язык переключается параметром `?lang=en` в `index.html`; все тексты лежат в словаре `TX` в начале `scene.js`.
 
 Нужны Chromium (`/opt/pw-browsers/chromium`) и ffmpeg.
 
 ## Ролики
 
-| № | Коктейль | Тип |
-|---|---|---|
-| 01 | [Апероль Шприц](01-aperol-spritz/) | алкогольный |
+| № | Коктейль | Тип | Языки |
+|---|---|---|---|
+| 01 | [Апероль Шприц](01-aperol-spritz/) · Aperol Spritz | алкогольный | RU, EN |
