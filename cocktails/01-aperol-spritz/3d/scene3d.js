@@ -20,7 +20,7 @@ function glassProfile(){const p=[new THREE.Vector2(0,0)];
 const glassMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,
   vertexShader:`varying vec3 vN;varying vec3 vV;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`,
   fragmentShader:`varying vec3 vN;varying vec3 vV;void main(){vec3 n=normalize(vN);if(!gl_FrontFacing)n=-n;float f=pow(1.-abs(dot(n,vV)),2.6);
-    float s1=exp(-pow((n.x+.62)/.07,2.))*.95, s2=exp(-pow((n.x-.78)/.05,2.))*.75, s3=exp(-pow((n.x+.2)/.03,2.))*.18;float top=smoothstep(.55,.95,n.y)*.5;
+    float s1=exp(-pow((n.x+.62)/.05,2.))*.8, s2=exp(-pow((n.x-.78)/.05,2.))*.75, s3=exp(-pow((n.x+.2)/.03,2.))*.18;float top=smoothstep(.55,.95,n.y)*.5;
     float a=clamp(.025+f*.8+s1+s2+s3+top,0.,1.);vec3 c=mix(vec3(1.),vec3(1.,.9,.82),s2)*(.75+f*.4);gl_FragColor=vec4(c,a*(gl_FrontFacing?1.:.55));}`});
 const glass=new THREE.Mesh(new THREE.LatheGeometry(glassProfile(),128),glassMat);glass.renderOrder=5;scene.add(glass);
 // ---------- напиток ----------
@@ -53,14 +53,25 @@ function bottle(kind){const grp=new THREE.Group();const P=kind==='pro'?[[0,0],[.
   const lab=new THREE.Mesh(new THREE.CylinderGeometry(kind==='pro'?.158:.138,kind==='pro'?.158:.138,.42,64,1,true,-1.1,2.2),new THREE.MeshStandardMaterial({map:labelTex(kind==='pro'?'ИГРИСТОЕ':'АПЕРИТИВ'),roughness:.7}));
   lab.position.y=.32;grp.add(lab);return grp;}
 // ---------- фон: бархат, стол ----------
-function velvetTex(){const c=document.createElement('canvas');c.width=1024;c.height=1024;const g=c.getContext('2d');g.fillStyle='#3a0b14';g.fillRect(0,0,1024,1024);
-  for(let i=0;i<22;i++){const x=i*48+((i*37)%17),w=40+((i*53)%30);const gr=g.createLinearGradient(x-w,0,x+w,0);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(.45,'rgba(255,170,180,.10)');gr.addColorStop(.55,'rgba(0,0,0,.18)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(x-w,0,2*w,1024);}
-  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
-const back=new THREE.Mesh(new THREE.PlaneGeometry(14,14),new THREE.MeshStandardMaterial({map:velvetTex(),roughness:1,envMapIntensity:0}));back.position.set(0,3,-3.2);back.receiveShadow=true;scene.add(back);
-const floor=new THREE.Mesh(new THREE.PlaneGeometry(14,8),new THREE.MeshLambertMaterial({color:0x2a0710}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+// бархат: 3D-складки + ворс (sheen) + микрорельеф ткани
+function pileNormal(){const N=512,c=document.createElement('canvas');c.width=c.height=N;const g=c.getContext('2d');const h=new Float32Array(N*N);
+  let s=7;const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647;};
+  for(let i=0;i<N*N;i++)h[i]=rnd();
+  for(let pass=0;pass<2;pass++){const o=new Float32Array(N*N);for(let y=0;y<N;y++)for(let x=0;x<N;x++){let v=0;for(let d=-1;d<=1;d++)v+=h[y*N+((x+d+N)%N)]+h[((y+d+N)%N)*N+x];o[y*N+x]=v/6;}h.set(o);}
+  // лёгкое направление ворса по вертикали
+  const img=g.createImageData(N,N);for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=y*N+x;const dx=h[y*N+(x+1)%N]-h[y*N+(x-1+N)%N],dy=h[((y+1)%N)*N+x]-h[((y-1+N)%N)*N+x];
+    let nx=-dx*2.2,ny=-dy*.8,nz=1;const l=Math.hypot(nx,ny,nz);img.data[i*4]=(nx/l*.5+.5)*255;img.data[i*4+1]=(ny/l*.5+.5)*255;img.data[i*4+2]=(nz/l*.5+.5)*255;img.data[i*4+3]=255;}
+  g.putImageData(img,0,0);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(46,34);return t;}
+const curtainGeo=new THREE.PlaneGeometry(14,10,420,60);{const p=curtainGeo.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i);const k=1+.35*(1-(y+5)/10);
+  const z=k*(.20*Math.sin(x*2.3+.4)+.08*Math.sin(x*5.3+1.3+y*.05)+.035*Math.sin(x*11.7+2.1))+.02*Math.sin(y*1.3+x*.7);p.setZ(i,z);}curtainGeo.computeVertexNormals();}
+const velvet=new THREE.MeshPhysicalMaterial({color:0x34060f,roughness:.95,metalness:0,sheen:1,sheenColor:new THREE.Color(0xd0405a),sheenRoughness:.3,normalMap:pileNormal(),normalScale:new THREE.Vector2(.16,.16),envMapIntensity:.12});
+const back=new THREE.Mesh(curtainGeo,velvet);back.position.set(0,4.35,-2.8);back.receiveShadow=true;scene.add(back);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(14,8),new THREE.MeshPhysicalMaterial({color:0x1c050a,roughness:.45,envMapIntensity:0,specularIntensity:.4}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
 // ---------- свет ----------
 const key=new THREE.SpotLight(0xffe6cc,90,20,.45,.7,1.6);key.position.set(-3,5,4);key.target.position.set(0,1.2,0);key.castShadow=true;key.shadow.mapSize.set(2048,2048);scene.add(key,key.target);
-const bgL=new THREE.SpotLight(0xff8c9a,38,20,.55,1,1.5);bgL.position.set(0,2.4,1.2);bgL.target.position.set(0,1.8,-3.2);scene.add(bgL,bgL.target);
+const bgL=new THREE.SpotLight(0xffb3bd,16,20,.6,1,1.5);bgL.position.set(0,2.6,1.4);bgL.target.position.set(0,2.2,-2.8);scene.add(bgL,bgL.target);
+const graze=new THREE.SpotLight(0xffd2c2,46,16,.45,.8,1.4);graze.position.set(-5.5,4.2,-1.2);graze.target.position.set(1.5,2.4,-2.8);scene.add(graze,graze.target);
+const graze2=new THREE.SpotLight(0xff9cab,25,16,.5,.9,1.4);graze2.position.set(5.5,1.5,-1.4);graze2.target.position.set(-1.5,2.6,-2.8);scene.add(graze2,graze2.target);
 const rimA=new THREE.DirectionalLight(0xffffff,2.2);rimA.position.set(3,3,-4);scene.add(rimA);
 const rimB=new THREE.DirectionalLight(0xffd7a8,1.4);rimB.position.set(-3,2,-4);scene.add(rimB);
 // тень-пятно под бокалом
