@@ -121,34 +121,35 @@ function levelTags(c,t){TAGS=TAGS||tagLayout();const fade=1-seg(t,bar(9),.4);if(
     c.beginPath();c.rect(x0+76,ty-46,W,60);c.clip();txt(c,s.amt,x0+80,ty+14+(1-p)*50,'46px Deco',s.key==='ape'?ORANGE:INK,'left');c.restore();}}
 // ---------- кадр ----------
 // камера: s/x — слой бокала, bs/bx — слой бархата (параллакс). Dolly zoom: бархат растёт, бокал держит размер.
-function camera(t){let s=1,x=0,bs=1,bx=0;
-  const pulse=(t0,amp,dec=7)=>t<t0?0:amp*Math.exp(-(t-t0)*dec);
-  // въезд: бокал влетает слева с пружиной, фон с параллаксом и dolly zoom
-  {const p=spring(t-.15,1.5,.62);x+=lerp(-900,0,p);bx+=lerp(-300,0,p);bs*=lerp(1.3,1,eoe(seg(t,.15,1.1)));}
-  // смена шага (такты 3–8): whip pan, направление чередуется
-  for(let b=3;b<=8;b++){const t0=bar(b),dir=b%2?1:-1;if(t>=t0-.12&&t<t0+.6){const p=t<t0?-(t0-t)/.12:eoe(seg(t,t0,.42));
-      if(p<0){x-=dir*520*(-p)**2;bx-=dir*160*(-p)**2;}else{x+=dir*420*(1-p);bx+=dir*130*(1-p);}}}
-  // такты 3–6: наезд во время шага + пульс на каждую долю
-  for(let b=3;b<=6;b++){const p=seg(t,bar(b),2);if(p>0&&p<1){s*=1+.11*eoe(p*.9);bs*=1+.03*p;}
-    for(let k=0;k<4;k++)s*=1+pulse(bar(b)+k*.5,.022);}
-  // такт 7: перемешивание — короткий truck туда-обратно
-  {const p=seg(t,bar(7)+.4,1.4);if(p>0&&p<1){const k=Math.sin(2*Math.PI*eio(p));x+=55*k;bx+=18*k;}}
-  // такт 8: snap-zoom на дольку, пауза, отъезд
-  {const tz=bar(8)+.45;const pin=eoe(seg(t,tz,.28)),pout=eio(seg(t,tz+.95,.5));const k=pin*(1-pout);s*=1+.5*k;bs*=1+.1*k;}
-  // такт 9: быстрый dolly zoom на сильную долю, затем медленный дрейф
-  {const p=eoe(seg(t,bar(9),1.1)),drift=seg(t,bar(9)+1.1,2.9),back=eio(seg(t,bar(15),.9));const k=(p*.8+.2*drift)*(1-back);s*=1+.12*k;bs*=1+.55*k;}
-  // такты 11–12: медленный truck
-  {const p=seg(t,bar(11),4);if(p>0&&p<1){const k=Math.sin(Math.PI*eio(p));x-=60*k;bx-=22*k;}}
-  // такт 13: рывок наезда, потом медленно
-  {const p=eoe(seg(t,bar(13),.45))*.6+.4*seg(t,bar(13)+.45,3.55),back=eio(seg(t,bar(15),.9));s*=1+.07*p*(1-back);}
-  return{s,x,bs,bx};}
+// Плавная камера: одна непрерывная траектория по ключам, сплайн Эрмита (скорость без скачков).
+// s — масштаб сцены, x/y — сдвиг сцены, bs/bx — масштаб и сдвиг бархата (параллакс и dolly zoom).
+const SL=[GX+150,0];// фокус на дольке задаётся сдвигом, точка опоры не меняется
+const CAM_KEYS=[
+ // t     s     x     y    bs    bx
+ [0,    .93, -150,   0, 1.14, -50],
+ [2.5,  1.00,  0,    0, 1.00,   0],
+ [6,    1.01,  0,    0, 1.00,   0],
+ [12,   1.10,  0,    0, 1.04,   0],
+ [13.5, 1.11, 30,    0, 1.05,  10],
+ [15.2, 1.26,-40,   0, 1.08,  -6],
+ [16.6, 1.12,  0,    0, 1.10,   0],
+ [20,   1.14,  0,    0, 1.42,   0],
+ [24,   1.15,-40,    0, 1.40, -14],
+ [28,   1.20,  0,    0, 1.30,   0],
+ [30,   1.02,  0,    0, 1.02,   0]];
+function camera(t){const K=CAM_KEYS,n=K.length;let i=0;while(i<n-2&&t>K[i+1][0])i++;
+  const t0=K[i][0],t1=K[i+1][0],h=t1-t0,u=cl((t-t0)/h);
+  const tan=(j,c)=>{if(j<=0||j>=n-1)return 0;return (K[j+1][c]-K[j-1][c])/(K[j+1][0]-K[j-1][0]);};
+  const H=c=>{const p0=K[i][c],p1=K[i+1][c],m0=tan(i,c)*h,m1=tan(i+1,c)*h,u2=u*u,u3=u2*u;
+    return (2*u3-3*u2+1)*p0+(u3-2*u2+u)*m0+(-2*u3+3*u2)*p1+(u3-u2)*m1;};
+  return{s:H(1),x:H(2),y:H(3),bs:H(4),bx:H(5)};}
 // фокус наезда на дольку смещён вправо-вверх: pivot сцены
-const PIV=[GX,1350],BPIV=[GX,1100];
+const PIV=[GX,700],BPIV=[GX,1100];
 function frame(t){const c=X;c.setTransform(1,0,0,1,0,0);const C=camera(t);
   c.fillStyle=BG;c.fillRect(0,0,W,H);
   c.save();c.translate(BPIV[0]+C.bx,BPIV[1]);c.scale(C.bs,C.bs);c.translate(-BPIV[0],-BPIV[1]);velvetBg(c,t);c.restore();
-  const z=C.s;const zp=t>=bar(8)&&t<bar(9)?[GX+150,RIM+60]:PIV;
-  c.save();c.translate(zp[0]+C.x,zp[1]);c.scale(z,z);c.translate(-zp[0],-zp[1]);glassShadow(c);
+  const z=C.s;
+  c.save();c.translate(PIV[0]+C.x,PIV[1]+C.y);c.scale(z,z);c.translate(-PIV[0],-PIV[1]);glassShadow(c);
   const ml=liquidMl(t),lvl=levelY(ml),col=liquidColor(t);
   drawLiquid(c,t,lvl,col);drawIce(c,t,lvl);for(const s of STEPS)stream(c,t,s);spoon(c,t);
   glassFront(c,t,seg(t,bar(9),2));orange(c,t);for(const s of STEPS)bottle(c,t,s);levelTags(c,t);
