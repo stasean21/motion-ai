@@ -1,0 +1,9 @@
+// общий запуск: локальный http из india-vs-world/ (флаги и карта — соседние папки, canvas без «tainted»)
+import { chromium } from '../../cocktails/node_modules/playwright/index.mjs'; import { spawn } from 'child_process'; import net from 'net';
+export const PORT=8767;
+const up=()=>new Promise(r=>{const s=net.connect(PORT,'127.0.0.1',()=>{s.end();r(true);});s.on('error',()=>r(false));});
+export async function open(){if(!await up()){spawn('python3',['-m','http.server',String(PORT),'--bind','127.0.0.1'],{cwd:'..',stdio:'ignore',detached:true}).unref();for(let i=0;i<30&&!await up();i++)await new Promise(r=>setTimeout(r,200));}
+  const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
+  const p=await b.newPage({viewport:{width:1920,height:1080}});const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>m.type()==='error'&&errs.push(m.text()));
+  await p.goto(`http://127.0.0.1:${PORT}/anim/index.html`);await p.waitForFunction(()=>window.ready,null,{timeout:60000});await p.evaluate(()=>window.ready);return{b,p,errs};}
+export const grab=(p,t,q=.9)=>p.evaluate(async([t,q])=>{await seek(t);return document.getElementById('c').toDataURL('image/jpeg',q)},[t,q]);

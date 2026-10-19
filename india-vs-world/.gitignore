@@ -1,2 +1,9 @@
 node_modules/
 package-lock.json
+anim/out/beats/
+anim/out/track.wav
+anim/out/log-*.txt
+anim/out/part-*.mp4
+anim/out/tmp-*.mp4
+anim/out/parts.txt
+anim/out/keys.jpg
