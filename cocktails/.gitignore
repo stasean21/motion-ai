@@ -3,3 +3,5 @@ node_modules/
 */out/track*.wav
 */out/tmp-*.mp4
 */out/log-*.txt
+*/out/part-*.mp4
+*/out/parts.txt
