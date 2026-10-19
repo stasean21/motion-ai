@@ -22,7 +22,8 @@ const NOTE={5:['*FIVE* COUNTRIES.','And the bar has barely moved.'],13:['HUGE TE
 const MILE={17:25,22:50,24:75,26:100};
 let _t=S_T0;
 const STEPS=DATA.map((d,i)=>{const box=VIEWS[d[1]],len=STEP+(EXTRA[i+1]||0),s={i,id:d[0],fl:d[1],name:d[2].toUpperCase(),pop:d[3],sum:d[4],prev:i?DATA[i-1][4]:0,n:i+1,t0:_t,len,
-  box,vbox:d[1]==='sg'?VIEWS.seAsia:box,bc:[(box[0]+box[2])/2,(box[1]+box[3])/2],p:PATHS.find(o=>o.id===d[0]).p};_t+=len;return s;});
+  box,vbox:d[1]==='sg'?VIEWS.seAsia:box,bc:[(box[0]+box[2])/2,(box[1]+box[3])/2],p:PATHS.find(o=>o.id===d[0]).p};
+  const B=MAP[d[0]].b;s.R=Math.max(...[[B[0][0],B[0][1]],[B[1][0],B[0][1]],[B[0][0],B[1][1]],[B[1][0],B[1][1]]].map(([x,y])=>Math.hypot(x-s.bc[0],y-s.bc[1])));_t+=len;return s;});
 const FIN=_t,FLEN=25;DURATION=FIN+FLEN;
 const SG=STEPS[25],US=STEPS[24],CL=STEPS[9];
 // ключевые моменты внутри шага (с от начала шага)
@@ -46,9 +47,10 @@ for(const s of STEPS){const pv=CAM[CAM.length-1],L=view(s.vbox,REG_L,.82),C=view
 key(FIN+2.2,view(WORLD,[40,150,1880,860],1));key(FIN+FLEN,view(WORLD,[40,150,1880,860],1.08));
 // ---------- карта: контур, бирюзовая заливка, волна финала ----------
 window.mapSteps=(M,t,C)=>{for(const s of STEPS){const r=t-s.t0;if(r<K.hl)continue;
-  const f=eoe(seg(r,K.fill,.6)),u=eio(seg(r,K.fill,.45)),R=Math.max(s.box[2]-s.box[0],s.box[3]-s.box[1])*.9;
+  const f=eoe(seg(r,K.fill,.6)),u=eio(seg(r,K.fill,.45)),R=s.R;
   if(u>0){M.globalAlpha=u*.45;M.fillStyle=COL.tq;M.fill(s.p);M.globalAlpha=1;}
-  if(f>0){M.save();M.beginPath();M.arc(s.bc[0],s.bc[1],f*R,0,7);M.clip();M.fillStyle=COL.tq;M.fill(s.p);M.restore();
+  // круг дотягивается до самых дальних территорий (Аляска, арктические острова), в конце — заливка целиком
+  if(f>0){M.save();if(f<.999){M.beginPath();M.arc(s.bc[0],s.bc[1],f*R,0,7);M.clip();}M.fillStyle=COL.tq;M.fill(s.p);M.restore();
     M.strokeStyle=COL.edge;M.lineWidth=1.3/C.z;M.stroke(s.p);}
   // волна в финале: страны вспыхивают по порядку добавления
   const w=t-(FIN+1.0+s.i*.1),wv=w>0&&w<.6?Math.sin(w/.6*Math.PI):0;
