@@ -41,4 +41,6 @@
 | 13–14 | 28–32 с | Название и короткий рецепт |
 | 15 | 32–34 с | «Сохрани рецепт» и предупреждение |
 
+Файлы: `out/mojito.mp4` (RU), `out/mojito-en.mp4` (EN), `out/storyboard.jpg` и `out/storyboard-en.jpg`.
+
 Сборка: `node beats.mjs 0.35 ru` (раскадровка), `node render.mjs mojito ru`, `node render.mjs mojito-en en`.
