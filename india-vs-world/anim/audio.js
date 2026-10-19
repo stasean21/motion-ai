@@ -2,7 +2,7 @@
 window.makeAudio=async(D=DURATION)=>{
   const SR=44100,ac=new OfflineAudioContext(2,Math.ceil(SR*D),SR);
   const bus=ac.createDynamicsCompressor();bus.threshold.value=-16;bus.ratio.value=3;const master=ac.createGain();bus.connect(master).connect(ac.destination);
-  master.gain.setValueAtTime(1,D-.8);master.gain.linearRampToValueAtTime(0,D);
+  master.gain.setValueAtTime(1,D-2.2);master.gain.linearRampToValueAtTime(0,D-.1);
   // пространство: свёртка с затухающим шумом
   const verb=ac.createConvolver();{const n=SR*2.2,b=ac.createBuffer(2,n,SR);for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);let s=7+ch;for(let i=0;i<n;i++){s=(s*16807)%2147483647;d[i]=(s/1073741823.5-1)*Math.pow(1-i/n,3);}}verb.buffer=b;}
   const wet=ac.createGain();wet.gain.value=.22;verb.connect(wet).connect(bus);
@@ -21,7 +21,10 @@ window.makeAudio=async(D=DURATION)=>{
   const R=[55,43.65,65.41,49,55,43.65,55];
   // после вступления — цикл Am–F–C–G
   const CY=[A[0],A[1],A[2],A[3]],CR=[55,43.65,65.41,49];
-  const groove=tb=>(tb>=3&&tb<12)||(tb>=14&&tb<D-1);
+  // пульс: пауза на «Still not enough» (США) до цели на Сингапуре, затихает к концу финала
+  const ST=typeof STEPS!=='undefined',tense=tb=>ST&&tb>=US.t0+STEP&&tb<SG.t0+K.land;
+  const groove=tb=>((tb>=3&&tb<12)||(tb>=14&&tb<D-1))&&!tense(tb)&&!(ST&&tb>=FIN+18);
+  const busy=tb=>ST&&tb>=STEPS[21].t0+K.land&&groove(tb);
   for(let b=0;b<Math.ceil(D/2);b++){const t=b*2,ch=b<7?A[b]:CY[(b-7)%4],root=b<7?R[b]:CR[(b-7)%4];
     // пэд: два расстроенных пилообразных через низкие частоты
     ch.forEach(f=>{osc('sawtooth',f,t,b===6?2.2:2.1,.018,music,.4,900);osc('sawtooth',f*1.006,t,b===6?2.2:2.1,.014,music,.4,900);});
@@ -32,8 +35,9 @@ window.makeAudio=async(D=DURATION)=>{
       if(groove(tb)){osc('sawtooth',R_*2,tb,.2,.09,music,.004,380);osc('sawtooth',R_*2,tb+.25,.18,.06,music,.004,380);
         // бочка на долю
         sweep(140,44,tb,.26,.6,music);}
-      if((tb>=7&&tb<12)||(tb>=14&&tb<D-1)){noise(tb+.25,.04,'highpass',8000,.7,.07,music,.002);}
-      if((tb>=4&&tb<12)||(tb>=14&&tb<D-1)){[0,1,2].forEach(j=>osc('triangle',ch[(k+j)%ch.length]*2,tb+j*.166,.22,.03,music,.003));}}}
+      if(busy(tb)){noise(tb+.125,.03,'highpass',9000,.7,.04,music,.002);noise(tb+.375,.03,'highpass',9000,.7,.04,music,.002);}
+      if(((tb>=7&&tb<12)||tb>=14)&&groove(tb)){noise(tb+.25,.04,'highpass',8000,.7,.07,music,.002);}
+      if(((tb>=4&&tb<12)||tb>=14)&&groove(tb)){[0,1,2].forEach(j=>osc('triangle',ch[(k+j)%ch.length]*2,tb+j*.166,.22,.03,music,.003));}}}
   osc('sine',55,12,2.2,.25,music,.02);
   // S1: «ONE» — воздушный удар, «COUNTRY» — глубокий
   sweep(90,40,.25,.5,.35);noise(.25,.6,'bandpass',2500,.6,.12,fx,.15);
@@ -77,6 +81,28 @@ window.makeAudio=async(D=DURATION)=>{
     noise(t0+K.fill,.6,'bandpass',1800,.7,.12,fx,.25);                    // заливка
     whoosh(t0+K.chip,.6,.18,500,2800);                                     // чип летит
     const lf=[880,987.8,1108.7,1174.7,1318.5][st.i%5];osc('sine',lf,t0+K.land,.25,.15,fx,.002);noise(t0+K.land,.03,'highpass',4000,.7,.14);sweep(80,45,t0+K.land,.25,.3);}
+  if(ST){
+    const bell=(t,v=.08)=>[1318.5,1568,1975.5].forEach((f,k)=>osc('sine',f,t,1.6,v/(k+1),fx,.002));
+    for(const st of STEPS){const t0=st.t0;
+      if(NOTE[st.n]){whoosh(t0+K.note,.35,.14,700,3000);hit(t0+K.note+.05,.35,120);noise(t0+K.note+.35,.6,'highpass',6000,.6,.06,fx,.2);}
+      if(MILE[st.n]){const t=t0+K.land+.35;hit(t,.85,95);sweep(70,32,t,1.0,.35);bell(t,.1);}}
+    // Чили: панель, рост полос, флаги, вывод
+    {const a=CL.t0+STEP;whoosh(a+.2,.5,.2,400,2400);{const n=noise(a+.7,.8,'bandpass',300,1.2,.18,fx,.7);n.fl.frequency.setValueAtTime(300,a+.7);n.fl.frequency.exponentialRampToValueAtTime(2500,a+1.5);}
+      osc('sine',660,a+1.7,.15,.12,fx,.002);for(let k=0;k<10;k++)osc('sine',880*Math.pow(2,k/12),a+2.5+k*.1,.1,.08,fx,.001);hit(a+3.8,.35,140);whoosh(CL.t0+CL.len-.5,.45,.16,2000,500);}
+    // США: тёмный удар, 99.6%, лупа
+    {const a=US.t0+STEP;whoosh(a+.1,1.0,.18,2500,300);sweep(60,28,a+1.0,1.6,.45);hit(a+1.3,.7,90);noise(a+1.9,.5,'highpass',5000,.6,.06,fx,.2);
+      osc('sine',700,a+2.6,.12,.15,fx,.002);noise(a+2.6,.04,'bandpass',2500,2,.15);whoosh(US.t0+US.len-.45,.45,.16,2000,500);
+      [110,164.8,220].forEach(f=>osc('sine',f,a+.5,US.len-STEP+1.5,.03,music,1.2));}
+    // Сингапур: лупа, нарастание к цели, удар и аккорд
+    {const t0=SG.t0;osc('sine',700,t0+1.0,.12,.15,fx,.002);noise(t0+1.0,.04,'bandpass',2500,2,.15);
+      const L=t0+K.land;{const n=noise(L-1.6,1.6,'bandpass',300,1.5,.28,fx,1.55);n.fl.frequency.setValueAtTime(300,L-1.6);n.fl.frequency.exponentialRampToValueAtTime(6000,L);sweep(150,800,L-1.4,1.4,.06,fx,'sawtooth');}
+      hit(L,.9,100);noise(L,1.2,'lowpass',500,.7,.35,fx,.01);[220,277.2,329.6,440,554.4].forEach((f,k)=>osc('sawtooth',f,L,3.0,.016,music,.02,1400));bell(L+.35,.12);}
+    // финал: волна по странам, рост полос, титр
+    {const F=FIN;for(let k=0;k<26;k++)osc('sine',1046.5*Math.pow(2,(k%12)/12),F+1.0+k*.1,.12,.035,fx,.002);
+      [3.5,4.7].forEach(d=>{const n=noise(F+d,.9,'bandpass',300,1.2,.16,fx,.8);n.fl.frequency.setValueAtTime(300,F+d);n.fl.frequency.exponentialRampToValueAtTime(2500,F+d+.9);});
+      bell(F+5.6,.07);noise(F+12.0,.7,'highpass',6000,.6,.08,fx,.25);hit(F+12.5,.8,90);sweep(70,32,F+12.5,1.0,.35);
+      for(let i=0;i<8;i++)osc('sine',3000+i*120,F+13.4+i*.03,.05,.04,fx,.001);hit(F+13.9,.75,130);
+      [220,261.6,329.6,493.9,659.3].forEach((f,k)=>osc('sawtooth',f,F+14,FLEN-14,.016,music,.05,1100));osc('sine',55,F+14,FLEN-14,.25,music,.05);bell(F+14,.07);}}
   const buf=await ac.startRendering();const L=buf.getChannelData(0),Rr=buf.getChannelData(1),n=L.length;
   let pk=0;for(let i=0;i<n;i++)pk=Math.max(pk,Math.abs(L[i]),Math.abs(Rr[i]));const g=.89/pk;
   const ab=new ArrayBuffer(44+n*4),dv=new DataView(ab),ws=(o,s)=>{for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i));};

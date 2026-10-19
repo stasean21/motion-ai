@@ -32,8 +32,9 @@ const toScreen=(C,x,y)=>{const dx=(x-C.cx)*C.z,dy=(y-C.cy)*C.z,c=Math.cos(C.rot)
 // ---------- карта ----------
 const PATHS=Object.entries(MAP).map(([id,m])=>({id,p:new Path2D(m.d)}));
 const INDP=PATHS.find(o=>o.id===IND).p;
-const mc=document.createElement('canvas');mc.width=W;mc.height=H;const M=mc.getContext('2d');
-function drawMap(t,C){M.setTransform(1,0,0,1,0,0);M.clearRect(0,0,W,H);
+const mc=document.createElement('canvas');mc.width=W;mc.height=H;const MM=mc.getContext('2d');
+// карта рисуется в любой холст: основной или лупу
+function drawMap(t,C,M=MM){M.setTransform(1,0,0,1,0,0);M.clearRect(0,0,W,H);
   M.setTransform(1,0,0,1,W/2,H/2);M.rotate(C.rot);M.scale(C.z,C.z);M.translate(-C.cx,-C.cy);
   M.fillStyle=COL.land;for(const o of PATHS)if(o.id!==IND)M.fill(o.p);
   M.fill(INDP);
@@ -58,7 +59,7 @@ function dust(c,t,C){for(let i=0;i<26;i++){const f=1.6+hash(i+4)*.6,r=6+hash(i+1
 const FAM={2:'N2',7:'N7',9:'N9'};
 function font(c,w,size,ls=0){c.font=`${size}px ${FAM[w]}`;c.letterSpacing=ls+'px';}
 // слово: вход a (slam | mask | track | skew | flip), выход ex (left | up | push | fly)
-function word(c,t,o){const tin=o.in;if(t<tin||t>(o.out??99)+.6)return;
+function word(c,t,o){const tin=o.in;if(t<tin||t>(o.out??1e9)+.6)return;
   const size=o.size;let ls=o.ls||0;const pin=seg(t,tin,o.dur||.45);let dx=0,dy=0,sc=1,rot=0,sy=1,skew=0,al=1,clip=null,blur=0;
   switch(o.a){
     case'slam':{const p=spring(t-tin,2.2,.55);sc=lerp(o.from||1.8,1,p);al=seg(t,tin,.08);blur=(1-cl(p))*8;break;}
@@ -129,12 +130,17 @@ function bar(c,t){if(t<11.0)return;const p=spring(t-11.0,1.5,.62),dy=(1-p)*260;c
     if(S.glow>0){const g=c.createRadialGradient(fx,y+h/2,0,fx,y+h/2,90);g.addColorStop(0,`rgba(46,230,200,${.7*S.glow})`);g.addColorStop(1,'rgba(46,230,200,0)');c.fillStyle=g;c.fillRect(fx-90,y-70,180,h+140);
       c.fillStyle=`rgba(255,255,255,${S.glow})`;c.beginPath();c.roundRect(fx-3,y-6,6,h+12,3);c.fill();}}
   [25,50,75].forEach((m,i)=>{const tm=11.25+i*.25;if(t<tm)return;const q=spring(t-tm,2.4,.5),mx=x0+L*m/100;
-    c.save();c.translate(mx,y+h/2);c.scale(1,cl(q,0,1.3));rr(c,-3,-h/2-12,6,h+24,3,'#3A4884');c.restore();
-    c.save();c.globalAlpha=cl(q);c.translate(mx,y-22+(1-cl(q))*20);font(c,7,24);c.textAlign='center';c.fillStyle=COL.mut;c.fillText(m+'%',0,0);c.restore();});
-  if(t>=12.0){const q=spring(t-12.0,2,.5);c.save();c.translate(0,(1-cl(q))*-80);rr(c,x1-4,y-20,8,h+40,4,COL.ind);flag(c,x1+26,y-14,64);c.restore();
+    const fl=window.markFlash?markFlash(t,m):0;
+    if(fl>0){const g=c.createRadialGradient(mx,y+h/2,0,mx,y+h/2,120);g.addColorStop(0,`rgba(255,255,255,${.55*fl})`);g.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=g;c.fillRect(mx-120,y-100,240,h+200);}
+    c.save();c.translate(mx,y+h/2);c.scale(1+fl*.6,cl(q,0,1.3)*(1+fl*.3));rr(c,-3,-h/2-12,6,h+24,3,fl>0?`rgba(255,255,255,${.4+.6*fl})`:'#3A4884');c.restore();
+    c.save();c.globalAlpha=cl(q);c.translate(mx,y-22+(1-cl(q))*20);c.scale(1+fl*.25,1+fl*.25);font(c,fl>0?9:7,24);c.textAlign='center';c.fillStyle=fl>0?'#fff':COL.mut;c.fillText(m+'%',0,0);c.restore();});
+  if(t>=12.0){const q=spring(t-12.0,2,.5),gf=window.markFlash?markFlash(t,100):0;
+    if(gf>0){const g=c.createRadialGradient(x1,y+h/2,0,x1,y+h/2,160);g.addColorStop(0,`rgba(255,170,80,${.8*gf})`);g.addColorStop(1,'rgba(255,170,80,0)');c.fillStyle=g;c.fillRect(x1-160,y-140,320,h+280);}
+    c.save();c.translate(0,(1-cl(q))*-80);rr(c,x1-4,y-20,8,h+40,4,COL.ind);flag(c,x1+26,y-14,64);c.restore();
     c.save();c.globalAlpha=seg(t,12.1,.25);font(c,7,22,1);c.textAlign='center';c.fillStyle=COL.ind;c.fillText('GOAL',x1+58,y+70);c.restore();}
   c.save();c.globalAlpha=seg(t,11.4,.3);font(c,9,26);c.textAlign='left';c.fillStyle=COL.txt;c.fillText(fmt(S.v)+'M · '+(S.v/1463.9*100).toFixed(1)+'%',x0,y-22);c.restore();
   c.restore();}
+const uc=document.createElement('canvas');uc.width=W;uc.height=H;const U=uc.getContext('2d');
 // ---------- кадр ----------
 function frame(t){const C=camera(t);X.setTransform(1,0,0,1,0,0);X.fillStyle=COL.bg;X.fillRect(0,0,W,H);dots(X,C);
   drawMap(t,C);
@@ -148,8 +154,8 @@ function frame(t){const C=camera(t);X.setTransform(1,0,0,1,0,0);X.fillStyle=COL.
   // затемнение под словами вопроса
   const dim=seg(t,6.9,.5)*(1-seg(t,10.5,.6));if(dim>0){const g=X.createLinearGradient(0,0,W*.75,0);g.addColorStop(0,`rgba(8,12,34,${.72*dim})`);g.addColorStop(1,'rgba(8,12,34,0)');X.fillStyle=g;X.fillRect(0,0,W,H);}
   words(X,t,C);
-  bar(X,t);targetPill(X,t);addedPill(X,t);
-  numberTag(X,t,C);
+  const ua=window.uiAlpha?uiAlpha(t):1;if(ua>0){U.setTransform(1,0,0,1,0,0);U.clearRect(0,0,W,H);bar(U,t);targetPill(U,t);addedPill(U,t);numberTag(U,t,C);
+    X.globalAlpha=ua;X.drawImage(uc,0,0);X.globalAlpha=1;}
   if(window.stepsUI)stepsUI(X,t,C);
   dust(X,t,C);}
 function words(c,t,C){
