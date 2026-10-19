@@ -1,6 +1,6 @@
 // India vs the World — вступление 0:00–0:14, EN, 120 BPM. Герой — текст: слово зажигает страну, число становится шкалой.
 const W=1920,H=1080,cv=document.getElementById('c'),X=cv.getContext('2d');
-const DURATION=14;
+let DURATION=14;
 const COL={bg:'#0B1230',land:'#27315C',edge:'#0B1230',ind:'#FF8A1F',tq:'#2EE6C8',ui:'#151F4A',ui2:'#1D2A5E',txt:'#F4F7FF',mut:'#9AA6D6',dot:'#2A3770'};
 const IND='356',IC=MAP[IND].c; // центр Индии в базовых координатах карты
 // ---------- математика ----------
@@ -23,7 +23,9 @@ const CAM=[
  [14  , 2605, 1095, .36 ,  0   , 0  ]];
 function camera(t){const K=CAM.map(k=>[k[0],k[1],k[2],Math.log(k[3]),k[4],k[5]]),n=K.length;let i=0;while(i<n-2&&t>K[i+1][0])i++;
   const t0=K[i][0],h=K[i+1][0]-t0,u=cl((t-t0)/h);
-  const tan=(j,c)=>j<=0||j>=n-1?0:(K[j+1][c]-K[j-1][c])/(K[j+1][0]-K[j-1][0]);
+  // монотонные касательные (Фриче–Карлсон): камера не проскакивает ключи
+  const sl=(j,c)=>(K[j+1][c]-K[j][c])/(K[j+1][0]-K[j][0]);
+  const tan=(j,c)=>{if(j<=0||j>=n-1)return 0;const a=sl(j-1,c),b=sl(j,c);if(a*b<=0)return 0;return 2/(1/a+1/b);};
   const Hm=c=>{const p0=K[i][c],p1=K[i+1][c],m0=tan(i,c)*h,m1=tan(i+1,c)*h,u2=u*u,u3=u2*u;return (2*u3-3*u2+1)*p0+(u3-2*u2+u)*m0+(-2*u3+3*u2)*p1+(u3-u2)*m1;};
   return{cx:Hm(1),cy:Hm(2),z:Math.exp(Hm(3)),rot:Hm(4),blur:Math.max(0,Hm(5))};}
 const toScreen=(C,x,y)=>{const dx=(x-C.cx)*C.z,dy=(y-C.cy)*C.z,c=Math.cos(C.rot),s=Math.sin(C.rot);return[W/2+dx*c-dy*s,H/2+dx*s+dy*c];};
@@ -43,6 +45,7 @@ function drawMap(t,C){M.setTransform(1,0,0,1,0,0);M.clearRect(0,0,W,H);
   // вспышка контура
   const hl=seg(t,3.0,.25)*(1-seg(t,4.6,.8));
   if(hl>0){M.globalAlpha=hl;M.strokeStyle='#fff';M.lineWidth=3/C.z;M.stroke(INDP);M.globalAlpha=1;}
+  if(window.mapSteps)mapSteps(M,t,C);
   M.setTransform(1,0,0,1,0,0);}
 // задний план: сетка точек с параллаксом 0,4
 function dots(c,C){const k=.4,step=28,ox=-(C.cx*C.z*k)%step,oy=-(C.cy*C.z*k)%step;c.fillStyle=COL.dot;c.globalAlpha=.7;
@@ -111,18 +114,26 @@ function targetPill(c,t){const p=eoe(seg(t,11.05,.5));if(p<=0)return;const x=ler
   font(c,7,38);c.fillStyle=COL.mut;c.textAlign='left';c.fillText('India —',1488+(1-q)*40,99);c.restore();}
 function addedPill(c,t){const p=spring(t-11.5,1.7,.55);if(t<11.5)return;const dy=(1-p)*-140;c.save();c.translate(0,dy);
   c.globalAlpha=.92;rr(c,40,36,300,92,46,COL.ui);c.globalAlpha=1;font(c,7,30);c.fillStyle=COL.mut;c.textAlign='left';c.fillText('Added:',80,93);
-  font(c,9,60);c.textAlign='right';c.fillStyle=COL.tq;c.fillText('00',300,104);c.restore();}
+  // счётчик стран: старое число уезжает вверх, новое приходит снизу
+  const A=window.addedAt?addedAt(t):{from:0,to:0,p:1},s0=String(A.from).padStart(2,'0'),s1=String(A.to).padStart(2,'0');
+  font(c,9,60);c.textAlign='right';c.fillStyle=COL.tq;c.beginPath();c.rect(180,44,140,78);c.clip();
+  if(A.p>=1)c.fillText(s1,300,104);else{const e=eio(A.p);c.fillText(s0,300,104-e*72);c.fillText(s1,300,104+(1-e)*72);}c.restore();}
 function bar(c,t){if(t<11.0)return;const p=spring(t-11.0,1.5,.62),dy=(1-p)*260;const x0=96,x1=1740,y=980,h=40,L=x1-x0;
   c.save();c.translate(0,dy);c.globalAlpha=.94;rr(c,40,898,1840,154,46,COL.ui);c.globalAlpha=1;rr(c,x0,y,L,h,h/2,COL.ui2);
   // блик по пустой шкале
   const sh=seg(t,12.9,.9);if(sh>0&&sh<1){c.save();c.beginPath();c.roundRect(x0,y,L,h,h/2);c.clip();const sx=x0+sh*(L+400)-200;const g=c.createLinearGradient(sx-160,0,sx+160,0);
     g.addColorStop(0,'rgba(46,230,200,0)');g.addColorStop(.5,'rgba(46,230,200,.45)');g.addColorStop(1,'rgba(46,230,200,0)');c.fillStyle=g;c.fillRect(x0,y,L,h);c.restore();}
+  // заливка суммы: обрезана скруглённой дорожкой; голова светится, пока растёт
+  const S=window.sumAt?sumAt(t):{v:0,glow:0};if(S.v>0){const fx=x0+L*S.v/1463.9;c.save();c.beginPath();c.roundRect(x0,y,L,h,h/2);c.clip();
+    c.fillStyle=COL.tq;c.fillRect(x0,y,fx-x0,h);c.fillStyle='rgba(255,255,255,.35)';c.fillRect(x0,y+7,fx-x0,9);c.restore();
+    if(S.glow>0){const g=c.createRadialGradient(fx,y+h/2,0,fx,y+h/2,90);g.addColorStop(0,`rgba(46,230,200,${.7*S.glow})`);g.addColorStop(1,'rgba(46,230,200,0)');c.fillStyle=g;c.fillRect(fx-90,y-70,180,h+140);
+      c.fillStyle=`rgba(255,255,255,${S.glow})`;c.beginPath();c.roundRect(fx-3,y-6,6,h+12,3);c.fill();}}
   [25,50,75].forEach((m,i)=>{const tm=11.25+i*.25;if(t<tm)return;const q=spring(t-tm,2.4,.5),mx=x0+L*m/100;
     c.save();c.translate(mx,y+h/2);c.scale(1,cl(q,0,1.3));rr(c,-3,-h/2-12,6,h+24,3,'#3A4884');c.restore();
     c.save();c.globalAlpha=cl(q);c.translate(mx,y-22+(1-cl(q))*20);font(c,7,24);c.textAlign='center';c.fillStyle=COL.mut;c.fillText(m+'%',0,0);c.restore();});
   if(t>=12.0){const q=spring(t-12.0,2,.5);c.save();c.translate(0,(1-cl(q))*-80);rr(c,x1-4,y-20,8,h+40,4,COL.ind);flag(c,x1+26,y-14,64);c.restore();
     c.save();c.globalAlpha=seg(t,12.1,.25);font(c,7,22,1);c.textAlign='center';c.fillStyle=COL.ind;c.fillText('GOAL',x1+58,y+70);c.restore();}
-  c.save();c.globalAlpha=seg(t,11.4,.3);font(c,9,26);c.textAlign='left';c.fillStyle=COL.txt;c.fillText('0.0M · 0%',x0,y-22);c.restore();
+  c.save();c.globalAlpha=seg(t,11.4,.3);font(c,9,26);c.textAlign='left';c.fillStyle=COL.txt;c.fillText(fmt(S.v)+'M · '+(S.v/1463.9*100).toFixed(1)+'%',x0,y-22);c.restore();
   c.restore();}
 // ---------- кадр ----------
 function frame(t){const C=camera(t);X.setTransform(1,0,0,1,0,0);X.fillStyle=COL.bg;X.fillRect(0,0,W,H);dots(X,C);
@@ -139,6 +150,7 @@ function frame(t){const C=camera(t);X.setTransform(1,0,0,1,0,0);X.fillStyle=COL.
   words(X,t,C);
   bar(X,t);targetPill(X,t);addedPill(X,t);
   numberTag(X,t,C);
+  if(window.stepsUI)stepsUI(X,t,C);
   dust(X,t,C);}
 function words(c,t,C){
   // S1 · хук: «ONE» тонко, «COUNTRY» — оранжевый удар; затем «COUNTRY» улетает в Индию
@@ -158,10 +170,10 @@ function words(c,t,C){
   word(c,t,{s:'DOES IT TAKE TO MATCH',w:7,size:62,x:112,y:665,in:8.5,a:'track',ls0:60,ls:6,out:10.58,ex:'left',odur:.45});
   word(c,t,{s:'INDIA?',w:9,size:200,x:104,y:870,in:9.0,a:'slam',from:1.6,out:10.64,ex:'left',odur:.45});
   // S4 · правила игры: «0 COUNTRIES» и сноска
-  word(c,t,{s:'0',w:9,size:240,x:1480,y:470,in:12.25,a:'slam',from:1.7,col:COL.tq});
-  word(c,t,{s:'COUNTRIES',w:9,size:60,x:1484,y:566,in:12.4,a:'mask'});
-  word(c,t,{s:'Population estimates for 2025',w:7,size:25,x:1486,y:640,in:12.75,a:'mask',col:COL.mut});
-  word(c,t,{s:'Countries selected by the author',w:7,size:25,x:1486,y:676,in:12.85,a:'mask',col:COL.mut});}
+  word(c,t,{s:'0',w:9,size:240,x:1480,y:470,in:12.25,a:'slam',from:1.7,col:COL.tq,out:14.0,ex:'up',odur:.35});
+  word(c,t,{s:'COUNTRIES',w:9,size:60,x:1484,y:566,in:12.4,a:'mask',out:14.04,ex:'up',odur:.35});
+  word(c,t,{s:'Population estimates for 2025',w:7,size:25,x:1486,y:640,in:12.75,a:'mask',col:COL.mut,out:14.08,ex:'up',odur:.35});
+  word(c,t,{s:'Countries selected by the author',w:7,size:25,x:1486,y:676,in:12.85,a:'mask',col:COL.mut,out:14.12,ex:'up',odur:.35});}
 window.ready=Promise.all([...['N2','N7','N9'].map(f=>document.fonts.load(`40px ${f}`)),new Promise(r=>{FLAG.complete?r():FLAG.onload=FLAG.onerror=r;})]).then(()=>{
   font(X,9,96);const w=X.measureText('MILLION ').width;window.PEOPLE_X=1088+w;});
 window.seek=async t=>frame(t);

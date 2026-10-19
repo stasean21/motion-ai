@@ -1,12 +1,12 @@
 // Звук: тёмный электронный пульс 120 BPM, Am–F–C–G, + SFX под каждое действие слов и интерфейса.
-window.makeAudio=async(D=14.0)=>{
+window.makeAudio=async(D=DURATION)=>{
   const SR=44100,ac=new OfflineAudioContext(2,Math.ceil(SR*D),SR);
   const bus=ac.createDynamicsCompressor();bus.threshold.value=-16;bus.ratio.value=3;const master=ac.createGain();bus.connect(master).connect(ac.destination);
-  master.gain.setValueAtTime(1,13.2);master.gain.linearRampToValueAtTime(0,14.0);
+  master.gain.setValueAtTime(1,D-.8);master.gain.linearRampToValueAtTime(0,D);
   // пространство: свёртка с затухающим шумом
   const verb=ac.createConvolver();{const n=SR*2.2,b=ac.createBuffer(2,n,SR);for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);let s=7+ch;for(let i=0;i<n;i++){s=(s*16807)%2147483647;d[i]=(s/1073741823.5-1)*Math.pow(1-i/n,3);}}verb.buffer=b;}
   const wet=ac.createGain();wet.gain.value=.22;verb.connect(wet).connect(bus);
-  const music=ac.createGain();music.gain.value=.5;music.connect(bus);music.connect(verb);const fx=ac.createGain();fx.gain.value=1;fx.connect(bus);const fxv=ac.createGain();fxv.gain.value=.5;fx.connect(fxv).connect(verb);
+  const music=ac.createGain();music.gain.value=.34;music.connect(bus);music.connect(verb);const fx=ac.createGain();fx.gain.value=1;fx.connect(bus);const fxv=ac.createGain();fxv.gain.value=.5;fx.connect(fxv).connect(verb); // музыка тише — место под будущий голос
   const nb=ac.createBuffer(1,SR*3,SR);{const d=nb.getChannelData(0);let s=1;for(let i=0;i<d.length;i++){s=(s*16807)%2147483647;d[i]=s/1073741823.5-1;}}
   const env=(g,t,a,v,d)=>{g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);};
   function osc(type,f,t,d,v,dest=music,a=.005,lp=0){const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;env(g,t,a,v,d);
@@ -19,17 +19,21 @@ window.makeAudio=async(D=14.0)=>{
   // музыка: 7 тактов по 2 с
   const A=[[220,261.6,329.6],[174.6,220,261.6],[196,261.6,329.6],[196,246.9,293.7],[220,261.6,329.6],[174.6,220,261.6],[220,261.6,329.6,493.9]];
   const R=[55,43.65,65.41,49,55,43.65,55];
-  for(let b=0;b<7;b++){const t=b*2,ch=A[b];
+  // после вступления — цикл Am–F–C–G
+  const CY=[A[0],A[1],A[2],A[3]],CR=[55,43.65,65.41,49];
+  const groove=tb=>(tb>=3&&tb<12)||(tb>=14&&tb<D-1);
+  for(let b=0;b<Math.ceil(D/2);b++){const t=b*2,ch=b<7?A[b]:CY[(b-7)%4],root=b<7?R[b]:CR[(b-7)%4];
     // пэд: два расстроенных пилообразных через низкие частоты
     ch.forEach(f=>{osc('sawtooth',f,t,b===6?2.2:2.1,.018,music,.4,900);osc('sawtooth',f*1.006,t,b===6?2.2:2.1,.014,music,.4,900);});
+    const R_=root;
     // бас: до 3 с — гул, потом восьмые
-    if(t<3){osc('sine',R[b],t,2.1,.22,music,.3);}
+    if(t<3){osc('sine',R_,t,2.1,.22,music,.3);}
     for(let k=0;k<4;k++){const tb=t+k*.5;
-      if(tb>=3&&tb<12){osc('sawtooth',R[b]*2,tb,.2,.09,music,.004,380);osc('sawtooth',R[b]*2,tb+.25,.18,.06,music,.004,380);
+      if(groove(tb)){osc('sawtooth',R_*2,tb,.2,.09,music,.004,380);osc('sawtooth',R_*2,tb+.25,.18,.06,music,.004,380);
         // бочка на долю
         sweep(140,44,tb,.26,.6,music);}
-      if(tb>=7&&tb<12){noise(tb+.25,.04,'highpass',8000,.7,.07,music,.002);}
-      if(tb>=4&&tb<12){[0,1,2].forEach(j=>osc('triangle',ch[(k+j)%ch.length]*2,tb+j*.166,.22,.03,music,.003));}}}
+      if((tb>=7&&tb<12)||(tb>=14&&tb<D-1)){noise(tb+.25,.04,'highpass',8000,.7,.07,music,.002);}
+      if((tb>=4&&tb<12)||(tb>=14&&tb<D-1)){[0,1,2].forEach(j=>osc('triangle',ch[(k+j)%ch.length]*2,tb+j*.166,.22,.03,music,.003));}}}
   osc('sine',55,12,2.2,.25,music,.02);
   // S1: «ONE» — воздушный удар, «COUNTRY» — глубокий
   sweep(90,40,.25,.5,.35);noise(.25,.6,'bandpass',2500,.6,.12,fx,.15);
@@ -61,6 +65,18 @@ window.makeAudio=async(D=14.0)=>{
   [1760,2637,3520].forEach((f,k)=>osc('sine',f,12.0,1.2,.07/(k+1),fx,.002));
   hit(12.25,.6,110);whoosh(12.4,.3,.12,900,2500);
   {const n=noise(12.9,.9,'bandpass',2000,2,.08,fx,.4);n.fl.frequency.setValueAtTime(1500,12.9);n.fl.frequency.exponentialRampToValueAtTime(7000,13.8);}
+  // шаги стран: те же эффекты, что во вступлении
+  if(typeof STEPS!=='undefined')for(const st of STEPS){const t0=st.t0;
+    if(st.i)whoosh(t0,.4,.12,1200,400);                                   // уход прошлой карточки
+    whoosh(t0+.1,.9,.2,400,2000);sweep(90,45,t0+K.arrive,.3,.3);          // перелёт и посадка
+    [1568,2093].forEach((f,k)=>osc('sine',f,t0+K.hl,.9,.04/(k+1),fx,.01)); // вспышка контура
+    osc('sine',3000,t0+K.idx,.05,.05,fx,.001);hit(t0+K.name,.5,120);       // «#01» и название
+    {let t=t0+K.num,dt=.035;while(t<t0+K.unit){osc('square',2600+((t*97)%1)*900,t,.012,.035,fx,.001);t+=dt;dt*=1.035;}}
+    [1318.5,2637].forEach((f,k)=>osc('sine',f,t0+K.unit,1.0,.06/(k+1),fx,.002));noise(t0+K.unit+.2,.6,'highpass',6000,.6,.07,fx,.2);
+    whoosh(t0+K.card,.5,.18,2500,600);osc('sine',520,t0+K.card+.6,.08,.15,fx,.001);noise(t0+K.card+.6,.05,'bandpass',2000,2,.15); // текст → карточка
+    noise(t0+K.fill,.6,'bandpass',1800,.7,.12,fx,.25);                    // заливка
+    whoosh(t0+K.chip,.6,.18,500,2800);                                     // чип летит
+    const lf=[880,987.8,1108.7,1174.7,1318.5][st.i%5];osc('sine',lf,t0+K.land,.25,.15,fx,.002);noise(t0+K.land,.03,'highpass',4000,.7,.14);sweep(80,45,t0+K.land,.25,.3);}
   const buf=await ac.startRendering();const L=buf.getChannelData(0),Rr=buf.getChannelData(1),n=L.length;
   let pk=0;for(let i=0;i<n;i++)pk=Math.max(pk,Math.abs(L[i]),Math.abs(Rr[i]));const g=.89/pk;
   const ab=new ArrayBuffer(44+n*4),dv=new DataView(ab),ws=(o,s)=>{for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i));};
