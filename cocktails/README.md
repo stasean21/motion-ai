@@ -40,3 +40,4 @@ node render.mjs aperol-spritz-en en    # английская версия
 | 02 | [Негрони](02-negroni/) · Negroni | алкогольный | RU, EN |
 | 03 | [Мохито](03-mojito/) · Mojito | алкогольный | RU, EN |
 | 04 | [Margarita](04-margarita/) · kinetic type | алкогольный | EN |
+| 05 | [Espresso Martini](05-espresso-martini/) · 3D type | алкогольный | EN, в работе |
