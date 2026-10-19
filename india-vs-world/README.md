@@ -58,3 +58,19 @@ for i in 0 1 2 3; do node render.mjs $i 4 & done; wait; node join.mjs   # → ou
 ```
 DUR=44 NAME=stage1 sh -c 'for i in 0 1 2 3; do node render.mjs $i 4 & done; wait; node join.mjs'
 ```
+
+## Полный ролик, 5:32 (EN)
+
+`anim/out/india-vs-world.mp4`: 1920×1080, 60 fps, H.264, AAC, 332 с. В git не хранится, потому что больше 100 МБ. Собирается командой:
+```
+cd anim && DUR=332 NAME=india-vs-world sh -c 'for i in 0 1 2 3; do node render.mjs $i 4 & done; wait; node join.mjs'
+```
+`KEEPAUDIO=1` переиспользует готовый `out/track.wav`: сборка звука для всего ролика занимает около 13 минут.
+
+**Спецмоменты (`anim/steps.js`):**
+- `NOTE`: комментарии;
+- `MILE`: вспышки 25/50/75/100%. Порог 25% пересекает Колумбия, а не Южная Корея: у неё 354.5M, это 24.2%;
+- Чили: сравнение на одной шкале;
+- США: 99.6% и лупа;
+- Сингапур: окно ×10;
+- финал.
