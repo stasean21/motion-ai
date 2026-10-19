@@ -2,6 +2,7 @@
 
 v1 (`../flat-cartoon`) was a quick sketch from primitives. v2 redraws the hero frame with the reference's actual shape language, authored as SVG:
 
+- **No sharp corners anywhere.** Every polygon vertex is rounded by `roundPoly()` (beaks, star tips, orange segments, floor edge, ray edges). Happy eyes are thick arcs with round caps, not two intersecting circles, which leave needle tips. All solid shapes get a same-colour stroke with round joins, which closes the micro-kinks where curves meet.
 - **Organic silhouettes.** Each bird is one smooth body path (head → neck → chest → tail), not a circle with a beak glued on. Crests and tails are clusters of rounded lobes.
 - **Flat form shading.** A darker same-hue shape is overlaid for shadow (belly, wing back) and a lighter blob for highlight. No gradients on characters; gradients only in the background and glow.
 - **Selective white rim.** Only the glass gets a thick white rounded outline, as the reference's test tube does. Everything else has no outlines.

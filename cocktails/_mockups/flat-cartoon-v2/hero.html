@@ -6,12 +6,15 @@ html,body{margin:0;background:#000}svg{display:block}</style></head><body>
 // Кадр-герой в языке референса: органичные силуэты, плоская тень наложенными формами, белая кромка только у стекла,
 // перчатка-облако, вогнутые звёздочки в пузырях, толстые штрихи лап. SVG — готов к риггингу групп.
 const W=1080,H=1920;
-const star=(cx,cy,r,k=.16)=>{let d='';for(let i=0;i<4;i++){const a=i*Math.PI/2-Math.PI/2,b=a+Math.PI/2;const tx=cx+Math.cos(a)*r,ty=cy+Math.sin(a)*r,nx=cx+Math.cos(b)*r,ny=cy+Math.sin(b)*r;
-  const qx=cx+(Math.cos(a)+Math.cos(b))*r*k,qy=cy+(Math.sin(a)+Math.sin(b))*r*k;d+=(i?'':`M${tx},${ty}`)+`Q${qx},${qy} ${nx},${ny}`;}return d+'Z';};
+// правило стиля: ни одного острого угла — каждая вершина скругляется дугой радиуса r (или r[i])
+const roundPoly=(pts,r)=>{const n=pts.length;let d='';for(let i=0;i<n;i++){const P=pts[i],A=pts[(i+n-1)%n],B=pts[(i+1)%n];const rr=Array.isArray(r)?r[i]:r;
+  const la=Math.hypot(A[0]-P[0],A[1]-P[1]),lb=Math.hypot(B[0]-P[0],B[1]-P[1]);const k1=Math.min(rr,la/2)/la,k2=Math.min(rr,lb/2)/lb;
+  const p1=[P[0]+(A[0]-P[0])*k1,P[1]+(A[1]-P[1])*k1],p2=[P[0]+(B[0]-P[0])*k2,P[1]+(B[1]-P[1])*k2];d+=(i?`L${p1}`:`M${p1}`)+`Q${P} ${p2}`;}return d+'Z';};
+const star=(cx,cy,r)=>{const pts=[],rad=[];for(let i=0;i<4;i++){const a=i*Math.PI/2-Math.PI/2,m=a+Math.PI/4;pts.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r]);rad.push(r*.16);pts.push([cx+Math.cos(m)*r*.24,cy+Math.sin(m)*r*.24]);rad.push(r*.5);}return roundPoly(pts,rad);};
 const bubble=(x,y,r,sr)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" fill-opacity=".22"/><circle cx="${x}" cy="${y}" r="${r*.82}" fill="#fff" fill-opacity=".12"/><path d="${star(x,y,sr)}" fill="#fff"/>`;
-let rays='';for(let i=0;i<22;i+=2){const a0=i/22*Math.PI*2,a1=(i+1)/22*Math.PI*2;rays+=`<path d="M560,940 L${560+Math.cos(a0)*2600},${940+Math.sin(a0)*2600} L${560+Math.cos(a1)*2600},${940+Math.sin(a1)*2600}Z" fill="#fff" fill-opacity=".14"/>`;}
+let rays='';for(let i=0;i<22;i+=2){const a0=i/22*Math.PI*2,a1=(i+1)/22*Math.PI*2;rays+=`<path d="${roundPoly([[560,940],[560+Math.cos(a0)*2600,940+Math.sin(a0)*2600],[560+Math.cos(a1)*2600,940+Math.sin(a1)*2600]],60)}" fill="#fff" fill-opacity=".14"/>`;}
 // счастливый глаз: белый круг, снизу «съеден» цветом тела → дуга ^
-const happyEye=(x,y,r,body)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff"/><circle cx="${x}" cy="${y+r*.62}" r="${r*1.02}" fill="${body}"/>`;
+const happyEye=(x,y,r)=>`<path d="M${x-r*.8},${y+r*.25} Q${x},${y-r*1.05} ${x+r*.8},${y+r*.25}" fill="none" stroke="#fff" stroke-width="${r*.55}" stroke-linecap="round"/>`;
 const leg=(d)=>`<path d="${d}" fill="none" stroke="#FF8A1F" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>`;
 const toucan=`<g id="toucan" transform="translate(205,1210) rotate(-10) scale(.88)">
   ${leg('M-40,60 L-120,118 L-205,96 M-205,96 L-232,70 M-205,96 L-238,110')}
@@ -22,8 +25,8 @@ const toucan=`<g id="toucan" transform="translate(205,1210) rotate(-10) scale(.8
   <path d="M-150,30 C-120,84 -60,112 10,112 C-30,90 -90,70 -150,30Z" fill="#5824B8"/>
   <path d="M-112,-78 Q-70,-140 6,-146" fill="none" stroke="#FF7A2E" stroke-width="36" stroke-linecap="round"/>
   <path d="M-40,-10 C10,-30 80,-34 150,-8 C182,4 182,40 150,44 C96,50 30,46 -30,40 C-60,36 -70,4 -40,-10Z" fill="#4E1BA6"/>
-  <path d="M110,-90 L222,-56 L112,-22Z" fill="#FF9A1F"/><path d="M111,-56 L222,-56 L112,-22Z" fill="#EC7608"/>
-  ${happyEye(56,-80,34,'#6A2FD0')}
+  <path d="${roundPoly([[106,-94],[222,-56],[108,-20]],[16,14,16])}" fill="#FF9A1F"/><path d="${roundPoly([[108,-56],[220,-56],[108,-20]],[6,10,16])}" fill="#EC7608"/>
+  ${happyEye(56,-80,34)}
 </g>`;
 const flamingo=`<g id="flamingo" transform="translate(880,1230) scale(-1,1) rotate(-4) scale(.9)">
   ${leg('M-40,130 L-60,206 L-128,228 M-128,228 L-154,208 M-128,228 L-148,252')}
@@ -37,8 +40,8 @@ const flamingo=`<g id="flamingo" transform="translate(880,1230) scale(-1,1) rota
   <ellipse cx="18" cy="-206" rx="30" ry="50" transform="rotate(-26 18 -206)" fill="#13897A"/>
   <ellipse cx="58" cy="-210" rx="26" ry="46" transform="rotate(16 58 -210)" fill="#1EAA94"/>
   <ellipse cx="38" cy="-188" rx="14" ry="30" fill="#9E0E3C"/>
-  <path d="M110,-130 L196,-104 L112,-78Z" fill="#FF9A1F"/><path d="M111,-104 L196,-104 L112,-78Z" fill="#EC7608"/>
-  ${happyEye(66,-118,30,'#E5176E')}
+  <path d="${roundPoly([[106,-134],[196,-104],[108,-74]],[14,12,14])}" fill="#FF9A1F"/><path d="${roundPoly([[108,-104],[194,-104],[108,-74]],[6,9,14])}" fill="#EC7608"/>
+  ${happyEye(66,-118,30)}
 </g>`;
 // хайбол с «восходом» — белая кромка, плоские полосы, блик-пилюля, лёд
 const glass=`<g id="glass" transform="translate(565,905) rotate(18) scale(1.12)">
@@ -56,7 +59,7 @@ const glass=`<g id="glass" transform="translate(565,905) rotate(18) scale(1.12)"
     <rect x="-80" y="-206" width="30" height="380" rx="15" fill="#fff" fill-opacity=".7"/>
   </g>
   <g transform="translate(92,-262)"><circle r="92" fill="#FF8A1F"/><circle r="78" fill="#FFE8B0"/>
-    ${Array.from({length:10},(_,k)=>{const a0=k/10*Math.PI*2+.07,a1=(k+1)/10*Math.PI*2-.07;return `<path d="M0,0 L${Math.cos(a0)*68},${Math.sin(a0)*68} A68,68 0 0 1 ${Math.cos(a1)*68},${Math.sin(a1)*68}Z" fill="#FFB33E"/>`}).join('')}
+    ${Array.from({length:10},(_,k)=>{const a0=k/10*Math.PI*2+.07,a1=(k+1)/10*Math.PI*2-.07;const pts=[[Math.cos((a0+a1)/2)*12,Math.sin((a0+a1)/2)*12]];for(let j=0;j<=6;j++){const a=a0+(a1-a0)*j/6;pts.push([Math.cos(a)*66,Math.sin(a)*66]);}return `<path d="${roundPoly(pts,[4,8,3,3,3,3,3,8])}" fill="#FFB33E"/>`}).join('')}
     <circle r="10" fill="#FFF3D6"/></g>
   <path d="M-40,-300 Q-20,-380 40,-404" fill="none" stroke="#2E9E5A" stroke-width="10" stroke-linecap="round"/>
   <circle cx="-44" cy="-288" r="40" fill="#E01E45"/><circle cx="-60" cy="-302" r="12" fill="#FF8296"/>
@@ -74,7 +77,7 @@ const fingers=`<g id="fingers">
   <ellipse cx="420" cy="1186" rx="34" ry="22" transform="rotate(-25 420 1186)" fill="#55E3C6"/>
   <path d="M540,1060 C600,1060 640,1110 630,1170 C600,1140 570,1120 530,1110Z" fill="#0FA88E"/>
 </g>`;
-const ground=`<path d="M520,1600 L1080,1380 L1080,1920 L420,1920Z" fill="#EEE8FF"/>
+const ground=`<path d="${roundPoly([[520,1600],[1160,1350],[1160,2000],[420,2000]],[60,0,0,40])}" fill="#EEE8FF"/>
   <path d="M780,1600 C860,1580 920,1640 940,1720 C960,1800 940,1880 900,1920 L800,1920 C820,1820 800,1700 780,1600Z" fill="#CFC6F5" fill-opacity=".8"/>`;
 const sparkles=[bubble(300,700,62,34),bubble(830,640,78,44),bubble(710,1440,64,36),bubble(270,1500,48,26)].join('')+
   [[420,560,30],[760,520,22],[880,880,34],[640,800,18],[330,920,20],[960,1300,22],[200,1300,18],[600,1180,16]].map(([x,y,r])=>`<path d="${star(x,y,r)}" fill="#fff"/>`).join('');
@@ -86,5 +89,6 @@ ${ground}${arm}${glass}${fingers}${toucan}${flamingo}${sparkles}
 <g font-family="Round" text-anchor="middle"><text x="546" y="268" font-size="150" fill="#4B22A8" letter-spacing="4">TEQUILA</text><text x="540" y="260" font-size="150" fill="#fff" letter-spacing="4">TEQUILA</text>
 <text x="546" y="408" font-size="150" fill="#E5176E" letter-spacing="4">SUNRISE</text><text x="540" y="400" font-size="150" fill="#FF9A1F" letter-spacing="4">SUNRISE</text></g>
 </svg>`;
-document.getElementById('root').innerHTML=svg;window.ready=document.fonts.load('80px Round');
+document.getElementById('root').innerHTML=svg;
+document.querySelectorAll('#root path, #root ellipse, #root circle').forEach(e=>{const f=e.getAttribute('fill');if(!f||f==='none'||f.startsWith('url')||e.getAttribute('fill-opacity'))return;e.setAttribute('stroke',f);e.setAttribute('stroke-width','6');e.setAttribute('stroke-linejoin','round');});window.ready=document.fonts.load('80px Round');
 </script></body></html>
