@@ -1,7 +1,8 @@
 // Звук: лёгкая боссa 120 BPM (аккорды, бас, клаве 3-2, маракас) + SFX под действия слов.
 window.makeAudio=async(D=34.5)=>{
   const SR=44100,ac=new OfflineAudioContext(2,Math.ceil(SR*D),SR);
-  const bus=ac.createDynamicsCompressor();bus.threshold.value=-14;bus.ratio.value=3;bus.connect(ac.destination);
+  const bus=ac.createDynamicsCompressor();bus.threshold.value=-14;bus.ratio.value=3;const master=ac.createGain();bus.connect(master).connect(ac.destination);
+  master.gain.setValueAtTime(1,33.2);master.gain.linearRampToValueAtTime(0,34.0);// мягкий финал, без обрыва ноты
   const music=ac.createGain();music.gain.value=.55;music.connect(bus);const fx=ac.createGain();fx.gain.value=1;fx.connect(bus);
   const nb=ac.createBuffer(1,SR*3,SR);{const d=nb.getChannelData(0);let s=1;for(let i=0;i<d.length;i++){s=(s*16807)%2147483647;d[i]=s/1073741823.5-1;}}
   const env=(g,t,a,v,d)=>{g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);};
@@ -41,11 +42,11 @@ window.makeAudio=async(D=34.5)=>{
   for(let t=18.55;t<19.85;t+=.0714){noise(t,.05,'bandpass',3200,1.5,.32,fx,.003);if(Math.random()<.5)osc('sine',2600+Math.random()*2000,t,.08,.05,fx,.001);}
   // колпак снят, пролив
   noise(19.95,.45,'bandpass',1500,.7,.25,fx,.25);
-  {const t=20.62,d=1.1;const n=noise(t,d+.2,'bandpass',900,1.4,.5,fx,.06);const l=ac.createOscillator(),lg=ac.createGain();l.frequency.value=8;lg.gain.value=300;l.connect(lg).connect(n.fl.frequency);l.start(t);l.stop(t+d+.3);}
+  {const t=20.75,d=1.0;const n=noise(t,d+.2,'bandpass',900,1.4,.5,fx,.06);const l=ac.createOscillator(),lg=ac.createGain();l.frequency.value=8;lg.gain.value=300;l.connect(lg).connect(n.fl.frequency);l.start(t);l.stop(t+d+.3);}
   // долька: свуш кольца и щелчок посадки
-  noise(22.0,.9,'bandpass',2400,.8,.18,fx,.3);osc('sine',1300,22.97,.08,.18,fx,.001);noise(22.97,.06,'lowpass',700,.8,.4);
+  noise(22.1,.9,'bandpass',2400,.8,.18,fx,.3);osc('sine',1300,23.07,.08,.18,fx,.001);noise(23.07,.06,'lowpass',700,.8,.4);
   // пропорция: удары цифр
-  [24.5,25.0,25.5].forEach(t=>{sweep(110,48,t,.26,.45);});
+  [24.25,24.6,24.95].forEach(t=>{sweep(110,48,t,.26,.45);});
   // звон
   [24,28,32].forEach(t=>[1568,2349,3136].forEach((f,k)=>osc('sine',f,t,1.4,.06/(k+1),fx,.002)));
   const buf=await ac.startRendering();const L=buf.getChannelData(0),R=buf.getChannelData(1),n=L.length;

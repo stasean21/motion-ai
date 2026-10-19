@@ -22,8 +22,8 @@ const CAM=[
  [3.8  , 1.00,   0,   0, 1.00,   0],
  [7    , 1.00,   0,   0, 1.00,   0],
  [10   , 1.04,   0,   0, 1.02,   0],
- [11.3 , 1.07,   0, -10, 1.03,   0],
- [12.4 , 1.00, 760,   0, 1.05,  40],
+ [11.7 , 1.07,   0, -10, 1.03,   0],
+ [12.7 , 1.00, 760,   0, 1.05,  40],
  [14   , 1.02, 760,   0, 1.06,  40],
  [16   , 1.04, 760,   0, 1.07,  40],
  [18   , 1.05, 760,   0, 1.08,  40],
@@ -44,7 +44,7 @@ function camera(t){const K=CAM,n=K.length;let i=0;while(i<n-2&&t>K[i+1][0])i++;
 const PIV=[540,1250];
 const toScreen=(C,wx,wy)=>[PIV[0]+(wx-PIV[0]-C.cx)*C.s,PIV[1]+(wy-PIV[1]-C.cy)*C.s];
 // ---------- рецепт и тайминг ----------
-const T={tqDrop:13.15,lqDrop:15.15,ljDrop:17.15,drop:.62,ice:17.85,cap:18.2,shake:[18.5,19.85],tinOff:19.9,tilt:[20.15,20.65],pour:[20.62,1.05],back:[21.7,.6],wheel:22.0};
+const T={tqDrop:13.15,lqDrop:15.15,ljDrop:17.15,drop:.62,ice:17.85,cap:18.2,shake:[18.5,19.85],tinOff:19.9,tilt:[20.1,20.8],pour:[20.75,1.0],back:[21.72,.42],wheel:22.1};
 const LAYERS=[{ml:50,col:'F4F6EE',a:.42,t:T.tqDrop+.45},{ml:25,col:'F7B548',a:.72,t:T.lqDrop+.45},{ml:25,col:'CFE77E',a:.8,t:T.ljDrop+.45}];
 const PXML=2.4; // высота слоя в стакане на мл
 // ---------- рисование: общее ----------
@@ -68,7 +68,7 @@ const BOWL=(()=>{const p=new Path2D();p.ellipse(GX,RIMC,RX-6,DEPTH-6,0,0,Math.PI
 const RIM_SALT=Array.from({length:340},(_,i)=>{const a=hash(i)*Math.PI*2;return{a,r:1.6+hash(i+400)*2.6,o:(hash(i+800)-.5)*9,k:hash(i+1200)};});
 function coupeFill(t){return eio(seg(t,T.pour[0]+.08,T.pour[1]+.1));}
 function coupeBack(c){c.save();c.fillStyle='rgba(255,255,255,.035)';c.fill(BOWL);c.strokeStyle='rgba(255,255,255,.42)';c.lineWidth=2.5;c.beginPath();c.ellipse(GX,RIMC,RX,RX*.15,0,Math.PI,2*Math.PI);c.stroke();c.restore();}
-function saltGrains(c,t,front){const cov=seg(t,11.25,.75);if(cov<=0)return;c.fillStyle='rgba(250,248,240,.95)';
+function saltGrains(c,t,front){const cov=seg(t,11.1,.6);if(cov<=0)return;c.fillStyle='rgba(250,248,240,.95)';
   for(const g of RIM_SALT){if(g.k>cov)continue;const sn=Math.sin(g.a);if(front!==(sn>0))continue;const x=GX+Math.cos(g.a)*(RX+g.o*.6),y=RIMC+sn*(RX*.15)+g.o*.5+3;c.beginPath();c.arc(x,y,g.r,0,7);c.fill();}}
 function coupeLiquid(c,t){const f=coupeFill(t);if(f<=0)return;const lvl=RIMC+DEPTH-6-(DEPTH-24)*Math.pow(f,.62);const hw=hwC(lvl)-6;
   c.save();c.clip(BOWL);c.globalAlpha=.86;c.fillStyle='#D9E79A';c.fillRect(0,lvl,W*3,DEPTH+40);c.globalAlpha=1;
@@ -95,8 +95,8 @@ function mixInner(c){c.beginPath();c.moveTo(-mhi(M_RIM),M_RIM);c.lineTo(-mhi(M_I
 function groupXf(t){// мировое положение низа стакана и наклон
   let x=MX,y=MBASE,a=0;const sh=seg(t,T.shake[0],.15)*(1-seg(t,T.shake[1]-.1,.15));
   if(sh>0){const w=t*Math.PI*2*7;x+=Math.sin(w)*18*sh;y+=-Math.abs(Math.cos(w))*22*sh;a+=Math.sin(w+1)*.06*sh;}
-  const tl=eio(seg(t,T.tilt[0],T.tilt[1]-T.tilt[0]))*(1-eio(seg(t,T.back[0],T.back[1])));
-  x=lerp(x,1230,tl);y=lerp(y,741,tl);a=lerp(a,-1.95,tl);return{x,y,a,tl};}
+  const tl=eio(seg(t,T.tilt[0],T.tilt[1]-T.tilt[0])),bk=eio(seg(t,T.back[0],T.back[1]));
+  x=lerp(x,1230,tl);y=lerp(y,741,tl);a=lerp(a,-1.95,tl);x+=bk*900;y-=bk*700;a+=bk*.8;return{x,y,a,tl};}
 const mixedCol='#DCE8A8';
 function mixContents(c,t){// в локальных координатах, стакан вертикально
   let top=M_IB;const shook=seg(t,T.shake[0],.6);
@@ -118,7 +118,7 @@ function mixGlassShape(c){// контур стакана
   c.fillStyle='rgba(255,255,255,.12)';c.beginPath();c.moveTo(-M_RB-2,M_IB);c.lineTo(-M_RB+10,0);c.lineTo(M_RB-10,0);c.lineTo(M_RB+2,M_IB);c.ellipse(0,M_IB,mhi(M_IB)+8,mhi(M_IB)*.17,0,0,Math.PI,false);c.fill();}
 function tin(c,t){// металлический стакан шейкера сверху, широким концом вниз
   const on=eoc(seg(t,T.cap,.3)),off=eie(seg(t,T.tinOff,.4));if(on<=0||off>=1)return;const dy=(1-on)*-900-off*1100;
-  c.save();c.translate(0,M_RIM+70+dy);const L=330;
+  c.save();c.translate(off*650,M_RIM+70+dy);c.rotate(off*.5);const L=330;
   c.beginPath();c.moveTo(-165,0);c.lineTo(-118,-L+30);c.quadraticCurveTo(-112,-L,-80,-L);c.lineTo(80,-L);c.quadraticCurveTo(112,-L,118,-L+30);c.lineTo(165,0);c.closePath();
   const g=c.createLinearGradient(-165,0,165,0);[[0,'#6E6A66'],[.18,'#F4F1EA'],[.32,'#A9A39B'],[.6,'#E2DDD3'],[.85,'#7D7770'],[1,'#5A5550']].forEach(([o,cc])=>g.addColorStop(o,cc));c.fillStyle=g;c.fill();
   c.strokeStyle=GOLD;c.lineWidth=3;[[-40,1],[-58,.6],[-L+70,1]].forEach(([y,w])=>{const hw=lerp(165,118,-y/L);c.globalAlpha=w;c.beginPath();c.moveTo(-hw+2,y);c.lineTo(hw-2,y);c.stroke();});c.globalAlpha=1;
@@ -155,7 +155,7 @@ function letters(c,s){const out=[];let x=0;for(const ch of s){const w=c.measureT
 function word(c,t,C,o){const tIn=o.in,tOut=o.out??99;if(t<tIn)return;let size=fit(c,o.f,o.size,o.s,o.ls||0,o.max||K_FIT);
   const pin=seg(t,tIn,o.dur||.5);let dx=0,dy=0,sc=1,rot=0,sx=1,sy=1,skew=0,alpha=1,ls=o.ls||0,clip=null;
   switch(o.a){
-    case'slam':{const p=spring(t-tIn,2.1,.55);sc=lerp(1.9,1,cl(p,0,1.2));rot=lerp(-.07,0,cl(p,0,1));alpha=seg(t,tIn,.1);break;}
+    case'slam':{const p=spring(t-tIn,2.1,.55);sc=lerp(o.from||1.9,1,cl(p,0,1.2));rot=lerp(-.07,0,cl(p,0,1));alpha=seg(t,tIn,.1);break;}
     case'mask':{dy=(1-eoe(pin))*size*1.05;clip=[size*1.02,size*.3];break;}
     case'skewL':case'skewR':{const d=o.a==='skewL'?-1:1,e=eoe(pin);dx=d*(1-e)*260;skew=d*(1-e)*-.5;alpha=seg(t,tIn,.18);break;}
     case'track':{const e=eoe(pin);ls=lerp(110,ls,e);alpha=seg(t,tIn,.2);size=fit(c,o.f,o.size,o.s,ls,o.max||K_FIT);break;}
@@ -183,12 +183,12 @@ let SALT=null;const SALT_O={s:'SALT',f:'H',size:270,x:540,y:720};
 function buildSalt(){const oc=document.createElement('canvas');oc.width=W;oc.height=900;const c=oc.getContext('2d');const size=fit(c,'H',SALT_O.size,'SALT');setFont(c,'H',size,0);c.textAlign='center';c.fillStyle='#fff';c.fillText('SALT',SALT_O.x,SALT_O.y);
   const d=c.getImageData(0,0,W,900).data;const pts=[];let minx=1e9,maxx=0;for(let y=300;y<900;y+=7)for(let x=0;x<W;x+=7){if(d[(y*W+x)*4+3]>140){pts.push([x,y]);minx=Math.min(minx,x);maxx=Math.max(maxx,x);}}
   SALT={pts,minx,maxx};}
-const CRUMBLE=[11.0,.55];
+const CRUMBLE=[10.95,.45];
 function saltWord(c,t,C){if(t<10.1)return;const front=lerp(SALT.minx-10,SALT.maxx+10,eio(seg(t,CRUMBLE[0],CRUMBLE[1])));
   // целая часть слова справа от фронта
   c.save();c.beginPath();c.rect(front,0,W,H);c.clip();word(c,t,C,{...SALT_O,in:10.05,a:'slam',col:INK});c.restore();
   // крупинки
-  const span=SALT.maxx-SALT.minx;SALT.pts.forEach(([x,y],i)=>{const td=CRUMBLE[0]+(x-SALT.minx)/span*CRUMBLE[1]+hash(i)*.08;if(t<td)return;const q=seg(t,td,.6+hash(i+3)*.25);if(q>=1)return;
+  const span=SALT.maxx-SALT.minx;SALT.pts.forEach(([x,y],i)=>{const td=CRUMBLE[0]+(x-SALT.minx)/span*CRUMBLE[1]+hash(i)*.08;if(t<td)return;const q=seg(t,td,.42+hash(i+3)*.18);if(q>=1)return;
     const a=hash(i+9)*Math.PI*2;const[tx,ty]=toScreen(C,GX+Math.cos(a)*RX,RIMC+Math.sin(a)*RX*.15);const e=q*q;
     const px=lerp(x,tx,eoc(q))+Math.sin(i+q*6)*14*(1-q),py=lerp(y,ty,e)-Math.sin(q*Math.PI)*40*(1-hash(i+4));
     c.fillStyle=`rgba(250,248,240,${.95-.3*q})`;c.fillRect(px,py,2.6+hash(i+5)*2.4,2.6+hash(i+6)*2.4);});}
@@ -245,25 +245,25 @@ function type(c,t,C){
       return{x:x0+l.x+l.w/2,y:o.y-(1-e)*size*1.1+out*size*1.15,clip:true,col:i===0?LIME:INK};});}
   word(c,t,C,{s:'INTO THE GLASS',f:'T',size:50,ls:10,x:540,y:530,in:20.6,a:'mask',out:21.8});
   // 10 · долька: буквы кружат вокруг и выстраиваются в строку
-  if(t>=T.wheel&&t<23.95){const s=wheelState(t);const[wx,wy]=toScreen(C,s.x,s.y);const txt='LIME WHEEL · ';const n=txt.length;const toLine=eio(seg(t,22.85,.45)),out=eie(seg(t,23.55,.35));
+  if(t>=T.wheel&&t<24.05){const s=wheelState(t);const[wx,wy]=toScreen(C,s.x,s.y);const txt='LIME WHEEL · ';const n=txt.length;const toLine=eio(seg(t,22.95,.45)),out=eie(seg(t,23.65,.35));
     setFont(c,'H',120,0);const line={out:letters(c,'LIME WHEEL').out.filter(l=>l.ch!==' ')};const lw=letters(c,'LIME WHEEL').w;const lx0=540-lw/2;let li=0;
     for(let i=0;i<n;i++){const ch=txt[i];const ang=i/n*Math.PI*2-t*2.2;const R=170*C.s;const rx=wx+Math.cos(ang)*R,ry=wy+Math.sin(ang)*R;
       let x=rx,y=ry,rot=ang+Math.PI/2,alpha=seg(t,T.wheel+i*.02,.15);
       if(ch!==' '&&ch!=='·'){const L=line.out[li];if(L){x=lerp(rx,lx0+L.x+L.w/2,toLine);y=lerp(ry,740,toLine);rot=lerp(rot,0,toLine);}li++;}else alpha*=1-toLine;
       y-=out*140;c.save();c.beginPath();c.rect(0,0,W,lerp(H,740+40,out>0?1:0));c.clip();c.translate(x,y);c.rotate(rot);c.globalAlpha=alpha*(1-out);setFont(c,'H',lerp(64,120,toLine),0);c.textAlign='center';c.fillStyle=li<=4&&ch!==' '&&ch!=='·'?LIME:INK;c.fillText(ch,0,lerp(22,0,toLine));c.restore();}}
   // 11 · пропорция
-  word(c,t,C,{s:'REMEMBER THE RATIO',f:'T',size:42,ls:10,col:SOFT,x:540,y:280,in:24.0,a:'mask',out:27.7});
-  [['2',300,LIME,24.5],['1',540,INK,25.0],['1',780,INK,25.5]].forEach(([n,x,col,tin],i)=>{word(c,t,C,{s:n,f:'H',size:300,x,y:560,in:tin,a:'slam',col,out:27.72+i*.03});
-    if(i)word(c,t,C,{s:':',f:'T',size:260,x:x-120,y:545,in:tin-.1,a:'fade',col:SOFT,out:27.7});});
+  word(c,t,C,{s:'REMEMBER THE RATIO',f:'T',size:42,ls:10,col:SOFT,x:540,y:250,in:24.0,a:'mask',out:27.7});
+  [['2',300,LIME,24.25],['1',540,INK,24.6],['1',780,INK,24.95]].forEach(([n,x,col,tin],i)=>{word(c,t,C,{s:n,f:'H',size:300,x,y:580,in:tin,a:'slam',from:1.3,col,out:27.72+i*.03});
+    if(i)word(c,t,C,{s:':',f:'T',size:260,x:x-120,y:565,in:tin-.1,a:'fade',col:SOFT,out:27.7});});
   const bars=[['tequila',2,LIME],['liqueur',1,'#F2C779'],['lime',1,'#C9DE7A']];let bx=540-380;
-  bars.forEach(([n,v,col],i)=>{const p=eoe(seg(t,26.0+i*.25,.5)),q=eie(seg(t,27.7,.3));const w=v*190*p*(1-q);if(w<1){bx+=v*190;return;}
+  bars.forEach(([n,v,col],i)=>{const p=eoe(seg(t,25.4+i*.25,.5)),q=eie(seg(t,27.7,.3));const w=v*190*p*(1-q);if(w<1){bx+=v*190;return;}
     c.save();rr(c,bx,640,Math.max(0,w-14),12,6);c.fillStyle=col;c.fill();if(p>.8&&q<.5){setFont(c,'T',36,2);c.textAlign='center';c.fillStyle=INK;c.fillText(n,bx+(v*190-14)/2,700);}c.restore();bx+=v*190;});
   // 12 · герой
-  word(c,t,C,{s:'Margarita',f:'S',size:190,x:540,y:520,in:28.0,a:'wipe',dur:.9,out:31.7});
-  word(c,t,C,{s:'SALT · 50 · 25 · 25 · SHAKE · STRAIN',f:'T',size:32,ls:5,col:SOFT,x:540,y:640,in:28.5,a:'mask',out:31.72,max:900});
+  word(c,t,C,{s:'Margarita',f:'S',size:190,x:540,y:520,in:27.85,a:'wipe',dur:.9,out:31.7});
+  word(c,t,C,{s:'SALT · 50 · 25 · 25 · SHAKE · STRAIN',f:'T',size:32,ls:5,col:SOFT,x:540,y:640,in:28.35,a:'mask',out:31.72,max:900});
   // 13 · финал
-  word(c,t,C,{s:'Save this recipe',f:'S',size:140,x:540,y:520,in:32.0,a:'wipe',dur:.7,col:LIME});
-  word(c,t,C,{s:'AND MAKE IT THIS WEEKEND',f:'T',size:36,ls:6,x:540,y:630,in:32.3,a:'mask'});
+  word(c,t,C,{s:'Save this recipe',f:'S',size:140,x:540,y:520,in:31.9,a:'wipe',dur:.7,col:LIME});
+  word(c,t,C,{s:'AND MAKE IT THIS WEEKEND',f:'T',size:36,ls:6,x:540,y:630,in:32.2,a:'mask'});
   word(c,t,C,{s:'PLEASE DRINK RESPONSIBLY',f:'T',size:26,ls:2,x:540,y:1860,in:32.4,a:'fade'});}
 window.seek=async t=>frame(t);
 window.ready=Promise.all(['Heavy','Deco','Script'].map(f=>document.fonts.load(`40px ${f}`))).then(buildSalt);
