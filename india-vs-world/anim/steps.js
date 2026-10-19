@@ -150,7 +150,7 @@ function usaGap(c,r){const a=r-STEP;if(a<0||a>US.len-STEP+.5)return;const out=1-
   c.restore();}
 // ---------- Сингапур: точка на карте + лупа ----------
 const lc=document.createElement('canvas');lc.width=W;lc.height=H;const LM=lc.getContext('2d');
-function sgLens(c,t,r,C){if(r<1.0||r>SG.len+.6)return;const [sx,sy]=toScreen(C,SG.bc[0],SG.bc[1]),q=spring(r-1.0,1.6,.6),out=1-seg(r,SG.len,.45),R=150,lx=sx-260,ly=cl(sy+190,300,735);
+function sgLens(c,t,r,C){if(r<1.0||r>SG.len+.6)return;const [sx,sy]=toScreen(C,SG.bc[0],SG.bc[1]),q=spring(r-1.0,1.6,.6),out=1-seg(r,SG.len,.45),R=150,lx=sx-260,ly=Math.max(sy-230,300);
   // точка с пульсом
   const ph=(r*1.6)%1;c.save();c.globalAlpha=out;c.strokeStyle=COL.tq;c.lineWidth=3;c.globalAlpha*=1-ph;c.beginPath();c.arc(sx,sy,10+ph*40,0,7);c.stroke();c.restore();
   c.save();c.globalAlpha=out;c.fillStyle=r>K.fill?COL.tq:'#fff';c.beginPath();c.arc(sx,sy,7,0,7);c.fill();
