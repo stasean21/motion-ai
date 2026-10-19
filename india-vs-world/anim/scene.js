@@ -37,7 +37,8 @@ function drawMap(t,C){M.setTransform(1,0,0,1,0,0);M.clearRect(0,0,W,H);
   M.fill(INDP);
   M.lineJoin='round';M.strokeStyle=COL.edge;M.lineWidth=1.3/C.z;for(const o of PATHS)M.stroke(o.p);
   // заливка Индии кругом от центра (3,05–3,75), потом горит всегда
-  const f=eio(seg(t,3.05,.7));
+  const f=eoe(seg(t,3.05,.6)),u=eio(seg(t,3.05,.45));
+  if(u>0){M.globalAlpha=u*.45;M.fillStyle=COL.ind;M.fill(INDP);M.globalAlpha=1;}
   if(f>0){M.save();M.beginPath();M.arc(IC[0],IC[1],f*260,0,7);M.clip();M.shadowColor='rgba(255,138,31,.85)';M.shadowBlur=40;M.fillStyle=COL.ind;M.fill(INDP);M.shadowBlur=0;M.restore();}
   // вспышка контура
   const hl=seg(t,3.0,.25)*(1-seg(t,4.6,.8));
@@ -101,7 +102,7 @@ function numberTag(c,t,C){const S2=[1080,560,200],[ix,iy]=toScreen(C,IC[0],IC[1]
   const tw=size*(wNum+wM*Math.max(toTag,t>=10.7?1:0));
   // подложка метки
   const pa=seg(t,7.05,.25);if(pa>0&&t<11.3){c.globalAlpha=pa*(1-seg(t,10.9,.35));rr(c,x-26,y-size*.95,tw+52,size*1.32,size*.66,COL.ui);c.globalAlpha=1;}
-  font(c,9,size,-2);c.textAlign='left';c.fillStyle=COL.ind;c.fillText(NUM,x,y);
+  font(c,9,size,-size*.02);c.textAlign='left';c.fillStyle=COL.ind;c.fillText(NUM,x,y);
   if(toTag>0){font(c,9,size,0);c.globalAlpha=toTag;c.fillText('M',x+size*wNum,y);c.globalAlpha=1;}}
 // плашка «India — 1,463.9M»: растёт из прилетевшей метки
 function targetPill(c,t){const p=eoe(seg(t,11.05,.5));if(p<=0)return;const x=lerp(1640,1370,p),w=lerp(240,510,p);
@@ -147,10 +148,10 @@ function words(c,t,C){
    else if(fly<1){c.save();c.translate(lerp(W/2,ix,fly),lerp(640,iy,fly));c.scale(lerp(1,.06,fly),lerp(1,.06,fly));c.globalAlpha=1-seg(fly,.7,.3);
      font(c,9,250);c.textAlign='center';c.fillStyle=COL.ind;c.shadowColor=COL.ind;c.shadowBlur=30;c.fillText('COUNTRY',0,90);c.restore();}}
   // S2 · число: плашка страны, «MILLION» и «PEOPLE»
-  if(t>3.5&&t<7.4){const p=eoe(seg(t,3.55,.45)),q=1-eie(seg(t,6.75,.35));c.save();c.globalAlpha=p*q;c.translate((1-p)*60,0);
+  if(t>3.5&&t<7.4){const p=eoe(seg(t,3.55,.45)),q=1-eie(seg(t,6.45,.3));c.save();c.globalAlpha=p*q;c.translate((1-p)*60,0);
     c.globalAlpha*=.9;rr(c,1086,286,450,84,42,COL.ui);c.globalAlpha=p*q;flag(c,1114,302,70);font(c,7,38);c.textAlign='left';c.fillStyle=COL.mut;c.fillText('INDIA · 2025',1206,342);c.restore();}
-  word(c,t,{s:'MILLION',w:9,size:96,x:1088,y:690,in:5.0,a:'mask',out:6.75,ex:'up',odur:.3});
-  word(c,t,{s:'PEOPLE',w:2,size:96,x:window.PEOPLE_X||1588,y:690,in:5.25,a:'track',ls0:70,ls:4,out:6.8,ex:'up',odur:.3});
+  word(c,t,{s:'MILLION',w:9,size:96,x:1088,y:690,in:5.0,a:'mask',out:6.45,ex:'up',odur:.3});
+  word(c,t,{s:'PEOPLE',w:2,size:96,x:window.PEOPLE_X||1588,y:690,in:5.25,a:'track',ls0:70,ls:4,out:6.5,ex:'up',odur:.3});
   // S3 · вопрос: контраст начертаний, ключевое слово бирюзовое
   word(c,t,{s:'HOW MANY',w:2,size:120,x:110,y:330,in:7.0,a:'skew',out:10.45,ex:'left',odur:.45});
   word(c,t,{s:'COUNTRIES',w:9,size:210,x:104,y:545,in:7.5,a:'flip',col:COL.tq,glow:'rgba(46,230,200,.35)',out:10.52,ex:'left',odur:.45});
@@ -159,8 +160,8 @@ function words(c,t,C){
   // S4 · правила игры: «0 COUNTRIES» и сноска
   word(c,t,{s:'0',w:9,size:240,x:1480,y:470,in:12.25,a:'slam',from:1.7,col:COL.tq});
   word(c,t,{s:'COUNTRIES',w:9,size:60,x:1484,y:566,in:12.4,a:'mask'});
-  word(c,t,{s:'Population estimates for 2025',w:7,size:28,x:1486,y:640,in:12.75,a:'mask',col:COL.mut});
-  word(c,t,{s:'Countries selected by the author',w:7,size:28,x:1486,y:680,in:12.85,a:'mask',col:COL.mut});}
+  word(c,t,{s:'Population estimates for 2025',w:7,size:25,x:1486,y:640,in:12.75,a:'mask',col:COL.mut});
+  word(c,t,{s:'Countries selected by the author',w:7,size:25,x:1486,y:676,in:12.85,a:'mask',col:COL.mut});}
 window.ready=Promise.all([...['N2','N7','N9'].map(f=>document.fonts.load(`40px ${f}`)),new Promise(r=>{FLAG.complete?r():FLAG.onload=FLAG.onerror=r;})]).then(()=>{
   font(X,9,96);const w=X.measureText('MILLION ').width;window.PEOPLE_X=1088+w;});
 window.seek=async t=>frame(t);
