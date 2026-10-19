@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Мир без холодильников — раскадровка</title><style>
+@font-face{font-family:Round;src:url(fonts/Nunito-900.ttf)}@font-face{font-family:Body;src:url(fonts/Nunito-700.ttf)}
+html,body{margin:0;background:#1B1440}#board{width:2000px;padding:40px;box-sizing:border-box;font-family:Body;color:#fff}
+h1{font-family:Round;font-size:64px;margin:0 0 6px}p.sub{font-size:26px;margin:0 0 30px;color:#C9C2F4}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:34px}.card{background:#2B2268;border-radius:28px;overflow:hidden}
+.card svg{display:block;width:100%;height:auto}.cap{padding:18px 24px 22px;font-size:21px;line-height:1.35}.cap b{font-family:Round;font-size:28px}
+.tc{display:inline-block;background:#FFD23F;color:#2B1550;border-radius:14px;padding:2px 12px;margin-right:10px;font-family:Round;font-size:22px}
+.row{margin-top:6px}.lab{color:#7DE8C8;font-family:Round}#single{width:1920px;height:1080px}</style></head><body>
+<div id="board"></div><div id="single"></div>
+<script src="lib.js"></script><script src="panels.js"></script>
+<script>
+const q=new URLSearchParams(location.search),only=q.get('p');
+const svg=n=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${only?W:''}" height="${only?H:''}">${defs}${P[n]()}</svg>`;
+// правило стиля: стыки кривых без изломов — обводка цветом заливки со скруглёнными стыками
+function soften(root){root.querySelectorAll('svg path, svg ellipse, svg circle, svg rect').forEach(e=>{const f=e.getAttribute('fill');if(!f||f==='none'||f.startsWith('url')||e.getAttribute('fill-opacity')||e.getAttribute('stroke'))return;e.setAttribute('stroke',f);e.setAttribute('stroke-width','5');e.setAttribute('stroke-linejoin','round');});}
+if(only){document.getElementById('board').remove();const s=document.getElementById('single');s.innerHTML=svg(+only);soften(s);}
+else{document.getElementById('single').remove();const b=document.getElementById('board');
+  b.innerHTML=`<h1>Как люди жили без холодильника? · первая минута</h1><p class="sub">Раскадровка · 16:9 · плоская иллюстрация без острых углов · 8 кадров</p><div class="grid">`+
+  [1,2,3,4,5,6,7,8].map(n=>{const c=CAPS[n];return `<div class="card">${svg(n)}<div class="cap"><span class="tc">${n} · ${c.t}</span><b>${c.name}</b>
+    <div class="row"><span class="lab">Камера и действие: </span>${c.cam}</div><div class="row"><span class="lab">Звук: </span>${c.snd}</div><div class="row"><span class="lab">Диктор: </span>${c.vo}</div></div></div>`;}).join('')+`</div>`;soften(b);}
+window.ready=Promise.all([document.fonts.load('40px Round'),document.fonts.load('20px Body')]);
+</script></body></html>
