@@ -38,4 +38,6 @@
 | 13–14 | 28–32 с | Название и короткий рецепт |
 | 15 | 32–34 с | «Сохрани рецепт» и предупреждение |
 
+Файлы: `out/negroni.mp4` (RU), `out/negroni-en.mp4` (EN), `out/storyboard.jpg` и `out/storyboard-en.jpg`.
+
 Сборка: `node beats.mjs 0.35 ru` (раскадровка), `node render.mjs negroni ru`, `node render.mjs negroni-en en`.
