@@ -192,15 +192,15 @@ function score(){const A=(tf,sx,sy,d)=>[tf,sx,sy,d];
   ing(12.55,13.6,'30','ESPRESSO','FRESH · COOLED',true);
   ing(14.55,15.6,'20','COFFEE','LIQUEUR',true);
   // 7 · шейк
-  word({s:'+ ICE',f:'T',at:A(16.8,0,.52,4.8),w:.28,in:16.5,a:'rise',out:17.0,outA:'up',outDur:.3});
-  lettersWord({s:'SHAKE',f:'H',col:AMBER,at:A(18,0,.66,4.4),w:.74,in:17.0,role:'shake'});
-  word({s:'HARD · 15 SECONDS',f:'T',at:A(18,0,.54,4.4),w:.56,in:17.3,a:'rise',out:18.75,outA:'up'});
+  word({s:'+ ICE',f:'T',at:A(16.8,0,.52,4.8),w:.28,in:16.5,a:'rise',out:16.85,outA:'up',outDur:.3});
+  lettersWord({s:'SHAKE',f:'H',col:AMBER,at:A(18,0,.66,4.4),w:.74,in:17.2,role:'shake'});
+  word({s:'HARD · 15 SECONDS',f:'T',at:A(18,0,.54,4.4),w:.56,in:17.45,a:'rise',out:18.75,outA:'up'});
   // 8 · процеживание
-  word({s:'DOUBLE',f:'T',al:'l',at:A(20.4,-.78,-.22,5.0),w:.36,in:19.4,a:'rise',out:21.3,outA:'up'});
-  lettersWord({s:'STRAIN',f:'H',col:AMBER,at:A(20.4,-.32,-.42,5.0),w:.62,in:19.6,role:'strain'});
+  word({s:'DOUBLE',f:'T',al:'l',at:A(20.4,-.78,-.22,5.0),w:.36,in:19.85,a:'rise',out:21.3,outA:'up'});
+  lettersWord({s:'STRAIN',f:'H',col:AMBER,at:A(20.4,-.32,-.42,5.0),w:.62,in:19.95,role:'strain'});
   // 9 · зёрна — в плоскости резкости бокала
-  word({s:'THREE',f:'H',col:AMBER,at:A(23,0,.62,3.0),w:.56,in:21.7,a:'slam',out:23.95,outA:'up'});
-  word({s:'BEANS',f:'H',at:A(23,0,.47,3.0),w:.56,in:21.95,a:'rise',out:23.97,outA:'up'});
+  word({s:'THREE',f:'H',col:AMBER,at:A(23,0,.62,3.0),w:.56,in:21.95,a:'slam',out:23.95,outA:'up'});
+  word({s:'BEANS',f:'H',at:A(23,0,.47,3.0),w:.56,in:22.15,a:'rise',out:23.97,outA:'up'});
   word({s:'health · wealth · happiness',f:'S',at:A(23,0,.36,3.0),w:.66,in:23.1,a:'fade',out:23.99,outA:'up'});
   // 10 · пропорция
   word({s:'REMEMBER THE RATIO',f:'T',at:A(26,0,.62,6.3),w:.62,in:24.95,a:'rise',out:27.7,outA:'up'});

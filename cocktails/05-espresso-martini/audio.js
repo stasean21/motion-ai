@@ -39,7 +39,7 @@ window.makeAudio=async(D=34.5)=>{
   {const t=18.8;[700,1500].forEach((f,k)=>osc('sine',f,t,.3,.06/(k+1),fx,.002));whoosh(t,.45,.2);}
   {const t=19.95,d=1.2;const n=noise(t,d+.2,'bandpass',800,1.3,.5,fx,.06);const l=ac.createOscillator(),g=ac.createGain();l.frequency.value=7;g.gain.value=260;l.connect(g).connect(n.fl.frequency);l.start(t);l.stop(t+d+.3);}
   // зёрна на пенке: три мягких касания на долю
-  thud(21.75,.35);[22.0,22.5,23.0].forEach((t,i)=>{osc('sine',1500+i*120,t,.06,.12,fx,.001);noise(t,.05,'lowpass',1200,.8,.25);});
+  thud(22.0,.35);[22.0,22.5,23.0].forEach((t,i)=>{osc('sine',1500+i*120,t,.06,.12,fx,.001);noise(t,.05,'lowpass',1200,.8,.25);});
   // пропорция: столбики поднимаются
   [25.05,25.4,25.75].forEach((t,i)=>{sweep(60,140-i*15,t,.3,.35);noise(t,.2,'lowpass',500,.8,.2,fx,.05);});
   // звон
