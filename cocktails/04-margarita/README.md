@@ -20,4 +20,6 @@ Fonts:
 
 Key word colour: lime `#C8F05A`.
 
+Files: `out/margarita.mp4`, `out/storyboard-en.jpg`, `out/keyframes.jpg`.
+
 Build: `node beats.mjs 0.35 en` (storyboard), `node render.mjs margarita en`.
