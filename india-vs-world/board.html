@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Индия против мира — макет</title><style>
+@font-face{font-family:Round;src:url(fonts/Nunito-900.ttf)}@font-face{font-family:Body;src:url(fonts/Nunito-700.ttf)}
+html,body{margin:0;background:#070C22}#board{width:2000px;padding:40px;box-sizing:border-box;font-family:Body;color:#fff}
+h1{font-family:Round;font-size:60px;margin:0 0 6px}p.sub{font-size:26px;margin:0 0 30px;color:#9AA6D6}
+.card{background:#151F4A;border-radius:28px;overflow:hidden;margin-bottom:34px}.card img{display:block;width:100%}
+.cap{padding:18px 26px 22px;font-size:23px;line-height:1.4}.cap b{font-family:Round;font-size:30px}
+.tc{display:inline-block;background:#2EE6C8;color:#0B1230;border-radius:14px;padding:2px 12px;margin-right:10px;font-family:Round;font-size:24px}
+.row{margin-top:6px}.lab{color:#FFB25E;font-family:Round}</style></head><body><div id="board"></div>
+<script src="frames.js"></script><script>
+document.getElementById('board').innerHTML=`<h1>Сколько стран нужно, чтобы догнать Индию? · макет кадров</h1><p class="sub">16:9 · 5:40 · тёмная карта, Индия оранжевая, добавленные страны бирюзовые · оценки 2025 (UN WPP 2024)</p>`+
+ [1,2,3].map(n=>{const c=CAPS[n];return `<div class="card"><img src="frames/${n}.png"><div class="cap"><span class="tc">${n} · ${c.t}</span><b>${c.name}</b>
+ <div class="row"><span class="lab">Камера и действие: </span>${c.cam}</div><div class="row"><span class="lab">Диктор: </span>${c.vo}</div></div></div>`;}).join('');
+window.ready=Promise.all([document.fonts.load('40px Round'),document.fonts.load('20px Body'),...[...document.images].map(i=>i.decode())]);</script></body></html>

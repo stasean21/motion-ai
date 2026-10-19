@@ -1,0 +1,8 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Индия против мира — кадр</title><style>
+@font-face{font-family:Round;src:url(fonts/Nunito-900.ttf)}@font-face{font-family:Body;src:url(fonts/Nunito-700.ttf)}
+html,body{margin:0;background:#0B1230}svg{display:block}</style></head><body><div id="s"></div>
+<script src="map-data.js"></script><script src="frames.js"></script>
+<script>const n=+new URLSearchParams(location.search).get('f')||1;
+document.getElementById('s').innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${defs}${F[n]()}</svg>`;
+const imgs=[...document.querySelectorAll('image')].map(i=>new Promise(r=>{const im=new Image();im.onload=im.onerror=r;im.src=i.getAttribute('href');}));
+window.ready=Promise.all([document.fonts.load('40px Round'),document.fonts.load('20px Body'),...imgs]);</script></body></html>
