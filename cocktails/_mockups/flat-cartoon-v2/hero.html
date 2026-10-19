@@ -1,0 +1,90 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Flat hero v2</title><style>
+@font-face{font-family:Round;src:url(fonts/Fredoka-Bold.ttf)}
+html,body{margin:0;background:#000}svg{display:block}</style></head><body>
+<div id="root"></div>
+<script>
+// Кадр-герой в языке референса: органичные силуэты, плоская тень наложенными формами, белая кромка только у стекла,
+// перчатка-облако, вогнутые звёздочки в пузырях, толстые штрихи лап. SVG — готов к риггингу групп.
+const W=1080,H=1920;
+const star=(cx,cy,r,k=.16)=>{let d='';for(let i=0;i<4;i++){const a=i*Math.PI/2-Math.PI/2,b=a+Math.PI/2;const tx=cx+Math.cos(a)*r,ty=cy+Math.sin(a)*r,nx=cx+Math.cos(b)*r,ny=cy+Math.sin(b)*r;
+  const qx=cx+(Math.cos(a)+Math.cos(b))*r*k,qy=cy+(Math.sin(a)+Math.sin(b))*r*k;d+=(i?'':`M${tx},${ty}`)+`Q${qx},${qy} ${nx},${ny}`;}return d+'Z';};
+const bubble=(x,y,r,sr)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" fill-opacity=".22"/><circle cx="${x}" cy="${y}" r="${r*.82}" fill="#fff" fill-opacity=".12"/><path d="${star(x,y,sr)}" fill="#fff"/>`;
+let rays='';for(let i=0;i<22;i+=2){const a0=i/22*Math.PI*2,a1=(i+1)/22*Math.PI*2;rays+=`<path d="M560,940 L${560+Math.cos(a0)*2600},${940+Math.sin(a0)*2600} L${560+Math.cos(a1)*2600},${940+Math.sin(a1)*2600}Z" fill="#fff" fill-opacity=".14"/>`;}
+// счастливый глаз: белый круг, снизу «съеден» цветом тела → дуга ^
+const happyEye=(x,y,r,body)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff"/><circle cx="${x}" cy="${y+r*.62}" r="${r*1.02}" fill="${body}"/>`;
+const leg=(d)=>`<path d="${d}" fill="none" stroke="#FF8A1F" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>`;
+const toucan=`<g id="toucan" transform="translate(205,1210) rotate(-10) scale(.88)">
+  ${leg('M-40,60 L-120,118 L-205,96 M-205,96 L-232,70 M-205,96 L-238,110')}
+  ${leg('M5,72 L-55,158 L-150,176 M-150,176 L-182,156 M-150,176 L-180,196')}
+  <ellipse cx="-62" cy="-150" rx="50" ry="32" transform="rotate(-28 -62 -150)" fill="#8A3FE0"/>
+  <ellipse cx="-118" cy="-118" rx="44" ry="28" transform="rotate(-62 -118 -118)" fill="#7130CC"/>
+  <path d="M-158,-6 C-162,-118 -50,-160 58,-128 C152,-100 176,-6 126,58 C76,122 -92,118 -158,-6Z" fill="#6A2FD0"/>
+  <path d="M-150,30 C-120,84 -60,112 10,112 C-30,90 -90,70 -150,30Z" fill="#5824B8"/>
+  <path d="M-112,-78 Q-70,-140 6,-146" fill="none" stroke="#FF7A2E" stroke-width="36" stroke-linecap="round"/>
+  <path d="M-40,-10 C10,-30 80,-34 150,-8 C182,4 182,40 150,44 C96,50 30,46 -30,40 C-60,36 -70,4 -40,-10Z" fill="#4E1BA6"/>
+  <path d="M110,-90 L222,-56 L112,-22Z" fill="#FF9A1F"/><path d="M111,-56 L222,-56 L112,-22Z" fill="#EC7608"/>
+  ${happyEye(56,-80,34,'#6A2FD0')}
+</g>`;
+const flamingo=`<g id="flamingo" transform="translate(880,1230) scale(-1,1) rotate(-4) scale(.9)">
+  ${leg('M-40,130 L-60,206 L-128,228 M-128,228 L-154,208 M-128,228 L-148,252')}
+  ${leg('M10,138 L30,214 L-30,250 M-30,250 L-56,236 M-30,250 L-44,276')}
+  <ellipse cx="-196" cy="10" rx="78" ry="40" transform="rotate(-25 -196 10)" fill="#9DBEE6"/>
+  <ellipse cx="-210" cy="48" rx="82" ry="40" transform="rotate(5 -210 48)" fill="#6F98D0"/>
+  <ellipse cx="-190" cy="86" rx="72" ry="34" transform="rotate(30 -190 86)" fill="#4D78B8"/>
+  <path d="M20,-176 C92,-186 136,-126 114,-74 C102,-44 80,-22 92,14 C112,94 40,152 -62,142 C-152,132 -194,72 -172,22 C-152,-12 -62,-22 -32,-62 C-20,-122 -18,-170 20,-176Z" fill="#E5176E"/>
+  <ellipse cx="-80" cy="98" rx="56" ry="36" transform="rotate(-14 -80 98)" fill="#B5104C"/>
+  <ellipse cx="-30" cy="50" rx="104" ry="62" transform="rotate(-10 -30 50)" fill="#FF4747"/>
+  <ellipse cx="18" cy="-206" rx="30" ry="50" transform="rotate(-26 18 -206)" fill="#13897A"/>
+  <ellipse cx="58" cy="-210" rx="26" ry="46" transform="rotate(16 58 -210)" fill="#1EAA94"/>
+  <ellipse cx="38" cy="-188" rx="14" ry="30" fill="#9E0E3C"/>
+  <path d="M110,-130 L196,-104 L112,-78Z" fill="#FF9A1F"/><path d="M111,-104 L196,-104 L112,-78Z" fill="#EC7608"/>
+  ${happyEye(66,-118,30,'#E5176E')}
+</g>`;
+// хайбол с «восходом» — белая кромка, плоские полосы, блик-пилюля, лёд
+const glass=`<g id="glass" transform="translate(565,905) rotate(18) scale(1.12)">
+  <defs><clipPath id="gin"><rect x="-94" y="-244" width="188" height="494" rx="32"/></clipPath></defs>
+  <rect x="-114" y="-264" width="228" height="534" rx="46" fill="#fff"/>
+  <g clip-path="url(#gin)">
+    <rect x="-120" y="-260" width="260" height="540" fill="#DDF8EF"/>
+    <path d="M-120,-196 Q-60,-212 0,-196 T120,-196 L120,300 L-120,300Z" fill="#FFD23F"/>
+    <path d="M-120,-40 Q-60,-60 0,-40 T120,-40 L120,300 L-120,300Z" fill="#FF9A2A"/>
+    <path d="M-120,96 Q-60,74 0,96 T120,96 L120,300 L-120,300Z" fill="#FF4D5E"/>
+    <path d="M-120,190 Q-60,172 0,190 T120,190 L120,300 L-120,300Z" fill="#E0284E"/>
+    <rect x="-40" y="-170" width="96" height="96" rx="22" transform="rotate(14 8 -122)" fill="#fff" fill-opacity=".38"/>
+    <rect x="-20" y="-40" width="84" height="84" rx="20" transform="rotate(-10 22 2)" fill="#fff" fill-opacity=".32"/>
+    <rect x="-58" y="80" width="78" height="78" rx="18" transform="rotate(20 -19 119)" fill="#fff" fill-opacity=".28"/>
+    <rect x="-80" y="-206" width="30" height="380" rx="15" fill="#fff" fill-opacity=".7"/>
+  </g>
+  <g transform="translate(92,-262)"><circle r="92" fill="#FF8A1F"/><circle r="78" fill="#FFE8B0"/>
+    ${Array.from({length:10},(_,k)=>{const a0=k/10*Math.PI*2+.07,a1=(k+1)/10*Math.PI*2-.07;return `<path d="M0,0 L${Math.cos(a0)*68},${Math.sin(a0)*68} A68,68 0 0 1 ${Math.cos(a1)*68},${Math.sin(a1)*68}Z" fill="#FFB33E"/>`}).join('')}
+    <circle r="10" fill="#FFF3D6"/></g>
+  <path d="M-40,-300 Q-20,-380 40,-404" fill="none" stroke="#2E9E5A" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="-44" cy="-288" r="40" fill="#E01E45"/><circle cx="-60" cy="-302" r="12" fill="#FF8296"/>
+</g>`;
+// рука: рукав снизу, тыльная сторона ладони за стаканом, пальцы-облако спереди
+const arm=`<g id="arm">
+  <path d="M420,1920 C450,1700 500,1480 560,1330 C610,1250 720,1240 770,1310 C840,1420 820,1700 800,1920Z" fill="#0B6E85"/>
+  <path d="M560,1330 C610,1250 720,1240 770,1310 C760,1350 700,1370 640,1372 C600,1372 570,1356 560,1330Z" fill="#118FA0"/>
+  <circle cx="640" cy="1180" r="150" fill="#0E8E92"/><circle cx="700" cy="1250" r="110" fill="#0B7C86"/>
+</g>`;
+const fingers=`<g id="fingers">
+  <circle cx="520" cy="1180" r="118" fill="#15C2A0"/>
+  <circle cx="430" cy="1100" r="74" fill="#2ED8B6"/><circle cx="414" cy="1196" r="76" fill="#24CFAE"/><circle cx="448" cy="1290" r="72" fill="#1BC6A6"/><circle cx="530" cy="1330" r="64" fill="#15B898"/>
+  <ellipse cx="450" cy="1080" rx="44" ry="28" transform="rotate(-25 450 1080)" fill="#6CEBD1"/>
+  <ellipse cx="420" cy="1186" rx="34" ry="22" transform="rotate(-25 420 1186)" fill="#55E3C6"/>
+  <path d="M540,1060 C600,1060 640,1110 630,1170 C600,1140 570,1120 530,1110Z" fill="#0FA88E"/>
+</g>`;
+const ground=`<path d="M520,1600 L1080,1380 L1080,1920 L420,1920Z" fill="#EEE8FF"/>
+  <path d="M780,1600 C860,1580 920,1640 940,1720 C960,1800 940,1880 900,1920 L800,1920 C820,1820 800,1700 780,1600Z" fill="#CFC6F5" fill-opacity=".8"/>`;
+const sparkles=[bubble(300,700,62,34),bubble(830,640,78,44),bubble(710,1440,64,36),bubble(270,1500,48,26)].join('')+
+  [[420,560,30],[760,520,22],[880,880,34],[640,800,18],[330,920,20],[960,1300,22],[200,1300,18],[600,1180,16]].map(([x,y,r])=>`<path d="${star(x,y,r)}" fill="#fff"/>`).join('');
+const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D6F5A6"/><stop offset=".45" stop-color="#A9EDD6"/><stop offset="1" stop-color="#58C6EE"/></linearGradient>
+<radialGradient id="glow" cx="560" cy="940" r="560" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFFBD0" stop-opacity=".95"/><stop offset=".5" stop-color="#F4FFB0" stop-opacity=".35"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs>
+<rect width="${W}" height="${H}" fill="url(#bg)"/>${rays}<rect width="${W}" height="${H}" fill="url(#glow)"/>
+${ground}${arm}${glass}${fingers}${toucan}${flamingo}${sparkles}
+<g font-family="Round" text-anchor="middle"><text x="546" y="268" font-size="150" fill="#4B22A8" letter-spacing="4">TEQUILA</text><text x="540" y="260" font-size="150" fill="#fff" letter-spacing="4">TEQUILA</text>
+<text x="546" y="408" font-size="150" fill="#E5176E" letter-spacing="4">SUNRISE</text><text x="540" y="400" font-size="150" fill="#FF9A1F" letter-spacing="4">SUNRISE</text></g>
+</svg>`;
+document.getElementById('root').innerHTML=svg;window.ready=document.fonts.load('80px Round');
+</script></body></html>
