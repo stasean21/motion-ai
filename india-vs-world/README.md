@@ -27,3 +27,14 @@
 npm i && node build-map.mjs   # → map-data.js
 node shot.mjs                 # → frames/*.png, board.png
 ```
+
+## Анимация: вступление 0:00–0:14 (EN)
+
+`anim/out/intro.mp4`: 1920×1080, 60 fps, H.264, звук AAC. Главный герой — текст, музыка 120 BPM. План и варианты сцен описаны в `anim/STORYBOARD.md`.
+
+**Сборка:**
+```
+cd anim
+node beats.mjs 0 1.0,4.5,9.5   # пробные кадры → out/keys.jpg
+for i in 0 1 2 3; do node render.mjs $i 4 & done; wait; node join.mjs   # → out/intro.mp4
+```
