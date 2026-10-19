@@ -1,0 +1,4 @@
+import { chromium } from '../../node_modules/playwright/index.mjs'; import fs from 'fs'; import { execFileSync } from 'child_process';
+const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});const p=await b.newPage({viewport:{width:1080,height:1920}});const errs=[];p.on('pageerror',e=>errs.push(e.message));
+for(const f of [1,2,3,4]){await p.goto('file://'+process.cwd()+'/mockup.html?f='+f);await p.evaluate(()=>window.ready);const d=await p.evaluate(()=>document.getElementById('c').toDataURL('image/png'));fs.writeFileSync(`frame-${f}.png`,Buffer.from(d.split(',')[1],'base64'));}
+await b.close();execFileSync('ffmpeg',['-y','-v','error','-i','frame-1.png','-i','frame-2.png','-i','frame-3.png','-i','frame-4.png','-filter_complex','[0][1][2][3]hstack=4,scale=2160:-1','mockup-sheet.jpg']);console.log(errs);

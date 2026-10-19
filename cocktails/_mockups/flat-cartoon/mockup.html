@@ -1,0 +1,157 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Flat cartoon cocktail mockup</title><style>
+@font-face{font-family:Round;src:url(fonts/Fredoka-Bold.ttf)}
+html,body{margin:0;background:#000}canvas{display:block;width:540px;height:960px}</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+// Макет: плоская векторная иллюстрация без обводок (разбор референса → своя тема коктейлей).
+const W=1080,H=1920,c=document.getElementById('c'),X=c.getContext('2d');
+const P={sky:'#A9B8F7',lav:'#C9C2F4',lav2:'#B6ADEE',vio:'#6A2FD8',vio2:'#4B22A8',deep:'#2A1170',mag:'#E5217A',pink:'#FF5C9A',red:'#FF3D4F',org:'#FF8A1F',yel:'#FFD23F',mint:'#3BE0B0',teal:'#1C9AA8',teal2:'#14707F',cyan:'#55D8F5',lime:'#C6F25A',skin:'#E58C5C',skin2:'#C76A3E',white:'#F2F9FF',ink:'#2B1550'};
+const hash=n=>{const s=Math.sin(n*127.1+311.7)*43758.5453;return s-Math.floor(s);};
+const P2=(pts)=>{X.beginPath();pts.forEach(([x,y],i)=>X[i?'lineTo':'moveTo'](x,y));X.closePath();};
+const fill=(col)=>{X.fillStyle=col;X.fill();};
+const circ=(x,y,r,col)=>{X.beginPath();X.arc(x,y,r,0,7);fill(col);};
+const ell=(x,y,rx,ry,col,rot=0)=>{X.beginPath();X.ellipse(x,y,rx,ry,rot,0,7);fill(col);};
+const rr=(x,y,w,h,r,col)=>{X.beginPath();X.roundRect(x,y,w,h,r);fill(col);};
+function txt(s,x,y,size,col,al='center',ls=0,shadow){X.font=`${size}px Round`;X.letterSpacing=ls+'px';X.textAlign=al;if(shadow){X.fillStyle=shadow;X.fillText(s,x+size*.05,y+size*.07);}X.fillStyle=col;X.fillText(s,x,y);X.letterSpacing='0px';}
+function spark(x,y,r,col='#fff'){X.save();X.translate(x,y);X.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4,rr_=i%2?r*.22:r;X.lineTo(Math.cos(a)*rr_,Math.sin(a)*rr_);}X.closePath();X.fillStyle=col;X.fill();X.restore();}
+function rays(cx,cy,n,c1,c2){for(let i=0;i<n;i++){const a0=i/n*Math.PI*2,a1=a0+Math.PI/n;X.beginPath();X.moveTo(cx,cy);X.lineTo(cx+Math.cos(a0)*3000,cy+Math.sin(a0)*3000);X.lineTo(cx+Math.cos(a1)*3000,cy+Math.sin(a1)*3000);X.closePath();X.fillStyle=i%2?c1:c2;X.fill();}}
+// ---------- персонажи ----------
+// барменша: круглое лицо, очки, каре с чёлкой, жилет, бабочка
+function bartender(cx,cy,s=1,mood='wow'){X.save();X.translate(cx,cy);X.scale(s,s);
+  // плечи, жилет, рубашка
+  P2([[-250,330],[-230,250],[-150,200],[150,200],[230,250],[250,330],[260,600],[-260,600]]);fill(P.white);
+  P2([[-250,330],[-230,250],[-150,200],[-40,210],[-10,420],[-20,600],[-260,600]]);fill(P.vio2);
+  P2([[250,330],[230,250],[150,200],[40,210],[10,420],[20,600],[260,600]]);fill(P.vio2);
+  P2([[-150,200],[-40,210],[-70,330],[-120,240]]);fill('#3A1A86');P2([[150,200],[40,210],[70,330],[120,240]]);fill('#3A1A86');
+  [300,370,440].forEach(y=>circ(-28,y,7,P.yel));
+  // бабочка
+  P2([[0,215],[-58,188],[-62,246]]);fill(P.mag);P2([[0,215],[58,188],[62,246]]);fill(P.mag);circ(0,215,14,'#B5145E');
+  // шея
+  rr(-34,140,68,70,20,P.skin2);
+  // голова
+  X.beginPath();X.moveTo(-118,-60);X.quadraticCurveTo(-125,110,-60,150);X.quadraticCurveTo(0,182,60,150);X.quadraticCurveTo(125,110,118,-60);X.quadraticCurveTo(0,-110,-118,-60);fill(P.skin);
+  X.beginPath();X.moveTo(-118,-60);X.quadraticCurveTo(-125,110,-60,150);X.quadraticCurveTo(-30,160,-10,165);X.quadraticCurveTo(-80,100,-90,-40);X.closePath();fill(P.skin2);
+  // уши, серьги
+  ell(-122,40,20,30,P.skin2);ell(122,40,20,30,P.skin);circ(-124,82,11,P.mint);circ(124,82,11,P.mint);
+  // волосы: каре с чёлкой
+  X.beginPath();X.moveTo(-140,90);X.quadraticCurveTo(-160,-150,0,-150);X.quadraticCurveTo(160,-150,140,90);X.lineTo(118,-20);X.quadraticCurveTo(40,-40,-10,-90);X.quadraticCurveTo(-60,-30,-118,-20);X.closePath();fill(P.ink);
+  X.beginPath();X.moveTo(-10,-90);X.quadraticCurveTo(60,-100,110,-40);X.quadraticCurveTo(50,-55,-10,-90);fill('#4A2C8C');
+  // очки
+  X.lineWidth=11;X.strokeStyle=P.mag;X.beginPath();X.roundRect(-104,-10,92,70,22);X.roundRect(12,-10,92,70,22);X.moveTo(-12,14);X.lineTo(12,14);X.stroke();
+  // глаза
+  if(mood==='happy'){X.lineWidth=9;X.strokeStyle=P.ink;X.lineCap='round';X.beginPath();X.arc(-58,32,18,Math.PI*1.1,Math.PI*1.9);X.moveTo(76,32);X.arc(58,32,18,Math.PI*1.1,Math.PI*1.9);X.stroke();}
+  else{ell(-58,30,26,22,'#fff');ell(58,30,26,22,'#fff');circ(-54,38,12,P.ink);circ(62,38,12,P.ink);P2([[-86,12],[-30,12],[-30,22],[-86,26]]);fill(P.skin);P2([[30,12],[86,12],[86,26],[30,22]]);fill(P.skin);}
+  // брови, нос, рот
+  X.lineWidth=9;X.lineCap='round';X.strokeStyle=P.ink;X.beginPath();X.moveTo(-90,-24);X.lineTo(-30,-30);X.moveTo(30,-30);X.lineTo(90,-24);X.stroke();
+  ell(0,80,12,8,P.skin2);
+  if(mood==='happy'){X.beginPath();X.arc(0,104,26,.15*Math.PI,.85*Math.PI);fill('#9C1F3C');}else ell(0,116,16,20,'#9C1F3C');
+  X.restore();}
+// рука-варежка
+function mitten(x,y,rot,col,s=1){X.save();X.translate(x,y);X.rotate(rot);X.scale(s,s);rr(-55,-40,110,120,50,col);ell(-58,10,28,40,col,-.4);X.restore();}
+// тукан: фиолетовый, огромный оранжевый клюв
+function toucan(x,y,s=1,dir=1,eye='look',fly=false){X.save();X.translate(x,y);X.scale(s*dir,s);
+  if(fly){X.lineCap='round';X.lineWidth=22;X.strokeStyle=P.org;X.beginPath();X.moveTo(-40,120);X.quadraticCurveTo(-130,150,-170,110);X.moveTo(10,130);X.quadraticCurveTo(-60,200,-120,190);X.stroke();}
+  ell(0,40,200,170,P.vio);ell(-40,90,120,110,'#5A24C0');
+  P2([[-120,-60],[-170,-160],[-60,-100]]);fill(P.mint);P2([[-80,-90],[-90,-190],[-10,-110]]);fill(P.teal);
+  // клюв
+  X.beginPath();X.moveTo(120,-40);X.quadraticCurveTo(330,-30,360,60);X.quadraticCurveTo(250,40,130,60);X.closePath();fill(P.org);
+  X.beginPath();X.moveTo(130,60);X.quadraticCurveTo(250,40,360,60);X.quadraticCurveTo(250,110,130,80);X.closePath();fill('#E06A0A');
+  // глаз
+  if(eye==='happy'){X.lineWidth=14;X.strokeStyle=P.ink;X.lineCap='round';X.beginPath();X.arc(60,-10,34,Math.PI*1.15,Math.PI*1.85);X.stroke();}
+  else{circ(60,-10,64,'#fff');circ(eye==='glow'?62:78,eye==='glow'?-4:0,eye==='glow'?30:20,eye==='glow'?P.yel:P.ink);if(eye==='glow')circ(70,-16,9,'#fff');}
+  if(fly){P2([[-60,0],[-260,-160],[-200,40]]);fill('#7A40F0');}else{ell(-110,60,90,60,'#7A40F0',-.4);}
+  X.restore();}
+// фламинго-птица: розовая, с хохолком
+function flamingo(x,y,s=1,dir=1,eye='look',fly=false){X.save();X.translate(x,y);X.scale(s*dir,s);
+  if(fly){X.lineCap='round';X.lineWidth=20;X.strokeStyle=P.org;X.beginPath();X.moveTo(-30,120);X.quadraticCurveTo(-60,210,-10,250);X.moveTo(20,120);X.quadraticCurveTo(30,210,80,240);X.stroke();
+    P2([[-120,20],[-260,-40],[-230,60]]);fill('#7AA9D8');}
+  ell(0,40,180,150,P.red);ell(-20,80,130,100,P.mag);
+  P2([[-40,-90],[-60,-210],[20,-120]]);fill(P.mint);P2([[0,-100],[40,-220],[70,-110]]);fill(P.teal);
+  P2([[130,-20],[240,20],[130,50]]);fill(P.org);
+  if(eye==='happy'){X.lineWidth=13;X.strokeStyle=P.ink;X.lineCap='round';X.beginPath();X.arc(50,0,30,Math.PI*1.15,Math.PI*1.85);X.stroke();}
+  else{circ(50,0,58,'#fff');circ(eye==='glow'?52:66,eye==='glow'?6:8,eye==='glow'?28:18,eye==='glow'?P.yel:P.ink);if(eye==='glow')circ(60,-4,8,'#fff');}
+  ell(-90,50,80,55,'#C21A5C',-.5);X.restore();}
+// хайбол с «восходом»: жёлтый → оранжевый → красный снизу
+function highball(x,y,s=1,rot=0,glow=false){X.save();X.translate(x,y);X.rotate(rot);X.scale(s,s);const w=150,h=330;
+  if(glow){const g=X.createRadialGradient(0,-h/2,20,0,-h/2,330);g.addColorStop(0,'rgba(255,240,150,.8)');g.addColorStop(1,'rgba(255,240,150,0)');X.fillStyle=g;X.fillRect(-400,-h-250,800,700);}
+  X.save();X.beginPath();X.roundRect(-w/2,-h,w,h,[6,6,26,26]);X.clip();
+  const g=X.createLinearGradient(0,-h+40,0,0);g.addColorStop(0,P.yel);g.addColorStop(.45,P.org);g.addColorStop(.8,P.red);g.addColorStop(1,'#B5143A');X.fillStyle=g;X.fillRect(-w,-h+40,w*2,h);
+  [[-30,-250,.3],[25,-190,-.2],[-20,-130,.15]].forEach(([ix,iy,r])=>{X.save();X.translate(ix,iy);X.rotate(r);X.fillStyle='rgba(255,255,255,.45)';X.beginPath();X.roundRect(-36,-36,72,72,14);X.fill();X.restore();});
+  X.fillStyle='rgba(255,255,255,.35)';X.fillRect(-w/2+14,-h+10,18,h-30);X.restore();
+  X.fillStyle='rgba(255,255,255,.25)';X.beginPath();X.roundRect(-w/2,-h,w,h,[6,6,26,26]);X.fill();
+  X.fillStyle='rgba(255,255,255,.7)';X.fillRect(-w/2,-h,w,10);
+  // долька апельсина и вишня
+  X.save();X.translate(w/2-10,-h+10);circ(0,0,62,P.org);circ(0,0,50,'#FFE08A');for(let k=0;k<8;k++){X.beginPath();X.moveTo(0,0);X.arc(0,0,44,k*Math.PI/4+.08,(k+1)*Math.PI/4-.08);X.closePath();fill('#FFB43A');}X.restore();
+  X.lineWidth=6;X.strokeStyle='#2E7D3A';X.beginPath();X.moveTo(-30,-h-10);X.quadraticCurveTo(-10,-h-80,20,-h-90);X.stroke();circ(-30,-h-6,26,'#D4103A');circ(-38,-h-14,8,'rgba(255,255,255,.6)');
+  X.restore();}
+// ---------- кадры ----------
+function frame1(){// бар: барменша, в свете бокала; тукан и фламинго в переднем плане
+  X.fillStyle=P.sky;X.fillRect(0,0,W,H);circ(540,760,470,P.lav);
+  // полки с бутылками
+  [560,820].forEach((y,j)=>{rr(40,y,1000,26,8,P.lav2);for(let i=0;i<9;i++){const x=90+i*112+(j?40:0),h=110+hash(i+j*9)*80,w=44+hash(i+3+j)*26;X.fillStyle=['#B3A9F0','#C4BCF6','#A79DE9'][i%3];X.beginPath();X.roundRect(x-w/2,y-h,w,h,[w/3,w/3,6,6]);X.fill();rr(x-9,y-h-40,18,46,6,X.fillStyle);}});
+  // барменша
+  bartender(540,640,1.05,'wow');
+  // руки на стойке
+  mitten(300,1225,-.3,P.skin2,.85);mitten(790,1215,.4,P.skin,.85);
+  // световой конус из бокала
+  const g=X.createLinearGradient(0,1150,0,520);g.addColorStop(0,'rgba(230,255,140,.7)');g.addColorStop(.6,'rgba(230,255,140,.12)');g.addColorStop(1,'rgba(230,255,140,0)');X.fillStyle=g;P2([[500,1010],[580,1010],[860,600],[220,600]]);X.fill();
+  // стойка
+  rr(-20,1240,1120,60,20,'#2FB8CC');X.fillStyle=P.teal;X.fillRect(0,1290,W,700);X.fillStyle=P.teal2;for(let i=0;i<6;i++)X.fillRect(80+i*170,1340,120,560);
+  ell(540,1250,150,20,'rgba(255,250,170,.8)');highball(540,1250,.72,0,true);
+  [[220,1230],[860,1210],[700,1235]].forEach(([x,y])=>{rr(x-20,y-40,40,40,8,'#F4B6CF');rr(x-24,y-48,48,12,6,'#FFD9E7');});
+  // передний план: птицы смотрят на бокал, в глазах отблеск
+  toucan(70,1520,1.05,1,'glow');flamingo(1040,1500,1.05,-1,'glow');
+  txt('TEQUILA',540,250,150,'#fff','center',4,P.vio);txt('SUNRISE',540,390,150,P.yel,'center',4,P.mag);}
+function frame2(){// внутри бокала: крошечная барменша идёт к гигантскому солнцу-гренадину
+  const g=X.createLinearGradient(0,0,0,1250);g.addColorStop(0,P.deep);g.addColorStop(.45,P.vio);g.addColorStop(.75,P.mag);g.addColorStop(1,P.org);X.fillStyle=g;X.fillRect(0,0,W,1250);
+  // лучи заката
+  X.save();X.globalAlpha=.12;rays(540,1180,18,'#fff','rgba(0,0,0,0)');X.restore();
+  // гигантское солнце
+  [[560,'rgba(255,90,80,.18)'],[470,'rgba(255,120,60,.3)'],[390,P.red]].forEach(([r,col])=>{X.beginPath();X.arc(540,1180,r,Math.PI,0);fill(col);});
+  X.save();X.beginPath();X.arc(540,1180,390,Math.PI,0);X.clip();[1000,1060,1110,1150].forEach((y,i)=>{X.fillStyle=P.vio2;X.globalAlpha=.25+i*.1;X.fillRect(0,y,W,14+i*6);});X.restore();X.globalAlpha=1;
+  // кубики льда в небе, как айсберги-планеты
+  [[190,420,90,.3],[880,330,120,-.2],[760,760,60,.5],[300,780,45,-.4]].forEach(([x,y,s,r])=>{X.save();X.translate(x,y);X.rotate(r);X.fillStyle='rgba(220,240,255,.55)';X.beginPath();X.roundRect(-s,-s,s*2,s*2,s*.3);X.fill();X.fillStyle='rgba(255,255,255,.8)';X.beginPath();X.roundRect(-s*.7,-s*.7,s*.6,s*.25,8);X.fill();X.restore();});
+  // долька апельсина — далёкая планета
+  X.save();X.translate(820,620);circ(0,0,70,P.org);circ(0,0,58,'#FFE08A');for(let k=0;k<8;k++){X.beginPath();X.moveTo(0,0);X.arc(0,0,52,k*Math.PI/4+.08,(k+1)*Math.PI/4-.08);X.closePath();fill('#FFB43A');}X.restore();
+  // пузырьки
+  for(let i=0;i<40;i++)circ(hash(i)*W,200+hash(i+5)*900,3+hash(i+9)*8,`rgba(255,255,255,${.2+hash(i+2)*.3})`);
+  // пол-подиум
+  X.fillStyle='#FF9A6A';X.fillRect(0,1180,W,740);X.fillStyle='#FFB48A';P2([[0,1180],[W,1180],[W,1260],[0,1300]]);X.fill();
+  X.fillStyle='rgba(181,20,58,.35)';P2([[380,1520],[400,1500],[1080,1300],[1080,1420]]);X.fill();// длинная тень
+  // крошечная барменша (силуэт сбоку)
+  X.save();X.translate(390,1500);rr(-14,-70,28,70,8,P.ink);rr(-22,-150,44,90,14,P.white);P2([[-22,-150],[22,-150],[14,-90],[-14,-90]]);fill(P.vio2);circ(0,-175,24,P.skin);X.beginPath();X.arc(0,-182,26,Math.PI*.9,Math.PI*2.1);fill(P.ink);X.restore();
+  txt('15 ml',540,300,110,'#fff','center',2,P.mag);txt('GRENADINE',540,440,130,P.yel,'center',4,P.red);txt('sinks like the sun',540,540,56,'#FFD9E7','center',2);}
+function frame3(){// герой: рука-перчатка поднимает бокал, лучи, искры, птицы празднуют
+  const g=X.createRadialGradient(560,900,40,560,900,1200);g.addColorStop(0,'#FFF6B0');g.addColorStop(.5,'#A8F0C8');g.addColorStop(1,'#5CC8E8');X.fillStyle=g;X.fillRect(0,0,W,H);
+  X.save();X.globalAlpha=.35;rays(560,900,22,'#fff','rgba(255,255,255,0)');X.restore();
+  const bl=X.createRadialGradient(560,880,10,560,880,380);bl.addColorStop(0,'rgba(255,255,200,.95)');bl.addColorStop(1,'rgba(255,255,200,0)');X.fillStyle=bl;X.fillRect(0,400,W,1000);
+  // рука снизу
+  X.lineCap='round';X.lineWidth=170;X.strokeStyle=P.teal2;X.beginPath();X.moveTo(1180,1900);X.quadraticCurveTo(880,1420,640,1230);X.stroke();
+  highball(560,1180,1.55,.18,true);
+  X.save();X.translate(600,1120);X.rotate(.18);rr(-120,-90,240,170,80,P.mint);ell(-110,-40,46,62,'#2FC99C',-.3);ell(60,-40,60,28,'#7FF0CC',.1);X.restore();
+  [[300,640,40],[820,560,54],[760,1060,30],[350,1180,26],[880,860,22],[440,470,20]].forEach(([x,y,r])=>spark(x,y,r));
+  toucan(230,1300,.75,1,'happy',true);flamingo(860,1350,.72,-1,'happy',true);
+  txt('TEQUILA',540,250,150,'#fff','center',4,P.teal);txt('SUNRISE',540,390,150,P.org,'center',4,P.mag);
+  txt('SAVE THIS RECIPE',440,1820,60,P.vio2,'center',6);}
+function frame4(){// переход «сдвиг панелей»: сверху апельсиновый сок, снизу гренадин; шов едет диагонально
+  const seam=y=>1000+(540-y)*0;// горизонтальный шов с наклоном ниже
+  // верхняя панель
+  X.save();P2([[0,0],[W,0],[W,900],[0,1060]]);X.clip();X.fillStyle=P.cyan;X.fillRect(0,0,W,1100);circ(760,420,380,'#7FE4FA');
+  // кувшин сока и струя
+  X.save();X.translate(720,330);X.rotate(-.9);rr(-110,-170,220,340,50,'rgba(255,255,255,.45)');X.save();X.beginPath();X.roundRect(-110,-170,220,340,50);X.clip();X.fillStyle=P.org;X.fillRect(-120,-40,240,260);X.restore();rr(-130,-200,60,90,20,'rgba(255,255,255,.6)');X.restore();
+  X.fillStyle=P.org;P2([[560,470],[590,470],[575,980],[555,980]]);X.fill();
+  highball(560,1040,1.2,0,false);
+  txt('90 ml',300,200,110,'#fff','center',2,P.teal);txt('ORANGE',300,330,110,P.yel,'center',3,P.org);txt('JUICE',300,440,110,'#fff','center',3,P.teal);X.restore();
+  // нижняя панель
+  X.save();P2([[0,1060],[W,900],[W,H],[0,H]]);X.clip();X.fillStyle=P.vio;X.fillRect(0,880,W,1100);circ(300,1500,420,'#7E46E6');
+  bartender(780,1420,.8,'happy');
+  // бутылочка гренадина в руке, струя уходит на дно бокала
+  X.save();X.translate(520,1250);X.rotate(-1.1);rr(-40,-120,80,200,26,P.red);rr(-16,-170,32,60,10,'#B5143A');X.restore();mitten(560,1300,-.9,P.skin,.75);
+  X.fillStyle=P.red;P2([[392,1300],[404,1300],[352,1700],[340,1700]]);X.fill();
+  highball(330,1860,.95,0,false);
+  txt('+ GRENADINE',780,1100,64,P.pink,'center',3);X.restore();
+  // шов с белой кромкой
+  X.lineWidth=14;X.strokeStyle='#fff';X.beginPath();X.moveTo(0,1060);X.lineTo(W,900);X.stroke();}
+const F=+(new URLSearchParams(location.search).get('f')||1);
+window.ready=document.fonts.load('80px Round').then(()=>{[frame1,frame2,frame3,frame4][F-1]();});
+</script></body></html>
