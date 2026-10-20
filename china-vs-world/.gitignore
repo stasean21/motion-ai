@@ -1,0 +1,16 @@
+node_modules/
+package-lock.json
+anim/out/beats/
+anim/out/track.wav
+anim/out/log-*.txt
+anim/out/part-*.mp4
+anim/out/tmp-*.mp4
+anim/out/parts.txt
+anim/out/keys.jpg
+anim/out/tr-*.jpg
+anim/out/last.png
+anim/out/india-vs-world-v1.mp4
+anim/out/india-vs-world.mp4
+anim/out/china-vs-world.mp4
+anim/out/tr-*.jpg
+anim/out/last.png
