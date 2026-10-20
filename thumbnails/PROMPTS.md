@@ -1,3 +1,58 @@
+# Версия 2 — текст говорит суть видео (как у референсов)
+
+Формула референсов:
+- **маленькая белая строка сверху** задаёт тему;
+- **огромная красная строка снизу** даёт панчлайн;
+- **плашка с цифрой** на карте объясняет, ЧТО сравниваем.
+
+В первой версии было «= 1 INDIA?», а непонятно, что с чем сравнивается. Теперь метрика (люди или электричество) всегда видна в плашке и в тексте.
+
+**Шрифт.** Как у референсов: пиксельный аркадный (Pixelify Sans Bold / Silkscreen / Press Start 2P). Белая строка, под ней красная строка (#FF2E3A) с тёмно-бордовой обводкой и 3D-тенью вниз.
+
+**Компоновка:**
+- сверху по центру — огромная страна-персонаж с эмоцией;
+- вокруг — карта мира со странами-персонажами и маленькими плашками-числами;
+- текст — по центру снизу на 40% высоты кадра.
+
+| Выпуск | Плашка (сверху над текстом) | Белая строка | Красная строка |
+|---|---|---|---|
+| 01 Индия | 👥 1.46 BILLION PEOPLE | 1 INDIA = | 26 COUNTRIES?! |
+| 02 Китай (население) | 👥 1.42 BILLION PEOPLE | CHINA vs | 25 COUNTRIES! |
+| 03 Китай (электричество) | ⚡ 10,025 TWh A YEAR | CHINA’S ELECTRICITY | vs 25 COUNTRIES! |
+
+Запасные панчлайны (для теста A/B):
+- 01 — белая «26 COUNTRIES TO MATCH», красная «INDIA?!»;
+- 02 — белая «STILL SHORT AT», красная «92.5%!»;
+- 03 — белая «ONLY THE USA CAN», красная «BEAT CHINA?» (на обложке США и Китай).
+
+## 01 — промпт
+```
+[STYLE ANCHOR] — Top center: a huge India-shaped cartoon character filled with the Indian flag, smug confident half-closed eyes with a raised eyebrow, slightly overlapping the top edge. Around it on the world map: small flag-filled country characters (Uruguay, Norway, Brazil, USA, Japan, Germany) with worried eyes, each with a tiny rounded label pill showing a population number like "3.4M", "212.8M", "347.3M". Above the text a dark rounded pill with a yellow-orange border reading "👥 1.46 BILLION PEOPLE". Bottom center, big pixel arcade font: white line "1 INDIA =" and below it a huge red line "26 COUNTRIES?!" with dark maroon outline and 3D drop shadow.
+```
+```
+[ЯКОРЬ СТИЛЯ] — Сверху по центру огромный мультяшный персонаж в форме Индии, залит индийским флагом, самоуверенный прищур с поднятой бровью, слегка выходит за верхний край. Вокруг на карте маленькие страны-персонажи с флагами (Уругвай, Норвегия, Бразилия, США, Япония, Германия) с обеспокоенными глазами, у каждой крошечная скруглённая плашка с населением: «3.4M», «212.8M», «347.3M». Над текстом тёмная скруглённая плашка с жёлто-оранжевой рамкой: «👥 1.46 BILLION PEOPLE». Внизу по центру крупный пиксельный аркадный шрифт: белая строка «1 INDIA =», под ней огромная красная «26 COUNTRIES?!» с тёмно-бордовой обводкой и 3D-тенью.
+```
+
+## 02 — промпт
+```
+[STYLE ANCHOR] — Top center: a huge China-shaped cartoon character filled with the Chinese flag, big angry-determined red eyes with thick black brows, yellow stars on its body. Around it: flag-filled country characters (Nigeria, Japan, Bangladesh, Germany, Philippines) with tense eyes and tiny label pills "237.5M", "123.1M", "175.7M", "116.8M". Above the text a dark rounded pill with orange border reading "👥 1.42 BILLION PEOPLE". Bottom center, big pixel arcade font: white line "CHINA vs" and below a huge red line "25 COUNTRIES!" with dark maroon outline and 3D drop shadow.
+```
+```
+[ЯКОРЬ СТИЛЯ] — Сверху по центру огромный мультяшный Китай, залит китайским флагом, большие сердито-решительные красные глаза с толстыми чёрными бровями, жёлтые звёзды на теле. Вокруг страны-персонажи с флагами (Нигерия, Япония, Бангладеш, Германия, Филиппины) с напряжёнными глазами и крошечными плашками «237.5M», «123.1M», «175.7M», «116.8M». Над текстом тёмная скруглённая плашка с оранжевой рамкой: «👥 1.42 BILLION PEOPLE». Внизу по центру крупный пиксельный аркадный шрифт: белая строка «CHINA vs», под ней огромная красная «25 COUNTRIES!» с тёмно-бордовой обводкой и 3D-тенью.
+```
+
+## 03 — промпт
+```
+[STYLE ANCHOR] — Top center: a huge China-shaped cartoon character filled with the Chinese flag, glowing angry eyes, small yellow lightning bolts crackling around its outline, wearing a tiny hard hat. Around it: flag-filled country characters (USA big and excited, Japan, Brazil, Canada, France) with little cartoon generator icons (circle with a sine wave) and tiny label pills "4,391 TWh", "1,015 TWh", "751 TWh". Above the text a dark rounded pill with yellow border reading "⚡ 10,025 TWh A YEAR". Bottom center, big pixel arcade font: white line "CHINA’S ELECTRICITY" and below a huge red line "vs 25 COUNTRIES!" with dark maroon outline and 3D drop shadow. No batteries, no green eco symbols.
+```
+```
+[ЯКОРЬ СТИЛЯ] — Сверху по центру огромный мультяшный Китай, залит китайским флагом, светящиеся сердитые глаза, по контуру потрескивают маленькие жёлтые молнии, на голове крошечная каска. Вокруг страны-персонажи с флагами (большие восторженные США, Япония, Бразилия, Канада, Франция) с мультяшными значками генератора (круг с синусоидой) и крошечными плашками «4,391 TWh», «1,015 TWh», «751 TWh». Над текстом тёмная скруглённая плашка с жёлтой рамкой: «⚡ 10,025 TWh A YEAR». Внизу по центру крупный пиксельный аркадный шрифт: белая строка «CHINA’S ELECTRICITY», под ней огромная красная «vs 25 COUNTRIES!» с тёмно-бордовой обводкой и 3D-тенью. Без батареек и «зелёных» эко-символов.
+```
+
+---
+
+# Версия 1 (первая подача)
+
 # Промпты для превью — Map by Map, выпуски 01–03
 
 Стиль взят со скрина работающих обложек:
