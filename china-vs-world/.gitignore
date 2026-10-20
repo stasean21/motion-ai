@@ -1,4 +1,4 @@
-node_modules/
+node_modules
 package-lock.json
 anim/out/beats/
 anim/out/track.wav
