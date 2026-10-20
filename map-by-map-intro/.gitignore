@@ -1,0 +1,9 @@
+out/beats/
+out/track.wav
+out/log-*.txt
+out/part-*.mp4
+out/tmp-*.mp4
+out/parts.txt
+out/keys.jpg
+out/tr-*.jpg
+out/debug-*.png
