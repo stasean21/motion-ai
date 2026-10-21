@@ -11,12 +11,20 @@ const C={};for(const f of fc.features){const d=path(f);if(!d)continue;const b=pa
   else C[f.id]={...e,a:path.area(f)};}
 for(const k in C)delete C[k].a;
 // кадровые рамки камеры: [запад, юг, восток, север] в градусах → базовые координаты
-const V={china:[73,18,135,53.6],world:[-170,-58,180,80],usm:[-125,24.4,-66.9,49.4],
+const V={china:[73,18,135,53.6],world:[-170,-58,180,80],usm:[-125,24.4,-66.9,49.4],my:[99.6,0.8,119.3,7.4],nz:[166,-47.5,178.6,-34.3],
   // кадры стран для шага «наезд на страну» (материковая часть)
   gr:[19.4,34.8,28.3,41.8],fi:[20,59.6,31.6,70.1],pt:[-9.6,36.9,-6.1,42.2],no:[4,57.5,31,71.3],se:[11,55.3,24.2,69.1],be:[2.5,49.5,6.4,51.5],
   pl:[14.1,49,24.2,54.9],ch:[5.9,45.8,10.5,47.8],sa:[34.5,16.3,55.7,32.2],nl:[3.3,50.7,7.3,53.6],tr:[26,35.8,44.8,42.1],id:[95,-11,141,6],
   es:[-9.4,36,3.3,43.8],au:[113,-39.2,154,-10.6],kr:[126,34.3,129.6,38.6],mx:[-117.2,14.5,-86.7,32.7],br:[-74,-33.8,-34.8,5.3],ca:[-141,41.7,-52.6,83.1],
   it:[6.6,36.6,18.5,47.1],fr:[-4.8,42.3,8.2,51.1],gb:[-8.2,49.9,1.8,58.7],in:[68,6,97.5,35.6],jp:[129.4,31,145.6,45.5],de:[5.9,47.3,15,55.1],cn:[73,18,135,53.6]};const VIEWS={};
 for(const k in V){const [w,s,e,n]=V[k],a=proj([w,n]),b=proj([e,s]);VIEWS[k]=[a[0],a[1],b[0],b[1]].map(v=>+v.toFixed(1));}
-fs.writeFileSync('map-data.js','const MAP='+JSON.stringify(C)+';\nconst VIEWS='+JSON.stringify(VIEWS)+';\n');
+// кадр «основной части» страны: самый большой полигон + полигоны рядом с ним (без далёких территорий)
+const MB={};for(const f of fc.features){const g=f.geometry;if(!g)continue;const polys=g.type==='MultiPolygon'?g.coordinates:[g.coordinates];
+  const P=polys.map(c=>{const pf={type:'Feature',geometry:{type:'Polygon',coordinates:c}};const b=path.bounds(pf);return{b,a:path.area(pf)};}).filter(p=>isFinite(p.b[0][0]));if(!P.length)continue;
+  const m=P.reduce((x,y)=>y.a>x.a?y:x),mc=[(m.b[0][0]+m.b[1][0])/2,(m.b[0][1]+m.b[1][1])/2],R=Math.max(m.b[1][0]-m.b[0][0],m.b[1][1]-m.b[0][1],8)*.75+10;
+  let x0=m.b[0][0],y0=m.b[0][1],x1=m.b[1][0],y1=m.b[1][1];
+  for(const p of P){const pc=[(p.b[0][0]+p.b[1][0])/2,(p.b[0][1]+p.b[1][1])/2];if(Math.hypot(pc[0]-mc[0],pc[1]-mc[1])<R){x0=Math.min(x0,p.b[0][0]);y0=Math.min(y0,p.b[0][1]);x1=Math.max(x1,p.b[1][0]);y1=Math.max(y1,p.b[1][1]);}}
+  const o=MB[f.id];if(!o||m.a>o.a)MB[f.id]={b:[x0,y0,x1,y1].map(v=>+v.toFixed(1)),a:m.a};}
+for(const k in MB)MB[k]=MB[k].b;
+fs.writeFileSync('map-data.js','const MAP='+JSON.stringify(C)+';\nconst VIEWS='+JSON.stringify(VIEWS)+';\nconst MAINBOX='+JSON.stringify(MB)+';\n');
 console.log(Object.keys(C).length,'стран',(fs.statSync('map-data.js').size/1024|0)+' КБ');
