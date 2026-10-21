@@ -1,12 +1,12 @@
 // Звук выпуска 03 (электричество Китая): тёмный пульс 120 BPM, Am–F–C–G, музыка тише — место под голос; SFX под каждое действие.
-window.makeAudio=async(D=DURATION)=>{
+window.makeAudio=async(D=DURATION,{music:withMusic=true}={})=>{
   const SR=44100,ac=new OfflineAudioContext(2,Math.ceil(SR*D),SR);
   const bus=ac.createDynamicsCompressor();bus.threshold.value=-16;bus.ratio.value=3;const master=ac.createGain();bus.connect(master).connect(ac.destination);
   master.gain.setValueAtTime(1,D-2.2);master.gain.linearRampToValueAtTime(0,D-.1);
   // пространство: свёртка с затухающим шумом
   const verb=ac.createConvolver();{const n=SR*2.2,b=ac.createBuffer(2,n,SR);for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);let s=7+ch;for(let i=0;i<n;i++){s=(s*16807)%2147483647;d[i]=(s/1073741823.5-1)*Math.pow(1-i/n,3);}}verb.buffer=b;}
   const wet=ac.createGain();wet.gain.value=.22;verb.connect(wet).connect(bus);
-  const music=ac.createGain();music.gain.value=.34;music.connect(bus);music.connect(verb);const fx=ac.createGain();fx.gain.value=1;fx.connect(bus);const fxv=ac.createGain();fxv.gain.value=.5;fx.connect(fxv).connect(verb); // музыка тише — место под будущий голос
+  const music=ac.createGain();music.gain.value=withMusic?.34:0;music.connect(bus);music.connect(verb);const fx=ac.createGain();fx.gain.value=1;fx.connect(bus);const fxv=ac.createGain();fxv.gain.value=.5;fx.connect(fxv).connect(verb); // музыка тише — место под будущий голос
   const nb=ac.createBuffer(1,SR*3,SR);{const d=nb.getChannelData(0);let s=1;for(let i=0;i<d.length;i++){s=(s*16807)%2147483647;d[i]=s/1073741823.5-1;}}
   const env=(g,t,a,v,d)=>{g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);};
   function osc(type,f,t,d,v,dest=music,a=.005,lp=0){const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;env(g,t,a,v,d);
