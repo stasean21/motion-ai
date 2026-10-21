@@ -66,7 +66,8 @@ for(const s of STEPS){const K=s.K,pv=CAM[CAM.length-1],L=view(s.vbox,REG_L,.82),
   const dist=Math.hypot(L[0]-pv[1],L[1]-pv[2]),zm=Math.max(.36,Math.min(pv[3],L[2],1400/Math.max(dist,1)));
   CAM.push([s.t0+K.arrive*.55,lerp(pv[1],L[0],.5),lerp(pv[2],L[1],.5),zm,s.i%2?.01:-.01,0]);
   key(s.t0+K.arrive,L);key(s.t0+K.card,[L[0],L[1],L[2]*1.03],.003);key(s.t0+K.card+.8,C);
-  if(s===FR||s===GB){const R=view(WORLD,[40,140,1450,700],1);key(s.t0+15.6,[C[0],C[1],C[2]*1.03]);key(s.t0+16.8,R);key(s.t0+s.len-.1,[R[0],R[1],R[2]*1.02]);}
+  // Франция и Великобритания: сравнение на общем плане, затем плавный подъезд к Европе — следующий шаг стартует без резкого нырка
+  if(s===FR||s===GB){const R=view(WORLD,[40,140,1450,700],1),EU=view(MAINBOX['276'],[200,200,1300,860],.12);key(s.t0+15.6,[C[0],C[1],C[2]*1.03]);key(s.t0+16.8,R);key(s.t0+18.0,[R[0],R[1],R[2]*1.02]);key(s.t0+s.len-.1,EU);}
   else key(s.t0+s.len-.1,[C[0],C[1],C[2]*1.05],-.004);}
 {const F=view(WORLD,[40,430,1880,1040],1);key(FIN+2.2,F);key(FIN+FLEN,[F[0],F[1],F[2]*1.03]);}
 // ---------- карта: контур, заливка флагом, волна финала ----------
