@@ -6,8 +6,9 @@ const sc3=(v,k)=>[v[0],v[1],v[2]*k];
   key(0,[WV[0]+60,WV[1]+10,WV[2]*.94]);key(3.7,sc3(WV,1.0));
   key(4.7,vb('EUR'));key(5.9,vb('LAM'));key(7.1,vb('SEA'));key(8.4,WVL);key(14,sc3(WVL,1.03));key(19.4,WVL);}
 for(const s of STEPS){const K=s.K,pv=CAM[CAM.length-1],L=view(s.vbox,s.fin?REG_F:REG,s.act==='Locate'?.95:.78);
-  const dist=Math.hypot(L[0]-pv[1],L[1]-pv[2]),zm=Math.max(.32,Math.min(pv[3],L[2],1400/Math.max(dist,1)));
-  CAM.push([s.t0+K.arrive*.12,lerp(pv[1],L[0],.5),lerp(pv[2],L[1],.5),zm,0,0]);
+  // перелёт: сначала отъезд на месте, потом перенос на малом зуме, потом наезд — без смазанных «хлыстов» через полмира
+  const dist=Math.hypot(L[0]-pv[1],L[1]-pv[2]),zm=Math.max(.3,Math.min(pv[3],L[2],650/Math.max(dist,1)));
+  if(zm<Math.min(pv[3],L[2])*.85){CAM.push([s.t0-.15,pv[1],pv[2],zm,0,0]);CAM.push([s.t0+K.arrive*.5,L[0],L[1],zm*1.05,0,0]);}
   key(s.t0+K.arrive,L);
   if(s.act==='Map'){const R=view(s.reg,REG,.62);key(s.t0+2.2,sc3(L,1.02));key(s.t0+3.0,R);key(s.t0+K.out,sc3(R,1.03));}
   else if(s.i===STEPS.length-1){key(s.t0+6.0,sc3(L,1.05));key(s.t0+7.8,WV);key(FIN+10,sc3(WV,1.02));key(DURATION,sc3(WV,1.04));}
@@ -99,7 +100,9 @@ function cardContent(c,t,r,s){const K=s.K,ex=eie(seg(r,K.out,.38));if(ex>=1)retu
   // название
   {const sz=fitSize(c,s.name,9,52,340);word(c,t,{s:s.name,w:9,size:sz,x:CX+44,y:CY+400,in:s.t0+K.name,a:s.act==='Reveal'?'track':'mask',ls0:40,dur:.4});}
   // индекс: одометр + /100; шкала 0–100 к точному значению
-  if(r>=K.bar){const ns=String(s.v);c.save();c.globalAlpha*=seg(r,K.bar,.12);const w=odo(c,t,ns,CX+44,CY+528,s.act==='Reveal'?130:116,palT(s.v),s.t0+K.bar,s.t0+K.barEnd,.12);
+  if(r>=K.bar){const ns=String(Math.round(s.v*eoc(seg(r,K.bar,K.barEnd-K.bar))));c.save();c.globalAlpha*=seg(r,K.bar,.12);// счёт идёт вместе со шкалой и никогда не показывает больше итогового значения
+    const sz=s.act==='Reveal'?130:116,kick=r>K.barEnd?Math.exp(-(r-K.barEnd)*9)*Math.sin((r-K.barEnd)*40)*.05:0;font(c,9,sz,-sz*.02);c.textAlign='left';c.fillStyle=palT(s.v);c.fillText(ns,CX+44,CY+528+kick*sz);
+    font(c,9,sz,-sz*.02);const w=c.measureText(String(s.v)).width;
     font(c,7,34);c.fillStyle=COL.mut;c.textAlign='left';c.fillText('/100',CX+52+w,CY+528);c.restore();}
   {const p=eoc(seg(r,K.bar,K.barEnd-K.bar));c.save();c.globalAlpha*=seg(r,K.reveal,.3);scale100(c,CX+44,CY+560,330,26,s.v,p);c.restore();
     const g=Math.exp(-Math.max(0,r-K.barEnd)*3)*(r>K.barEnd?1:0);if(g>.02){const gx=CX+44+330*s.v/100;const gr=c.createRadialGradient(gx,CY+573,0,gx,CY+573,60);gr.addColorStop(0,`rgba(255,255,255,${.6*g})`);gr.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=gr;c.fillRect(gx-60,CY+513,120,120);}}
