@@ -5,9 +5,10 @@ from lib import *
 
 ONLY = set(sys.argv[1:])
 BOTTLES = {  # кадр, прямоугольник для GrabCut, горлышко (добавка к маске), центр горлышка сверху
-    'tequila': ('tequila-full', (295, 505, 642, 1250), (406, 515, 530, 760), (468, 515), 'clear'),
-    'liqueur': ('liqueur-full', (266, 655, 664, 1260), (408, 668, 523, 800), (465, 668), 'amber'),
-    'lime': ('lime-juice-full', (340, 772, 602, 1260), (398, 782, 542, 870), (470, 782), 'lime'),
+    # прямоугольник — до самого дна: бутылка целиком, её низ потом уводим за край кадра
+    'tequila': ('tequila-full', (295, 505, 642, 1378), (406, 515, 530, 760), (468, 515), 'clear'),
+    'liqueur': ('liqueur-full', (266, 655, 664, 1400), (408, 668, 523, 800), (465, 668), 'amber'),
+    'lime': ('lime-juice-full', (340, 772, 602, 1400), (398, 782, 542, 870), (470, 782), 'lime'),
 }
 
 
@@ -35,15 +36,24 @@ def s01():  # бокал въезжает справа
 def pour_bottle(key, n):
     name, rect, neck, mouth, kind = BOTTLES[key]
     img = load('shaker-open')
-    rgb, a, _ = bottle_cutout(name, rect, neck)
-    to = (478, 600)
+    rgb, a, axis = bottle_cutout(name, rect, neck)
+    to, ANG = (478, 600), 132
+    # масштаб подбираем так, чтобы дно бутылки целиком ушло за край кадра: бутылка не висит в воздухе
+    base = [(rect[0], rect[3]), (rect[2], rect[3]), (axis, rect[3])]
+    for scale in np.arange(1.0, 2.01, .05):
+        M = cv2.getRotationMatrix2D(mouth, ANG, scale)
+        M[:, 2] += [to[0] - mouth[0], to[1] - mouth[1]]
+        pts = [M @ np.array([x, y, 1.0]) for x, y in base]
+        if all(px > PW + 20 or py < -20 for px, py in pts):
+            break
+    print(key, 'scale', round(float(scale), 2))
     if kind == 'clear':
         # прозрачная бутылка: переносим только её вклад (стекло, блики, этикетку), штора сквозь неё — новая
         delta = rgb - load('scene-empty')
-        d2, a2 = transform(delta + 1, a, mouth, 132, 1.0, to)
+        d2, a2 = transform(delta + 1, a, mouth, ANG, scale, to)
         layer = ('delta', d2 - 1, a2)
     else:
-        layer = ('over',) + transform(rgb, a, mouth, 132, 1.0, to)
+        layer = ('over',) + transform(rgb, a, mouth, ANG, scale, to)
     # жидкость стекает с нижней губы горлышка: из краёв горлышка берём тот, что оказался ниже
     lips = [tpt((mouth[0] + dx, mouth[1] + 6)) for dx in (-50, -30, 0, 30, 50)]
     sx, sy = max(lips, key=lambda p: p[1])
