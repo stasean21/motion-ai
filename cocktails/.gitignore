@@ -7,3 +7,4 @@ node_modules/
 */out/parts.txt
 */out/*-v1.mp4
 06-margarita-photo/assets/plate.png
+__pycache__/
