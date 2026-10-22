@@ -13,7 +13,7 @@ Music is already lowered in every window below (×0.6 on top of the base level).
 | 5:30–5:40 | "Remember, these numbers compare search interest within each location. They do not count searches or players." |
 | 6:50–6:58 | "Now the final five. Cambodia reaches forty-five on our search interest index." |
 | 6:58–7:06 | "Vietnam moves ahead with forty-eight." |
-| 7:06–7:14 | "Peru takes third with fifty-five." |
+| 7:06–7:14 | "Russia takes third with sixty-two." |
 | 7:14–7:22 | "The Philippines reaches seventy-five. One location is still ahead." |
 | 7:22–7:30 | "Mongolia finishes at one hundred, the highest relative search interest in this export." |
 | 7:30–7:40 | "That is the Google search map for this period. Search interest can reflect gameplay, news, or access issues." |

@@ -48,3 +48,9 @@ node music-chunks.mjs K 60  (K=0..7)     # music in chunks, then: python3 stitch
 for P in 0 1 2 3; do DUR=480 FPS=30 node render.mjs $P 4 & done; wait
 DUR=480 node join.mjs                    # out/roblox-search.mp4
 ```
+
+## Author's version (current)
+On the author's request, the final cut uses `?ua=cut&ru=in`:
+- **Map:** `map-data-ua.js`. Crimea and the Donetsk, Luhansk, Zaporizhzhia and Kherson oblasts are shown as part of Russia, in one fill with no internal border. Geometry is built by `cut.py` and `merge.py` (shapely, Natural Earth 10m admin-1 oblast borders).
+- **Data:** Russia, index 62 from the source CSV (per the author), replaces Peru. Russia is #3; all other ranks stay the same.
+- **Inserts** for the main render: `anim/out/ukraine-2m29s-2m36s.mp4` (2:29–2:36) and `anim/out/russia-7m03s-end.mp4` (7:03–8:00).

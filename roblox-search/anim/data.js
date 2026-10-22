@@ -19,5 +19,7 @@ const DATA=[
  ['428','lv','Latvia',32],['858','uy','Uruguay',32],['458','my','Malaysia',33],['068','bo','Bolivia',34],['222','sv','El Salvador',35],
  ['440','lt','Lithuania',39],['764','th','Thailand',39],['218','ec','Ecuador',41],
  ['116','kh','Cambodia',45],['704','vn','Vietnam',48],['604','pe','Peru',55],['608','ph','Philippines',75],['496','mn','Mongolia',100]];
+// вариант автора (?ru=in): Россия вместо Перу, индекс 62 из исходного CSV (по словам автора); Перу не показывается
+if(typeof location!=='undefined'&&location.search.includes('ru=in')){const k=DATA.findIndex(r=>r[0]==='604');DATA[k]=['643','ru','Russia',62];}
 // ранги «соревнования»: равные индексы — общий ранг (1 + число мест с большим индексом)
 const RANK=DATA.map(d=>1+DATA.filter(e=>e[3]>d[3]).length),TIE=DATA.map(d=>DATA.filter(e=>e[3]===d[3]).length);

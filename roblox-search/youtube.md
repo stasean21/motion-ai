@@ -15,14 +15,14 @@ Search term: Roblox. Worldwide. All categories. Web Search.
 Period: January 1–September 30, 2026.
 Export date: October 22, 2026.
 
-Google Trends compares the query's share of all Google searches within each location, then scales the highest location to 100. These are not player counts, monthly active users, percentages of residents or absolute search volumes. Search interest may reflect gameplay, news or access issues. Blank results are not treated as zero. Equal indexes share a rank. Coverage is limited to included locations with numeric results; Russia is not included.
+Google Trends compares the query's share of all Google searches within each location, then scales the highest location to 100. These are not player counts, monthly active users, percentages of residents or absolute search volumes. Search interest may reflect gameplay, news or access issues. Blank results are not treated as zero. Equal indexes share a rank. Coverage is limited to included locations with numeric results.
 
 Source and methodology:
 https://trends.google.com/trends/explore?date=2026-01-01%202026-09-30&q=Roblox&hl=en
 https://support.google.com/trends/answer/4355212?hl=en
 https://support.google.com/trends/answer/4365533
 
-Map: Natural Earth 1:50m boundaries; Crimea shown as part of Ukraine (UN General Assembly resolution 68/262).
+Map: Natural Earth 1:50m base map.
 
 CHAPTERS
 0:00 Where does Roblox get the most search interest?

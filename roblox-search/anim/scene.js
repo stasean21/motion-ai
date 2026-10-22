@@ -39,7 +39,7 @@ function camera(t){const K=CAM.map(k=>[k[0],k[1],k[2],Math.log(k[3]),k[4]]),n=K.
 const toScreen=(C,x,y)=>{const dx=(x-C.cx)*C.z,dy=(y-C.cy)*C.z,c=Math.cos(C.rot),s=Math.sin(C.rot);return[W/2+dx*c-dy*s,H/2+dx*s+dy*c];};
 // ---------- карта ----------
 const PATHS=Object.entries(MAP).map(([id,m])=>({id,p:new Path2D(m.d)}));const PBY={};for(const o of PATHS)PBY[o.id]=o.p;
-const RU=PBY['643'];
+const RU=PBY['643'],RU_IN=DATA.some(r=>r[0]==='643');
 const REGS=['EUR','MENA','SAS','EAS','SEA','AFR','NAM','LAM','OCE','CAS'];
 for(const s of STEPS){const box=VIEWS[s.fl]||MAINBOX[s.id];s.box=box;s.bc=[(box[0]+box[2])/2,(box[1]+box[3])/2];s.p=PBY[s.id];
   s.tiny=Math.max(box[2]-box[0],box[3]-box[1])<16;
@@ -53,8 +53,8 @@ const mc=document.createElement('canvas');mc.width=W;mc.height=H;const MM=mc.get
 let HATCH=null;
 function drawMap(t,C,M=MM){M.setTransform(1,0,0,1,0,0);M.clearRect(0,0,W,H);
   M.setTransform(1,0,0,1,W/2,H/2);M.rotate(C.rot);M.scale(C.z,C.z);M.translate(-C.cx,-C.cy);
-  M.fillStyle=COL.land;for(const o of PATHS)if(o.id!=='643')M.fill(o.p);
-  if(!HATCH)HATCH=M.createPattern(hatch,'repeat');HATCH.setTransform(new DOMMatrix().scale(1/C.z));M.fillStyle=HATCH;M.fill(RU);
+  M.fillStyle=COL.land;for(const o of PATHS)if(o.id!=='643')M.fill(o.p);M.fillStyle=COL.land;
+  if(RU_IN)M.fill(RU);else{if(!HATCH)HATCH=M.createPattern(hatch,'repeat');HATCH.setTransform(new DOMMatrix().scale(1/C.z));M.fillStyle=HATCH;M.fill(RU);}
   // окрашенные: цвет индекса появляется, когда шаг страны закончился (до этого — флаг)
   for(const s of STEPS){const r=t-s.t0;if(r<s.K.reveal)continue;
     const f=eoe(seg(r,s.K.reveal+.1,.6)),col=seg(r,s.K.out+.1,.8)*(s.fin?1-seg(t,FIN-.01,.01)*0:1);

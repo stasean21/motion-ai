@@ -163,6 +163,7 @@ function podium(c,t){const t0=STEPS[N5].t0,a=eoe(seg(t,t0-.4,.6))*(1-seg(t,FIN+1
 // ---------- Монголия: отъезд на всю карту и подпись; концовка ----------
 function closing(c,t,C){const M=STEPS[STEPS.length-1],r=t-M.t0;
   {const a=seg(r,6.3,.4)*(1-seg(t,FIN+9.4,.5));if(a>0){c.save();c.globalAlpha=a;const x=1030;
+    c.save();c.globalAlpha=a*.9;rr(c,x-330,138,660,190,40,'rgba(16,27,48,.92)');c.restore();
     word(c,t,{s:'HIGHEST RELATIVE',w:9,size:54,x,y:200,al:'center',in:M.t0+6.3,a:'mask',col:COL.or});
     word(c,t,{s:'SEARCH INTEREST',w:9,size:54,x,y:262,al:'center',in:M.t0+6.45,a:'mask',col:COL.or});
     word(c,t,{s:'MONGOLIA · 100 · IN THIS EXPORT',w:7,size:24,x,y:306,al:'center',in:M.t0+6.7,a:'mask',col:COL.txt,ls:3});c.restore();}}
@@ -173,7 +174,7 @@ function closing(c,t,C){const M=STEPS[STEPS.length-1],r=t-M.t0;
     scale100(c,x+30,y+70,300,18,100,1,{ticks:false,labels:false});font(c,7,15);c.fillStyle=COL.mut;c.fillText('0',x+30,y+108);c.textAlign='right';c.fillText('100',x+330,y+108);
     c.textAlign='left';font(c,7,20);c.fillStyle=COL.txt;c.fillText('Colored = numeric result',x+346,y+86);
     rr(c,x+30,y+132,70,44,8,COL.land);c.strokeStyle='rgba(245,242,233,.6)';c.lineWidth=2;c.stroke();c.fillStyle=COL.txt;c.fillText('Neutral = no numeric result',x+118,y+162);
-    c.save();rr(c,x+30,y+196,70,44,8);c.fillStyle=c.createPattern(hatch,'repeat');c.fill();c.strokeStyle='rgba(245,242,233,.6)';c.stroke();c.restore();c.fillStyle=COL.txt;c.fillText('Excluded = not included (Russia)',x+118,y+226);
+    if(!RU_IN){c.save();rr(c,x+30,y+196,70,44,8);c.fillStyle=c.createPattern(hatch,'repeat');c.fill();c.strokeStyle='rgba(245,242,233,.6)';c.stroke();c.restore();c.fillStyle=COL.txt;c.fillText('Excluded = not included (Russia)',x+118,y+226);}
     font(c,7,15);c.fillStyle=COL.mut;c.fillText('Blank results are never shown as zero.',x+30,y+274);c.restore();}}
   // 7:45–8:00: вопрос зрителям и подписка; центр и низ свободны под элементы конечной заставки
   {const d=seg(a,15,.6)*.35;if(d>0){c.fillStyle=`rgba(8,12,26,${d})`;c.fillRect(0,0,W,H);}}
