@@ -4,9 +4,11 @@ import cv2
 import numpy as np
 from PIL import Image
 
-K = 2
+import os
+
+K = float(os.environ.get('K', 2))  # для видео K=1080/941: считаем сразу в 1080×1920
 PW, PH = 941, 1672
-W, H = PW * K, PH * K
+W, H = round(PW * K), round(PH * K)
 SHOTS = '../../06-margarita-photo/assets/shots/'
 SOURCE = '../../06-margarita-photo/assets/source.png'
 rng = np.random.default_rng(5)
@@ -171,7 +173,18 @@ LIQUIDS = {
 }
 
 
-def stream(img, spout, hit, w0=12.0, kind='cloudy', bend=.55, light=-1):
+_STREAK = None
+
+
+def _streak():
+    global _STREAK
+    if _STREAK is None:
+        n = cv2.GaussianBlur(np.random.default_rng(1).standard_normal((H, W)).astype(np.float32), (0, 0), sigmaX=.7 * K, sigmaY=14 * K)
+        _STREAK = n / n.std()
+    return _STREAK
+
+
+def stream(img, spout, hit, w0=12.0, kind='cloudy', bend=.55, light=-1, t=0.0, head=None, tail=None):
     """Струя от spout до hit (x, y). Форма x(y) = xs + (xt − xs)·k^bend, сужается книзу.
     light=-1: основной блик слева."""
     P = LIQUIDS[kind]
@@ -182,15 +195,19 @@ def stream(img, spout, hit, w0=12.0, kind='cloudy', bend=.55, light=-1):
     xc = xs + (xt - xs) * k ** bend
     slope = (xt - xs) * bend * k ** (bend - 1) / (yt - ys)
     cos = 1 / np.sqrt(1 + slope ** 2)
-    hw = w0 * (1 + 3 * k) ** -.25 * (1 + .07 * k * np.sin(yc * .085 + 1.3) + .035 * k * np.sin(yc * .21))
+    # t — время в секундах: рябь и струйки бегут вниз; head/tail — где сейчас передний и задний конец струи
+    hw = w0 * (1 + 3 * k) ** -.25 * (1 + .07 * k * np.sin(yc * .085 + 1.3 - t * 14) + .035 * k * np.sin(yc * .21 - t * 30))
     hw = hw * (1 + .22 * sm(yt - 20, yt, yc)) * (1 + .25 * sm(ys + 14, ys, yc))
     u = (XX - xc) * cos / hw
     aa = sm(1.0, .88, np.abs(u)) * sm(ys - 1, ys + 3, YY) * (1 - sm(yt - 3, yt + 3, YY))
+    if head is not None:
+        aa = aa * (1 - sm(head - 3, head + 3, YY))
+    if tail is not None:
+        aa = aa * sm(tail - 3, tail + 3, YY)
     th = np.sqrt(np.clip(1 - u ** 2, 0, 1))
     bg = blur(img, .6)
     refr = sum(sample(bg, xc - u * hw * 3.0, YY + dy - 10 * th) for dy in (-6, -3, 0, 3, 6)) / 5
-    streak = cv2.GaussianBlur(rng.standard_normal((H, W)).astype(np.float32), (0, 0), sigmaX=.7 * K, sigmaY=14 * K)
-    streak /= streak.std()
+    streak = np.roll(_streak(), int(t * 220 * K), axis=0)
     lam = np.clip(.62 + .38 * light * u + .25 * th, .25, 1.15)
     body = P['body'] * (lam * (1 + .10 * streak))[..., None] * (.55 + .45 * th[..., None])
     trans = refr * np.exp(-P['sigma'] * (th * 2.2)[..., None])
@@ -209,7 +226,7 @@ def stream(img, spout, hit, w0=12.0, kind='cloudy', bend=.55, light=-1):
     col = col * (1 - fres[..., None] * .6) + fres[..., None] * edge
     if kind != 'clear':
         col *= (1 - .45 * sm(.88, 1.0, np.abs(u)))[..., None]
-    mod = np.clip(.55 + .45 * np.sin(yc * .085 + 1.9) + .25 * np.sin(yc * .21 + 2), 0, 1.3)
+    mod = np.clip(.55 + .45 * np.sin(yc * .085 + 1.9 - t * 14) + .25 * np.sin(yc * .21 + 2 - t * 30), 0, 1.3)
     s1 = np.exp(-((u - .55 * light + .04 * streak) / .07) ** 2) * mod * np.clip(1 + .35 * streak, .3, 1.6)
     s2 = np.exp(-((u + .66 * light) / .06) ** 2) * (.3 + .3 * mod)
     col += s1[..., None] * np.array([1.0, .95, .82]) * (1.1 if kind == 'clear' else 1)
@@ -287,8 +304,18 @@ def bubbles(img, x, y, depth=125, n=240, spread=(8, 30), mask=None, milk=.3):
     return over(img, np.array([1, 1, .95]), bub * .55)
 
 
+_FRAME = None
+
+
 def frame(img):
     """Золотая рамка с веером с исходного фото поверх кадра."""
+    global _FRAME
+    if _FRAME is None:
+        _FRAME = _frame_layer()
+    return over(img, *_FRAME)
+
+
+def _frame_layer():
     src = load(SOURCE)
     plate = load('../../06-margarita-photo/assets/plate.png')
     gold = (src[..., 0] - src[..., 2] > .15) & (src[..., 0] > .35)
@@ -296,7 +323,7 @@ def frame(img):
     zone = (np.abs(XX - 22) < 7) | (np.abs(XX - 918) < 7) | (YY < 92) | (np.abs(YY - 1631) < 7) | corner
     m = ((np.abs(src - plate).max(2) > .06) & gold & zone).astype(np.float32)
     m = cv2.GaussianBlur(m, (0, 0), 1.2)
-    return over(img, src, m)
+    return src, m
 
 
 def bottle_cutout(name, rect, neck, feather=.6):
