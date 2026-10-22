@@ -43,7 +43,7 @@ const RU=PBY['643'],RU_IN=DATA.some(r=>r[0]==='643');
 const REGS=['EUR','MENA','SAS','EAS','SEA','AFR','NAM','LAM','OCE','CAS'];
 for(const s of STEPS){const box=VIEWS[s.fl]||MAINBOX[s.id];s.box=box;s.bc=[(box[0]+box[2])/2,(box[1]+box[3])/2];s.p=PBY[s.id];
   s.tiny=Math.max(box[2]-box[0],box[3]-box[1])<16;
-  s.vbox=s.tiny?[s.bc[0]-50,s.bc[1]-40,s.bc[0]+50,s.bc[1]+40]:box;
+  s.vbox=s.tiny?[s.bc[0]-50,s.bc[1]-40,s.bc[0]+50,s.bc[1]+40]:box;if(VIEWS[s.fl+'c'])s.vbox=VIEWS[s.fl+'c']; // огромные страны (Россия): камера на основную часть, а не на всю ширину
   const B=MAP[s.id].b;s.R=Math.max(...[[B[0][0],B[0][1]],[B[1][0],B[0][1]],[B[0][0],B[1][1]],[B[1][0],B[1][1]]].map(([x,y])=>Math.hypot(x-s.bc[0],y-s.bc[1])));
   let best=null,ba=1e12;for(const r of REGS){const b=VIEWS[r];if(s.bc[0]>=b[0]&&s.bc[0]<=b[2]&&s.bc[1]>=b[1]&&s.bc[1]<=b[3]){const a=(b[2]-b[0])*(b[3]-b[1]);if(a<ba){ba=a;best=r;}}}s.reg=VIEWS[best||'EUR'];}
 const STEP_BY_ID={};for(const s of STEPS)STEP_BY_ID[s.id]=s;
@@ -58,14 +58,16 @@ function drawMap(t,C,M=MM){M.setTransform(1,0,0,1,0,0);M.clearRect(0,0,W,H);
   // окрашенные: цвет индекса появляется, когда шаг страны закончился (до этого — флаг)
   for(const s of STEPS){const r=t-s.t0;if(r<s.K.reveal)continue;
     const f=eoe(seg(r,s.K.reveal+.1,.6)),col=seg(r,s.K.out+.1,.8)*(s.fin?1-seg(t,FIN-.01,.01)*0:1);
-    if(col<1){M.save();if(f<.999){M.beginPath();M.arc(s.bc[0],s.bc[1],f*s.R,0,7);M.clip();}M.clip(s.p);flagFill(M,FLAGS[s.fl],s.box);M.restore();}
+    if(col<1){M.save();if(f<.999){M.beginPath();M.arc(s.bc[0],s.bc[1],f*s.R,0,7);M.clip();}M.clip(s.p);flagFill(M,FLAGS[s.fl],s.box,s.fl);M.restore();}
     if(col>0){M.globalAlpha=col;M.fillStyle=pal(s.v);M.fill(s.p);M.globalAlpha=1;}}
   M.lineJoin='round';M.strokeStyle=COL.edge;M.lineWidth=1.3/C.z;for(const o of PATHS)M.stroke(o.p);
   // контур текущей: белый пульс при прилёте; «Map» — кольца пульса
   for(const s of STEPS){const r=t-s.t0;if(r<-.1||r>s.len+.3)continue;const hl=seg(r,-.1,.3)*(1-seg(r,s.K.out,.5));if(hl<=0)continue;
     const pu=.6+.4*Math.sin(r*9);M.save();M.globalAlpha=hl*(r<s.K.reveal+.4?1:.75);M.shadowColor='rgba(255,255,255,.9)';M.shadowBlur=18*pu;M.strokeStyle='#fff';M.lineWidth=3.2/C.z;M.stroke(s.p);M.restore();}
   M.setTransform(1,0,0,1,0,0);}
-function flagFill(M,im,box){const bw=box[2]-box[0],bh=box[3]-box[1],sc=Math.max(bw/4,bh/3),w=4*sc,h=3*sc;M.drawImage(im,(box[0]+box[2])/2-w/2,(box[1]+box[3])/2-h/2,w,h);}
+// полосатые флаги огромных стран растягиваются на всю рамку страны — видны все три полосы
+const STRETCH={ru:1};
+function flagFill(M,im,box,fl){if(STRETCH[fl]){M.drawImage(im,box[0],box[1],box[2]-box[0],box[3]-box[1]);return;}const bw=box[2]-box[0],bh=box[3]-box[1],sc=Math.max(bw/4,bh/3),w=4*sc,h=3*sc;M.drawImage(im,(box[0]+box[2])/2-w/2,(box[1]+box[3])/2-h/2,w,h);}
 function dots(c,C){const k=.4,step=28,ox=-(C.cx*C.z*k)%step,oy=-(C.cy*C.z*k)%step;c.fillStyle=COL.dot;c.globalAlpha=.7;
   for(let x=ox-step;x<W+step;x+=step)for(let y=oy-step;y<H+step;y+=step){c.beginPath();c.arc(x,y,1.6,0,7);c.fill();}c.globalAlpha=1;}
 function dust(c,t,C){for(let i=0;i<22;i++){const f=1.6+hash(i+4)*.6,r=6+hash(i+1)*22;
