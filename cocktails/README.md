@@ -41,3 +41,4 @@ node render.mjs aperol-spritz-en en    # английская версия
 | 03 | [Мохито](03-mojito/) · Mojito | алкогольный | RU, EN |
 | 04 | [Margarita](04-margarita/) · kinetic type | алкогольный | EN |
 | 05 | [Espresso Martini](05-espresso-martini/) · 3D type | алкогольный | EN |
+| 06 | [Margarita · photo](06-margarita-photo/) · анимация фото | алкогольный | EN |
