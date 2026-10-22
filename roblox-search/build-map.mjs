@@ -11,9 +11,9 @@ if(!UA_CUT){const G=topo.objects.countries.geometries,ru=G.find(g=>g.id==='643')
 const fc=feature(topo,topo.objects.countries);fc.features=fc.features.filter(f=>f.id!=='010');
 if(!UA_CUT){for(const f of fc.features)if(f.id==='804'){const g=topo.objects.countries.geometries.find(g=>g.id==='804').__merged;f.geometry={type:g.type,coordinates:g.coordinates};}}
 // вариант по просьбе автора (UA_CUT=1 → map-data-ua.js): Украина без Крыма, Донецкой, Луганской, Херсонской и Запорожской областей (границы областей — Natural Earth 10m admin-1);
-// эти территории штрихуются вместе с Россией как «не включено». Геометрия — ua-override.json (shapely, см. README)
+// эти территории показаны в составе России одной заливкой (merge.py, shapely). Геометрия — ua-override.json (shapely, см. README)
 if(UA_CUT){const o=JSON.parse(fs.readFileSync('ua-override.json'));for(const f of fc.features){if(f.id==='804')f.geometry=o['804'];
-  if(f.id==='643'){const g=f.geometry,cs=g.type==='MultiPolygon'?g.coordinates:[g.coordinates];f.geometry={type:'MultiPolygon',coordinates:[...cs,...o.cut.map(q=>q.coordinates)]};}}}
+  if(f.id==='643')f.geometry=o['643'];}}
 const proj=geoNaturalEarth1().fitExtent([[0,0],[4000,2000]],fc);const path=geoPath(proj);
 const rnd=d=>d.replace(/-?\d+\.\d+/g,n=>(+n).toFixed(1).replace(/\.0$/,''));
 const C={};for(const f of fc.features){const d=path(f);if(!d)continue;const b=path.bounds(f),c=path.centroid(f);
