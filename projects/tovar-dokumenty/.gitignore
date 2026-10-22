@@ -1,0 +1,3 @@
+out/*.part*
+out/*.txt.tmp
+out/video_noaudio.mp4.txt
