@@ -8,3 +8,5 @@ node_modules/
 */out/*-v1.mp4
 06-margarita-photo/assets/plate.png
 __pycache__/
+_mockups/*/out/tmp-*.mp4
+_mockups/*/out/*.wav
