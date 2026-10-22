@@ -1,0 +1,357 @@
+Create an eight minute animated map countdown covering 83 countries and regions with numeric Google Trends results. Most locations receive five seconds; the final five receive eight seconds each. Music and map animation carry the episode, with short voiceover passages at selected moments.
+
+Working title: Where Is Roblox Most Popular on Google? (2026 Map)
+
+Metric: Google Trends relative search interest, index 0–100. Period: January 1 to September 30, 2026. This episode does not estimate Roblox players or monthly active users.
+
+Data and interpretation
+
+Source settings: search term Roblox, Worldwide, All categories, Web Search. The low search volume regions option was unchecked. Export downloaded October 22, 2026. The CSV contains 84 numeric location results; this episode includes 83 after excluding Russia as an editorial choice. Hong Kong and Taiwan retain their source location labels, so use countries and regions when describing coverage.
+
+The index compares the query’s share of all Google searches within each location. Google then scales the leading location to 100. A score of 75 is an index value, not 75 percent of residents. Google search coverage differs between locations. Do not interpret this ranking as overall gaming popularity or user market share.
+
+Blank source cells mean no numeric result in this export. Leave those areas neutral and label them No numeric result; never convert blanks into zero. Russia is Not included. Preserve the exported indexes without rescaling. The source CSV is authoritative for this edit; Google Trends sampling can produce different values on later loads or exports.
+
+Display shared competition ranks among the 83 included locations. Equal integer indexes share the same rank. Within each tie, use alphabetical display order only; the animation order does not indicate a difference in popularity. Start at the lowest reported index and build toward the highest.
+
+Timeline
+
+  -----------------------------------------------------------------------
+  Time                                Content
+  ----------------------------------- -----------------------------------
+  0:00–0:20                           Hook and explanation
+
+  0:20–6:50                           78 locations at five seconds each
+
+  6:50–7:30                           Final five at eight seconds each
+
+  7:30–7:45                           Top five and full map recap
+
+  7:45–8:00                           Comment prompt and end screen
+  -----------------------------------------------------------------------
+
+Animation and screen design
+
+Use a flat 2D world map, a readable flag character, a location name, a numeric index and a bar. Keep the footer visible: GOOGLE SEARCH INTEREST · JAN–SEP 2026. Keep a smaller label visible: INDEX 0–100 · NOT PLAYER COUNTS. Use a consistent map projection and current neutral map assets; disputed boundaries must follow the same documented mapping policy throughout.
+
+All bars use the same 0–100 scale. Keep area on the map separate from the index: land size must not change the bar value. Use a small inset for compact locations such as Hong Kong or Singapore. Place labels outside crowded regions and connect them with a leader line.
+
+Five second location cycle
+
+0.0–0.6 seconds: pan to the location and pulse its outline. 0.6–1.2: reveal the flag and name. 1.2–2.0: animate the index bar to its exact exported value. 2.0–4.5: hold the completed number and name. 4.5–5.0: transition into the next location. Keep the completed value visible in the ranking rail through the transition.
+
+For equal indexes, show TIED and the shared rank. Keep a common rank visible while cycling tied locations. Do not use winner reactions or rising scores to imply differences inside a tie. For untied values, a short surprised reaction is enough; avoid flag characters celebrating a larger population or more players.
+
+Eight second final cycle
+
+Use one second to locate, one second to reveal, four seconds to hold and compare, then two seconds for the podium update and transition. The final location receives a full map pullback and the label HIGHEST RELATIVE SEARCH INTEREST. Avoid MOST PLAYERS or BIGGEST ROBLOX COUNTRY.
+
+Opening shots
+
+0:00–0:04: world map with three unnamed flag silhouettes; large question WHERE DOES ROBLOX GET THE MOST SEARCH INTEREST? No winner or top score is revealed.
+
+0:04–0:08: fast map moves through three distant regions; overlay PICK YOUR COUNTRY. Keep the focus on guessing the search result.
+
+0:08–0:14: show a Google search field containing Roblox; replace it with JAN–SEP 2026. A clean label explains RELATIVE GOOGLE SEARCH INTEREST.
+
+0:14–0:20: reveal a 0–100 scale and the caption NOT PLAYER COUNTS. Show 83 COUNTRIES AND REGIONS, then begin the countdown.
+
+Sound and pacing
+
+Use one continuous music bed with changes in texture around the middle and the final five. Play a soft tick for each map reveal and a brief accent for a new distinct index. Lower music beneath speech. No voiceover is needed for every location: the country name and completed score do the work. Keep subtitles inside the title safe area without covering location labels.
+
+Location shots in exact edit order
+
+Times below include transitions. Rank is calculated among the 83 included locations. The action patterns refer to the five second cycle above. Final five rows use the eight second cycle. Index values are copied from the downloaded CSV.
+
+  ---------------------------------------------------------------------------
+  Time        Location               Index   Rank       Action
+  ----------- ---------------------- ------- ---------- ---------------------
+  0:20–0:25   Iran                   1       #82 tied   Locate
+
+  0:25–0:30   Japan                  1       #82 tied   Compare
+
+  0:30–0:35   Nigeria                4       #81        Stack
+
+  0:35–0:40   India                  5       #80        Reveal
+
+  0:40–0:45   Switzerland            6       #79        Map
+
+  0:45–0:50   Egypt                  7       #77 tied   Locate
+
+  0:50–0:55   Italy                  7       #77 tied   Compare
+
+  0:55–1:00   Algeria                8       #74 tied   Stack
+
+  1:00–1:05   Austria                8       #74 tied   Reveal
+
+  1:05–1:10   Belarus                8       #74 tied   Map
+
+  1:10–1:15   Bangladesh             9       #73        Locate
+
+  1:15–1:20   Germany                10      #70 tied   Compare
+
+  1:20–1:25   South Korea            10      #70 tied   Stack
+
+  1:25–1:30   Spain                  10      #70 tied   Reveal
+
+  1:30–1:35   Finland                11      #67 tied   Map
+
+  1:35–1:40   France                 11      #67 tied   Locate
+
+  1:40–1:45   South Africa           11      #67 tied   Compare
+
+  1:45–1:50   Greece                 12      #64 tied   Stack
+
+  1:50–1:55   Kenya                  12      #64 tied   Reveal
+
+  1:55–2:00   Taiwan                 12      #64 tied   Map
+
+  2:00–2:05   Iraq                   13      #57 tied   Locate
+
+  2:05–2:10   Ireland                13      #57 tied   Compare
+
+  2:10–2:15   Norway                 13      #57 tied   Stack
+
+  2:15–2:20   Pakistan               13      #57 tied   Reveal
+
+  2:20–2:25   Saudi Arabia           13      #57 tied   Map
+
+  2:25–2:30   Sweden                 13      #57 tied   Locate
+
+  2:30–2:35   Ukraine                13      #57 tied   Compare
+
+  2:35–2:40   Belgium                14      #54 tied   Stack
+
+  2:40–2:45   Hungary                14      #54 tied   Reveal
+
+  2:45–2:50   Netherlands            14      #54 tied   Map
+
+  2:50–2:55   Croatia                15      #51 tied   Locate
+
+  2:55–3:00   Denmark                15      #51 tied   Compare
+
+  3:00–3:05   Kazakhstan             15      #51 tied   Stack
+
+  3:05–3:10   Czechia                16      #48 tied   Reveal
+
+  3:10–3:15   Slovakia               16      #48 tied   Map
+
+  3:15–3:20   Türkiye                16      #48 tied   Locate
+
+  3:20–3:25   Australia              17      #44 tied   Compare
+
+  3:25–3:30   Guatemala              17      #44 tied   Stack
+
+  3:30–3:35   Morocco                17      #44 tied   Reveal
+
+  3:35–3:40   Portugal               17      #44 tied   Map
+
+  3:40–3:45   Bulgaria               18      #39 tied   Locate
+
+  3:45–3:50   Hong Kong              18      #39 tied   Compare
+
+  3:50–3:55   Israel                 18      #39 tied   Stack
+
+  3:55–4:00   Serbia                 18      #39 tied   Reveal
+
+  4:00–4:05   United Kingdom         18      #39 tied   Map
+
+  4:05–4:10   Poland                 19      #38        Locate
+
+  4:10–4:15   Canada                 20      #36 tied   Compare
+
+  4:15–4:20   Costa Rica             20      #36 tied   Stack
+
+  4:20–4:25   Colombia               21      #32 tied   Reveal
+
+  4:25–4:30   Mexico                 21      #32 tied   Map
+
+  4:30–4:35   United Arab Emirates   21      #32 tied   Locate
+
+  4:35–4:40   United States          21      #32 tied   Compare
+
+  4:40–4:45   Panama                 22      #29 tied   Stack
+
+  4:45–4:50   Singapore              22      #29 tied   Reveal
+
+  4:50–4:55   Uzbekistan             22      #29 tied   Map
+
+  4:55–5:00   Argentina              23      #27 tied   Locate
+
+  5:00–5:05   Venezuela              23      #27 tied   Compare
+
+  5:05–5:10   Brazil                 24      #23 tied   Stack
+
+  5:10–5:15   Chile                  24      #23 tied   Reveal
+
+  5:15–5:20   Indonesia              24      #23 tied   Map
+
+  5:20–5:25   Paraguay               24      #23 tied   Locate
+
+  5:25–5:30   Nepal                  25      #22        Compare
+
+  5:30–5:35   New Zealand            27      #21        Stack
+
+  5:35–5:40   Azerbaijan             28      #20        Reveal
+
+  5:40–5:45   Honduras               29      #19        Map
+
+  5:45–5:50   Dominican Republic     30      #15 tied   Locate
+
+  5:50–5:55   Georgia                30      #15 tied   Compare
+
+  5:55–6:00   Myanmar (Burma)        30      #15 tied   Stack
+
+  6:00–6:05   Romania                30      #15 tied   Reveal
+
+  6:05–6:10   Estonia                31      #14        Map
+
+  6:10–6:15   Latvia                 32      #12 tied   Locate
+
+  6:15–6:20   Uruguay                32      #12 tied   Compare
+
+  6:20–6:25   Malaysia               33      #11        Stack
+
+  6:25–6:30   Bolivia                34      #10        Reveal
+
+  6:30–6:35   El Salvador            35      #9         Map
+
+  6:35–6:40   Lithuania              39      #7 tied    Locate
+
+  6:40–6:45   Thailand               39      #7 tied    Compare
+
+  6:45–6:50   Ecuador                41      #6         Stack
+
+  6:50–6:58   Cambodia               45      #5         Final five
+
+  6:58–7:06   Vietnam                48      #4         Final five
+
+  7:06–7:14   Peru                   55      #3         Final five
+
+  7:14–7:22   Philippines            75      #2         Final five
+
+  7:22–7:30   Mongolia               100     #1         Final five
+  ---------------------------------------------------------------------------
+
+Action pattern key
+
+Locate: Highlight the location; zoom in; flag character waves.
+
+Compare: Slide in the previous card; compare two bars on the same scale.
+
+Stack: Drop the flag into the ranking rail; fill the index bar.
+
+Reveal: Reveal the name, then the index; character looks at the bar.
+
+Map: Zoom out to the region; pulse the location; return to the card.
+
+Final five: reveal the shared-scale bar, hold the index, then update the podium. Do not reveal Mongolia’s winning score before its own shot.
+
+Closing shots
+
+7:30–7:40: full map with all 83 included locations colored by index. Place the final five on a shared 0–100 bar chart: Cambodia 45, Vietnam 48, Peru 55, Philippines 75, Mongolia 100. Keep the period and metric visible.
+
+7:40–7:45: briefly reveal the legend: colored = numeric result; neutral = no numeric result; excluded = not included. No numbers are assigned to blank cells.
+
+7:45–8:00: keep the world map in the background. Display WHERE DID YOUR COUNTRY FINISH? and subscribe branding. Reserve clear space for YouTube end screen elements during the final seconds.
+
+English voiceover with recording cues
+
+Record only the quoted sentences. Time ranges are placement windows, not text to be spoken. Use a natural voice at about 145–155 words per minute; leave silence between cues. The separate TXT file contains spoken text only, in this same order.
+
+0:00–0:08
+
+“Where does Roblox get the most search interest? Pick a country before the map fills up.”
+
+0:08–0:20
+
+“We compared Google searches from January through September twenty twenty-six. The scores run from zero to one hundred. They measure relative search interest, not player counts.”
+
+1:00–1:07
+
+“A low score does not mean nobody plays Roblox there. This is a search comparison.”
+
+3:05–3:13
+
+“Countries with the same score are tied. Watch how the map changes as the scores rise.”
+
+5:30–5:40
+
+“Remember, these numbers compare search interest within each location. They do not count searches or players.”
+
+6:50–6:58
+
+“Now the final five. Cambodia reaches forty-five on our search interest index.”
+
+6:58–7:06
+
+“Vietnam moves ahead with forty-eight.”
+
+7:06–7:14
+
+“Peru takes third with fifty-five.”
+
+7:14–7:22
+
+“The Philippines reaches seventy-five. One location is still ahead.”
+
+7:22–7:30
+
+“Mongolia finishes at one hundred, the highest relative search interest in this export.”
+
+7:30–7:40
+
+“That is the Google search map for this period. Search interest can reflect gameplay, news, or access issues.”
+
+7:45–7:53
+
+“Did your country finish where you expected? Comment below, and subscribe to Map by Map.”
+
+Publication package
+
+Title
+
+Where Is Roblox Most Popular on Google? (2026 Map)
+
+Thumbnail direction
+
+Three flag characters, a simple search bar containing Roblox, and the text ROBLOX SEARCH MAP. Use a clear question mark over the unknown leader. Avoid player counts, percentages or a claim that the winning location has the most users.
+
+Description
+
+Where does Roblox get the highest relative Google search interest? This animated map compares 83 countries and regions using Google Trends results for January–September 2026.
+
+Follow the countdown from the lowest reported scores to the final five. Each location gets a flag, a map highlight and a shared-scale index bar.
+
+ABOUT THE DATA
+Metric: relative Google search interest, index 0–100.
+Search term: Roblox. Worldwide. All categories. Web Search.
+Period: January 1–September 30, 2026.
+Export date: October 22, 2026.
+
+Google Trends compares the query’s share of all Google searches within each location, then scales the highest location to 100. These are not player counts, monthly active users, percentages of residents or absolute search volumes. Search interest may reflect gameplay, news or access issues. Blank results are not treated as zero. Equal indexes share a rank. Coverage is limited to included locations with numeric results; Russia is not included.
+
+Source and methodology:
+https://trends.google.com/trends/explore?date=2026-01-01%202026-09-30&q=Roblox&hl=en
+https://support.google.com/trends/answer/4355212?hl=en
+https://support.google.com/trends/answer/4365533
+
+Where did your country finish? Tell us in the comments.
+Subscribe to Map by Map for more animated world comparisons.
+
+#Roblox #WorldMap #MapAnimation
+
+Category and tags
+
+Category: Education. Set audience selection based on the finished video and intended audience; Roblox as a topic alone does not determine whether the content is made for children.
+
+Tags: Roblox, Roblox map, Roblox search interest, Google Trends, Roblox countries, Roblox 2026, world map, map animation, country comparison, geography, Map by Map
+
+Pinned comment
+
+Which country surprised you most? These scores show relative Google search interest, not the number of Roblox players. What should we map next?
+
+Source file
+
+Numeric source: Google_Trends_Roblox_2026_Source.csv. Retain its blank cells and use the exact exported values for this edit. Check the final animation against the CSV before publishing.
