@@ -479,7 +479,7 @@ function camera(t){
   c=kf(t,[[0,{x:540,y:980,z:.97}],[1.2,{x:540,y:960,z:1},'out'],[A.push-.08,{x:540,y:960,z:1.0}],[A.push+.32,{x:540,y:700,z:1.24},'outExpo'],[2.95,{x:540,y:690,z:1.27},'lin'],
     [A.morph+.65,{x:540,y:960,z:1.0},'io'],[6.9,{x:540,y:980,z:1.03},'lin'],[7.6,{x:540,y:1020,z:1.0},'out'],[10.6,{x:540,y:1040,z:1.07},'lin'],[11.4,{x:540,y:980,z:1.0},'out'],
     [14.5,{x:540,y:980,z:1.04},'lin'],[15.4,{x:540,y:1000,z:1.0},'out'],[18.9,{x:540,y:1020,z:1.04},'lin'],[19.6,{x:540,y:990,z:1.0},'out'],[A.c3,{x:540,y:1050,z:1.0},'io'],[23.9,{x:540,y:1065,z:1.01},'lin'],
-    [24.6,{x:540,y:1000,z:1.0},'out'],[28.9,{x:540,y:1020,z:1.04},'lin'],[29.6,{x:790,y:1030,z:1.58},'outExpo'],[A.back,{x:770,y:1030,z:1.62},'lin'],[A.back+.55,{x:540,y:1000,z:1.0},'io'],
+    [24.6,{x:540,y:1000,z:1.0},'out'],[28.9,{x:540,y:1020,z:1.04},'lin'],[29.6,{x:650,y:1030,z:1.34},'outExpo'],[A.back,{x:640,y:1030,z:1.38},'lin'],[A.back+.55,{x:540,y:1000,z:1.0},'io'],
     [32.0,{x:540,y:1010,z:1.03},'lin'],[32.6,{x:540,y:1000,z:1.0},'out'],[33.1,{x:545,y:1010,z:1.02},'io'],[33.9,{x:545,y:1010,z:1.02},'lin'],[34.6,{x:540,y:1000,z:1.0},'io'],[37,{x:540,y:1000,z:1.03},'lin']]);
   c.x+=Math.sin(t*.37)*6;c.y+=Math.sin(t*.29+1)*7;c.r=Math.sin(t*.21)*.35;c.rx=Math.sin(t*.33+.5)*1.6;c.ry=Math.sin(t*.27)*2.0;
   return c;
@@ -533,11 +533,11 @@ function renderProduct(t){
   let bs=1,bg='#111',col='#fff';
   if(t>A.hover&&t<A.click)bs=lerp(1,1.05,E.out(prog(t,A.hover,A.hover+.15))),bg='#25252c';
   if(t>=A.click&&t<A.click+.4)bs=t<A.click+.08?lerp(1.05,.92,prog(t,A.click,A.click+.08)):lerp(.92,1,E.spring(prog(t,A.click+.08,A.click+.4)));
-  if(t>=A.notif){bg='#e9e8ef';col='#a9a8b6'}
+  if(t>=A.notif&&t<A.back){bg='#e9e8ef';col='#a9a8b6'}
   pcBtn.style.transform=`scale(${bs})`;pcBtn.style.background=bg;pcBtn.style.color=col;
-  const dn=E.out(prog(t,A.deny,A.deny+.25));op(pcBtnA,1-dn);op(pcBtnB,dn);
-  if(t>=A.deny){pcBtn.style.background='#ffe4ea';pcBtn.style.color='#ff2d55';pcBtn.style.transform=`scale(${t<A.deny+.35?lerp(.9,1,E.spring(prog(t,A.deny,A.deny+.35))):1})`}
-  const fr=E.out(prog(t,A.lock,A.lock+.3));op(pcFrost,fr*.9);pcBricks.style.filter=`grayscale(${fr*.9})`;
+  const dn=t>=A.back?0:E.out(prog(t,A.deny,A.deny+.25));op(pcBtnA,1-dn);op(pcBtnB,dn);
+  if(t>=A.deny&&t<A.back){pcBtn.style.background='#ffe4ea';pcBtn.style.color='#ff2d55';pcBtn.style.transform=`scale(${t<A.deny+.35?lerp(.9,1,E.spring(prog(t,A.deny,A.deny+.35))):1})`}
+  const fr=t>=A.back?0:E.out(prog(t,A.lock,A.lock+.3));op(pcFrost,fr*.9);pcBricks.style.filter=`grayscale(${fr*.9})`;
   // shake on "нельзя"
   if(t>A.gw3-.05&&t<A.gw3+.4){const q=prog(t,A.gw3-.05,A.gw3+.4);p=Object.assign({},p,{x:p.x+Math.sin(q*40)*16*(1-q),rz:(p.rz||0)+Math.sin(q*34)*1.6*(1-q)})}
   p.ry=(p.ry||0)+Math.sin(t*.8)*2.2;
