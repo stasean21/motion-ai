@@ -35,15 +35,24 @@ def s01():  # бокал въезжает справа
 def pour_bottle(key, n):
     name, rect, neck, mouth, kind = BOTTLES[key]
     img = load('shaker-open')
-    rgb, a = cutout(name, rect, fill_rows=True, add=[neck])
+    rgb, a, _ = bottle_cutout(name, rect, neck)
     to = (478, 600)
-    rgb, a = transform(rgb, a, mouth, 132, 1.0, to)
+    if kind == 'clear':
+        # прозрачная бутылка: переносим только её вклад (стекло, блики, этикетку), штора сквозь неё — новая
+        delta = rgb - load('scene-empty')
+        d2, a2 = transform(delta + 1, a, mouth, 132, 1.0, to)
+        layer = ('delta', d2 - 1, a2)
+    else:
+        layer = ('over',) + transform(rgb, a, mouth, 132, 1.0, to)
     # жидкость стекает с нижней губы горлышка: из краёв горлышка берём тот, что оказался ниже
     lips = [tpt((mouth[0] + dx, mouth[1] + 6)) for dx in (-50, -30, 0, 30, 50)]
     sx, sy = max(lips, key=lambda p: p[1])
     spout, hit = (sx, sy - 18), (430, 872)  # начало прячется под горлышком
     img = stream(img, spout, hit, w0=9, kind=kind, bend=.7)
-    img = over(img, rgb, a)
+    if layer[0] == 'delta':
+        img = np.clip(img + layer[1] * layer[2][..., None], 0, 1)
+    else:
+        img = over(img, layer[1], layer[2])
     # шейкер спереди закрывает конец струи: возвращаем переднюю стенку ниже края
     tin = load('shaker-open')
     front = sm(2, -2, np.abs(XX - 432) - 150) * sm(876, 882, YY) * (YY < 1400)

@@ -297,3 +297,38 @@ def frame(img):
     m = ((np.abs(src - plate).max(2) > .06) & gold & zone).astype(np.float32)
     m = cv2.GaussianBlur(m, (0, 0), 1.2)
     return over(img, src, m)
+
+
+def bottle_cutout(name, rect, neck, feather=.6):
+    """Бутылка симметрична: из маски GrabCut берём полуширину по строкам относительно оси,
+    сглаживаем профиль, от горлышка к плечам он не сужается. Край — по субпиксельной полуширине."""
+    im = (load(name) * 255).astype(np.uint8)
+    small = cv2.resize(im, (PW, PH), interpolation=cv2.INTER_AREA)
+    mask = np.zeros((PH, PW), np.uint8)
+    bgd, fgd = np.zeros((1, 65), np.float64), np.zeros((1, 65), np.float64)
+    x0, y0, x1, y1 = rect
+    cv2.grabCut(cv2.cvtColor(small, cv2.COLOR_RGB2BGR), mask, (x0, y0, x1 - x0, y1 - y0), bgd, fgd, 6, cv2.GC_INIT_WITH_RECT)
+    m = (mask == 1) | (mask == 3)
+    nx0, ny0, nx1, ny1 = neck
+    m[ny0:ny1, nx0:nx1] = True
+    rows = range(y0, y1)
+    lo = np.array([np.nonzero(m[y])[0].min() if m[y].any() else -1 for y in rows], float)
+    hi = np.array([np.nonzero(m[y])[0].max() if m[y].any() else -1 for y in rows], float)
+    ok = lo >= 0
+    axis = float(np.median(((lo + hi) / 2)[ok]))
+    hw = np.where(ok, np.maximum(axis - lo, hi - axis), 0)
+    body = np.percentile(hw[ok][len(hw[ok]) // 3:], 60)  # полуширина корпуса; всё шире — кусок стойки или шторы
+    hw = np.minimum(hw, body + 2)
+    hw[-4:] = hw[-5]
+    hw = np.median(np.lib.stride_tricks.sliding_window_view(np.pad(hw, 5, mode='edge'), 11), axis=1)
+    top = int(np.argmax(hw > 0))
+    peak = top + int(np.argmax(hw[top:]))
+    hw[top:peak] = np.maximum.accumulate(hw[top:peak])  # от горлышка до самого широкого места не сужается
+    hw = cv2.GaussianBlur(hw.reshape(-1, 1).astype(np.float32), (1, 0), sigmaX=0, sigmaY=1.5).ravel()
+    hw[:top] = 0
+    hwK = np.zeros(H, np.float32)
+    ys = np.arange(H) / K
+    hwK[:] = np.interp(ys, np.arange(y0, y1), hw, left=0, right=0)
+    a = np.clip((hwK[:, None] - np.abs(XX - axis)) * K / (1 + feather * K) + .5, 0, 1)
+    a *= sm(top + y0 - 1, top + y0 + 1, YY) * (hwK[:, None] > 0)
+    return im.astype(np.float32) / 255, a.astype(np.float32), axis
