@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>prompt keywords — graphic version mockups</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#eef0f6}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#14151b}
+.abs{position:absolute}
+.sq{display:flex;align-items:center;justify-content:center}
+.mono{font-family:'DejaVu Sans Mono',monospace}
+.pill{position:absolute;border-radius:999px;display:flex;align-items:center;justify-content:center;white-space:nowrap;background:rgba(255,255,255,.85);border:1.5px solid #fff;box-shadow:0 10px 24px -12px rgba(40,50,110,.28)}
+.kar{position:absolute;left:60px;width:960px;top:200px;text-align:center;font-weight:600;font-size:54px;line-height:1.24;letter-spacing:-.015em}
+.kar .u{color:#a9c1ee}.kar .k{color:#2f7bf5}
+.gpt{display:inline-flex;align-items:center;gap:8px;padding:2px 18px;border-radius:999px;background:#fff;box-shadow:0 6px 16px -8px rgba(40,50,110,.3);font-size:38px;vertical-align:middle}
+.gpt::before{content:'';width:10px;height:10px;border-radius:50%;background:#c9cede}
+.card{position:absolute;border-radius:44px;background:#fff;box-shadow:0 40px 80px -36px rgba(40,50,110,.35),0 8px 20px -10px rgba(40,50,110,.12)}
+.tag{position:absolute;left:34px;top:30px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:26px;color:#2f7bf5}
+.tag::before{content:'';width:9px;height:9px;border-radius:50%;background:#c3c9d8}
+.big{position:absolute;left:540px;transform:translate(-50%,-50%);font-weight:500;font-size:120px;letter-spacing:-.03em;color:#2f7bf5;white-space:nowrap}
+.chip{position:absolute;padding:8px 18px;border-radius:999px;font-weight:700;font-size:24px;white-space:nowrap;box-shadow:0 10px 20px -10px rgba(0,0,0,.35)}
+.lab{font-weight:700;font-size:22px;letter-spacing:.06em;color:#8a90a6}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+ <filter id="mbx" x="-50%" y="-10%" width="200%" height="120%"><feGaussianBlur stdDeviation="16 0"/></filter>
+ <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="18"/></filter>
+ <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs></svg>
+<div id="root"></div>
+<script>
+'use strict';
+const root=document.getElementById('root');let H='';const add=s=>H+=s;
+function bg(){add(`<div class="abs" style="inset:0;background:radial-gradient(110% 55% at 50% 0%,#f7f8fc 0%,#eef0f6 60%,#e8ebf3 100%)"></div>`)}
+function counter(n){add(`<div class="pill" style="left:540px;top:120px;transform:translate(-50%,-50%);height:62px;padding:0 26px;gap:18px;font-weight:700;font-size:26px"><span>${n}<span style="color:#9aa0b4">/10</span></span><span class="mono" style="letter-spacing:-.05em;font-size:30px;font-weight:700">${[...Array(10)].map((_,i)=>`<span style="color:${i<n?'#2f7bf5':'#c6cbdb'};font-style:italic">/</span>`).join('')}</span></div>`)}
+// karaoke: words before index `at` dark, rest light; keys = indices painted blue
+function kar(text,at,keys=[],top=200){const w=text.split(' ');add(`<div class="kar" style="top:${top}px">${w.map((x,i)=>x==='ChatGPT'?`<span class="gpt">ChatGPT</span>`:`<span class="${i>=at?'u':keys.includes(i)?'k':''}">${x}</span>`).join(' ')}</div>`)}
+function card(x,y,w,h,tag,inner,o={}){add(`<div class="card" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;overflow:hidden;${o.style||''}">${tag?`<div class="tag" style="${o.tagStyle||''}">${tag}</div>`:''}${inner}</div>`)}
+const svg=(w,h,inner,x=0,y=0)=>`<svg class="abs" style="left:${x}px;top:${y}px;overflow:visible" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${inner}</svg>`;
+// a product silhouette (perfume-bottle-like) reused across scenes
+const bottle=(cx,by,s=1,fill='#d9e4fb',stroke='#14151b')=>`<g transform="translate(${cx} ${by}) scale(${s})"><rect x="-26" y="-250" width="52" height="40" rx="10" fill="${stroke}"/><rect x="-14" y="-212" width="28" height="22" fill="${stroke}"/><rect x="-80" y="-192" width="160" height="192" rx="34" fill="${fill}" stroke="${stroke}" stroke-width="6"/><rect x="-56" y="-160" width="16" height="110" rx="8" fill="#fff" opacity=".7"/></g>`;
+const CX=380,CW=320; // card centre helpers
+const F={
+// 00 HOOK — prompt card: "Make it look better." → result barely changes
+hook(){bg();counter(0);kar('Want better AI photos? Try these ten keywords in your next ChatGPT image prompt.',9,[5,6]);
+  card(150,640,780,820,'prompt',`
+   <div class="abs" style="left:34px;top:96px;width:712px;height:520px;border-radius:30px;background:#f2f4fa;overflow:hidden">
+    ${svg(712,520,`<rect x="236" y="120" width="240" height="190" rx="22" fill="none" stroke="#c3cadb" stroke-width="8"/><circle cx="300" cy="180" r="22" fill="#c3cadb"/><path d="M250 290 L330 220 L380 260 L420 230 L462 290 Z" fill="#c3cadb"/>
+     <rect x="186" y="360" width="340" height="18" rx="9" fill="#dfe4ef"/><rect x="186" y="360" width="80" height="18" rx="9" fill="#2f7bf5"/><text x="356" y="420" text-anchor="middle" font-family="Inter Display" font-weight="800" font-size="34" fill="#9aa0b4">IMPROVEMENT +2%</text>`)}
+   </div>
+   <div class="abs" style="left:34px;top:650px;width:712px;height:120px;border-radius:30px;background:#f2f4fa;display:flex;align-items:center;padding-left:34px;font-weight:600;font-size:36px;color:#4a4d5c">Make it&nbsp;<s style="text-decoration-color:#ff3b30;text-decoration-thickness:4px;color:#aab">look better.</s></div>
+   <div class="sq abs" style="left:640px;top:676px;width:70px;height:70px;border-radius:50%;background:#2f7bf5">${svg(36,36,'<path d="M18 30V6M7 16L18 5l11 11" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>')}</div>`);
+  [['/softlight',220,1530],['/macro',470,1590],['/editorial',720,1540]].forEach(([t,x,y])=>add(`<div class="chip" style="left:${x}px;top:${y}px;background:#2f7bf5;color:#fff">${t}</div>`));},
+
+// 01 PRODUCT SHOT — clutter flies out, seamless sweep + contact shadow appear
+productshot(){bg();counter(1);kar('Product shot: give your subject a clean, commercial presentation.',5,[0,1]);
+  card(140,560,800,900,'/productshot',`
+   ${svg(800,900,`<defs><linearGradient id="sw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef1f7"/><stop offset=".62" stop-color="#e3e8f2"/><stop offset="1" stop-color="#f7f8fb"/></linearGradient></defs>
+    <path d="M80 120 H720 V560 Q720 640 640 650 H160 Q80 640 80 560 Z" fill="url(#sw)"/>
+    <path d="M80 540 Q80 640 170 650 H630 Q720 640 720 540" fill="none" stroke="#c9d3e6" stroke-width="3" stroke-dasharray="10 10"/>
+    <ellipse cx="400" cy="640" rx="130" ry="18" fill="#14151b" opacity=".18" filter="url(#soft)"/>
+    ${bottle(400,640,1.1)}
+    <!-- clutter leaving the frame with speed trails -->
+    <g opacity=".85"><rect x="-60" y="380" width="120" height="90" rx="14" fill="#f3d7c4" stroke="#14151b" stroke-width="5" transform="rotate(-14 0 420)"/><path d="M70 410 h140 M60 440 h110" stroke="#14151b" stroke-width="4" opacity=".25" stroke-linecap="round"/></g>
+    <g><circle cx="760" cy="300" r="46" fill="#c9e6d8" stroke="#14151b" stroke-width="5"/><path d="M700 290 h-140 M700 320 h-100" stroke="#14151b" stroke-width="4" opacity=".25" stroke-linecap="round"/></g>
+    <g transform="rotate(18 720 760)"><rect x="680" y="700" width="70" height="120" rx="14" fill="#14151b"/></g><path d="M650 770 h-120" stroke="#14151b" stroke-width="4" opacity=".25" stroke-linecap="round"/>`)}
+   <div class="abs" style="left:80px;top:700px;display:flex;gap:14px">${['SEAMLESS BACKDROP','SOFT CONTACT SHADOW'].map(t=>`<div class="chip" style="position:static;background:#e9f0ff;color:#2f7bf5;box-shadow:none;font-size:22px">${t}</div>`).join('')}</div>
+   <div class="abs lab" style="left:80px;top:790px">DISTRACTIONS <b style="color:#34c759;font-size:40px;margin-left:10px">3 → 0</b></div>`);},
+
+// 02 SOFT LIGHT — big diffuser, wide soft cone, blurry shadow, edge graph
+softlight(){bg();counter(2);kar('Soft light: ask for gentle shadows and smooth transitions.',5,[0,1]);
+  card(140,560,800,900,'/softlight',`
+   ${svg(800,900,`<defs><linearGradient id="cn" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#fff6d6" stop-opacity=".95"/><stop offset="1" stop-color="#fff6d6" stop-opacity="0"/></linearGradient></defs>
+    <rect x="70" y="110" width="250" height="120" rx="26" fill="#fff" stroke="#14151b" stroke-width="6"/><rect x="92" y="130" width="206" height="80" rx="16" fill="#fff4cf"/>
+    <path d="M90 230 L300 230 L640 640 L170 640 Z" fill="url(#cn)"/>
+    <ellipse cx="500" cy="628" rx="170" ry="30" fill="#14151b" opacity=".22" filter="url(#soft)"/>
+    ${bottle(440,630,1)}
+    <line x1="80" y1="680" x2="720" y2="680" stroke="#e1e5ef" stroke-width="3"/>`)}
+   <div class="abs" style="left:80px;top:712px;width:640px">
+    <div class="lab">SHADOW EDGE</div>
+    ${svg(640,110,'<path d="M0 95 C 200 95, 420 10, 640 10" stroke="#2f7bf5" stroke-width="8" fill="none" stroke-linecap="round"/><path d="M0 95 L300 95 L300 10 L640 10" stroke="#d3d8e4" stroke-width="4" fill="none" stroke-dasharray="10 10"/>',0,40)}
+    <div class="abs" style="right:0;top:0;font-weight:900;font-size:40px;color:#2f7bf5">SOFT 86%</div></div>`);},
+
+// 03 HARD LIGHT — small spot, narrow beam, crisp diagonal shadow, step graph
+hardlight(){bg();counter(3);kar('Hard light: create crisp shadows and a bolder look.',5,[0,1]);
+  card(140,560,800,900,'/hardlight',`
+   ${svg(800,900,`<circle cx="130" cy="170" r="30" fill="#ff8a1a"/><circle cx="130" cy="170" r="54" fill="none" stroke="#ff8a1a" stroke-width="4" opacity=".5"/><circle cx="130" cy="170" r="80" fill="none" stroke="#ff8a1a" stroke-width="3" opacity=".25"/>
+    <path d="M150 190 L360 450 L330 470 Z" fill="#ffe4c7"/>
+    <path d="M440 640 L760 820 L800 820 L800 700 L520 520 Z" fill="#14151b"/>
+    ${bottle(440,640,1,'#ffd9b8')}
+    <line x1="80" y1="642" x2="720" y2="642" stroke="#e1e5ef" stroke-width="3"/>`)}
+   <div class="abs" style="left:80px;top:700px;width:300px"><div class="lab">SHADOW EDGE</div>${svg(300,110,'<path d="M0 95 L140 95 L140 10 L300 10" stroke="#ff6a00" stroke-width="8" fill="none" stroke-linejoin="round"/>',0,40)}<div style="position:absolute;left:0;top:160px;font-weight:900;font-size:40px;color:#ff6a00">CRISP</div></div>
+   <div class="abs lab" style="left:440px;top:740px">CONTRAST <div style="font-weight:900;font-size:80px;line-height:1.05;color:#ff6a00">×3</div></div>`);},
+
+// 04 RIM LIGHT — dark card, silhouette with a glowing traced edge
+rimlight(){bg();counter(4);kar('Rim light: separate your subject with an illuminated edge.',5,[0,1]);
+  card(140,560,800,900,'/rimlight',`
+   ${svg(800,900,`<rect width="800" height="900" fill="#17181e"/><circle cx="400" cy="380" r="210" fill="#2f7bf5" opacity=".25" filter="url(#soft)"/>
+    <g transform="translate(400 640) scale(1.1)"><rect x="-26" y="-250" width="52" height="40" rx="10" fill="#0b0c10"/><rect x="-14" y="-212" width="28" height="22" fill="#0b0c10"/><rect x="-80" y="-192" width="160" height="192" rx="34" fill="#0b0c10"/>
+     <path d="M-80 -60 L-80 -158 Q-80 -192 -46 -192 L46 -192 Q80 -192 80 -158 L80 -20" stroke="#fff" stroke-width="5" fill="none" filter="url(#glow)" stroke-linecap="round"/><circle cx="80" cy="-20" r="9" fill="#fff" filter="url(#glow)"/></g>
+    <circle cx="400" cy="250" r="16" fill="#9cc3ff" filter="url(#glow)"/>`)}
+   <div class="abs" style="left:80px;top:730px;color:#fff"><div class="lab" style="color:#9aa0b8">SEPARATION</div><div style="font-weight:900;font-size:90px;line-height:1">72<span style="font-size:46px;color:#2f7bf5">%</span></div></div>
+   <div class="abs" style="left:470px;top:760px;padding:16px 24px;border-radius:24px;background:#24262e;color:#fff;font-weight:800;font-size:24px;letter-spacing:.08em">LIGHT · BEHIND</div>`,{tagStyle:'color:#9cc3ff'});},
+
+// 05 GOLDEN HOUR — card warms, sun sinks along an arc, long shadow, clock + K
+goldenhour(){bg();counter(5);kar('Golden hour: bring in warm, low evening light.',5,[0,1]);
+  card(140,560,800,900,'/goldenhour',`
+   ${svg(800,900,`<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe7c2"/><stop offset="1" stop-color="#ffb46b"/></linearGradient></defs>
+    <rect width="800" height="660" fill="url(#sky)"/><path d="M60 600 Q 400 60 760 600" stroke="#fff" stroke-width="4" fill="none" stroke-dasharray="3 14" stroke-linecap="round"/>
+    <circle cx="650" cy="470" r="56" fill="#fff3c4"/><circle cx="650" cy="470" r="90" fill="#ffd27a" opacity=".5" filter="url(#soft)"/>
+    <path d="M330 640 L-40 720 L-40 660 L360 610 Z" fill="#a8562a" opacity=".35"/>
+    ${bottle(400,640,1,'#ffc98a')}
+    <rect y="640" width="800" height="260" fill="#fff"/>`)}
+   <div class="abs" style="left:80px;top:700px"><div class="lab">TIME</div><div style="font-weight:900;font-size:80px;line-height:1.05">18:42</div></div>
+   <div class="abs" style="left:420px;top:700px"><div class="lab">COLOR TEMP</div><div style="font-weight:900;font-size:80px;line-height:1.05;color:#ff6a00">3200K</div></div>`);},
+
+// 06 MACRO — weave texture, loupe magnifies, ×10
+macro(){bg();counter(6);kar('Macro: move closer to reveal texture and tiny details.',3,[0]);
+  let dots='';for(let y=0;y<16;y++)for(let x=0;x<18;x++)dots+=`<rect x="${70+x*38}" y="${100+y*34}" width="26" height="14" rx="7" fill="${(x+y)%2?'#d6dceb':'#e6eaf3'}"/>`;
+  let big='';for(let y=0;y<5;y++)for(let x=0;x<5;x++)big+=`<rect x="${-200+x*84}" y="${-190+y*76}" width="60" height="32" rx="16" fill="${(x+y)%2?'#9fb6e8':'#cfdcf7'}" stroke="#14151b" stroke-width="3"/>`;
+  card(140,560,800,900,'/macro',`
+   ${svg(800,900,`${dots}<defs><clipPath id="lc"><circle r="200"/></clipPath></defs>
+    <g transform="translate(470 360)"><circle r="214" fill="#fff"/><g clip-path="url(#lc)">${big}</g><circle r="206" fill="none" stroke="#14151b" stroke-width="12"/><path d="M146 146 L250 250" stroke="#14151b" stroke-width="30" stroke-linecap="round"/></g>
+    <rect x="232" y="306" width="40" height="34" fill="none" stroke="#ffd60a" stroke-width="5" rx="5"/>`)}
+   <div class="abs" style="left:80px;top:690px;font-weight:900;font-size:140px;color:#2f7bf5;line-height:1">×10</div>
+   <div class="abs lab" style="left:380px;top:740px">FOCUS<div style="font-weight:900;font-size:44px;color:#14151b">TEXTURE</div></div>`);},
+
+// 07 LOW ANGLE — camera drops to the ground, perspective lines, subject towers
+lowangle(){bg();counter(7);kar('Low angle: make the subject feel more imposing.',3,[0,1]);
+  card(140,560,800,900,'/lowangle',`
+   ${svg(800,900,`<rect width="800" height="560" fill="#e9f0ff"/><line x1="0" y1="560" x2="800" y2="560" stroke="#14151b" stroke-width="4"/>
+    <path d="M330 560 L360 140 L440 140 L470 560 Z" fill="#cfdcf7" stroke="#14151b" stroke-width="6"/>
+    <path d="M110 640 L360 140 M110 640 L440 140 M110 640 L700 560" stroke="#2f7bf5" stroke-width="3" stroke-dasharray="10 10" opacity=".7"/>
+    <line x1="60" y1="100" x2="60" y2="640" stroke="#9fb6e8" stroke-width="5" stroke-dasharray="4 28"/>
+    <g transform="translate(110 640)"><rect x="-44" y="-36" width="88" height="66" rx="16" fill="#fff" stroke="#2f7bf5" stroke-width="5"/><circle r="17" cy="-3" fill="none" stroke="#2f7bf5" stroke-width="5"/></g>
+    <g opacity=".25"><rect x="66" y="116" width="88" height="66" rx="16" fill="none" stroke="#2f7bf5" stroke-width="5"/></g><path d="M110 210 L110 560" stroke="#2f7bf5" stroke-width="4" stroke-dasharray="6 10"/><path d="M96 540 L110 562 L124 540" stroke="#2f7bf5" stroke-width="4" fill="none"/>`)}
+   <div class="abs" style="left:80px;top:720px"><div class="lab">CAMERA HEIGHT</div><div style="font-weight:900;font-size:80px;line-height:1.05;color:#2f7bf5">160 → 10 cm</div></div>`);},
+
+// 08 MINIMAL — clutter shapes blow away, one object stays in big empty space
+minimal(){bg();counter(8);kar('Minimal: remove distractions and give the subject room.',3,[0]);
+  card(140,560,800,900,'/minimal',`
+   ${svg(800,900,`${[[90,170,70,'#f3d7c4',-1],[640,150,60,'#c9e6d8',1],[120,520,80,'#ffe2a8',-1],[660,500,70,'#d9d0f5',1],[220,90,50,'#cfe0f7',-1],[560,640,56,'#f6c9d0',1]].map(([x,y,s,c,d])=>`<g opacity=".55"><rect x="${x}" y="${y}" width="${s}" height="${s}" rx="14" fill="${c}" stroke="#14151b" stroke-width="4" transform="rotate(${d*16} ${x} ${y})" filter="url(#mbx)"/></g>`).join('')}
+    <path d="M370 620 C 330 560 340 470 380 430 L380 400 L420 400 L420 430 C 460 470 470 560 430 620 Z" fill="#efe6da" stroke="#14151b" stroke-width="6"/>
+    <ellipse cx="400" cy="624" rx="90" ry="12" fill="#14151b" opacity=".12" filter="url(#soft)"/>
+    <rect x="200" y="300" width="400" height="360" rx="10" fill="none" stroke="#c9d3e6" stroke-width="3" stroke-dasharray="10 12"/>`)}
+   <div class="abs" style="left:80px;top:720px"><div class="lab">CLUTTER</div><div style="font-weight:900;font-size:80px;line-height:1.05;color:#2f7bf5">7 → 0</div></div>
+   <div class="abs" style="left:420px;top:720px"><div class="lab">EMPTY SPACE</div><div style="font-weight:900;font-size:80px;line-height:1.05;color:#2f7bf5">78%</div></div>`);},
+
+// 09 EDITORIAL — the card becomes a magazine spread built on a grid
+editorial(){bg();counter(9);kar('Editorial: try a styled, magazine-inspired composition.',3,[0]);
+  card(140,560,800,900,'/editorial',`
+   ${svg(800,900,`${[...Array(6)].map((_,i)=>`<line x1="${80+i*128}" y1="90" x2="${80+i*128}" y2="680" stroke="#2f7bf5" stroke-width="1.5" opacity=".25"/>`).join('')}
+    <text x="80" y="170" font-family="Inter Display" font-weight="900" font-size="78" letter-spacing="-3" fill="#14151b">STILL LIFE</text>
+    <rect x="80" y="200" width="120" height="8" fill="#2f7bf5"/>
+    <rect x="336" y="240" width="384" height="420" rx="20" fill="#f3ece2"/><path d="M560 660 L560 420 A70 70 0 0 1 700 420 L700 660 Z" fill="#e08b5a"/>
+    <rect x="410" y="520" width="150" height="140" rx="24" fill="#b5703f" stroke="#14151b" stroke-width="5"/><path d="M440 520 Q485 440 530 520" stroke="#14151b" stroke-width="6" fill="none"/>
+    ${[0,1,2,3,4,5,6].map(i=>`<rect x="80" y="${260+i*36}" width="${i===6?120:200}" height="12" rx="6" fill="#d7dcea"/>`).join('')}
+    <text x="80" y="560" font-family="Inter Display" font-weight="900" font-size="120" fill="#14151b">09</text>`)}
+   <div class="abs" style="left:80px;top:720px;display:flex;gap:14px">${['GRID','ONE BOLD PROP','BALANCE'].map(t=>`<div class="chip" style="position:static;background:#e9f0ff;color:#2f7bf5;box-shadow:none;font-size:22px">${t}</div>`).join('')}</div>`);},
+
+// 10 MOTION BLUR — subject sharp, background streaks, "keep sharp" check
+motionblur(){bg();counter(10);kar('Motion blur: suggest speed. Specify what should stay sharp.',5,[0,1]);
+  card(140,560,800,900,'/motionblur',`
+   ${svg(800,900,`<rect width="800" height="660" fill="#eef2fa"/>${[...Array(18)].map((_,i)=>`<rect x="${(i*137)%700-60}" y="${90+i*30}" width="${160+(i*53)%260}" height="${6+(i%3)*4}" rx="6" fill="#9fb6e8" opacity="${.35+(i%4)*.15}" filter="url(#mbx)"/>`).join('')}
+    <g transform="translate(400 420)"><circle r="150" fill="#fff" stroke="#14151b" stroke-width="10"/><circle r="22" fill="#14151b"/>${[...Array(12)].map((_,i)=>`<line x1="0" y1="0" x2="${Math.cos(i*Math.PI/6)*140}" y2="${Math.sin(i*Math.PI/6)*140}" stroke="#14151b" stroke-width="3"/>`).join('')}</g>
+    <rect x="220" y="240" width="360" height="360" rx="26" fill="none" stroke="#34c759" stroke-width="6"/>`)}
+   <div class="abs" style="left:240px;top:200px;padding:8px 18px;border-radius:999px;background:#34c759;color:#fff;font-weight:800;font-size:24px">SHARP ✓</div>
+   <div class="abs" style="left:80px;top:720px"><div class="lab">SHUTTER</div><div style="font-weight:900;font-size:80px;line-height:1.05">1/30 s</div></div>
+   <div class="abs" style="left:420px;top:720px"><div class="lab">BACKGROUND</div><div style="font-weight:900;font-size:60px;line-height:1.3;color:#2f7bf5;filter:url(#mbx)">BLURRED</div></div>`);},
+
+// 11 SAVE — keyword list, highlight sweep, bookmark
+save(){bg();counter(10);kar('Add these to a clear description of your scene. Save this before your next generation.',13,[]);
+  const K=[['productshot','clean, commercial look'],['softlight','gentle shadows'],['hardlight','crisp, bold shadows'],['rimlight','glowing edges'],['goldenhour','warm evening light'],['macro','texture & tiny details'],['lowangle','a stronger perspective'],['minimal','less clutter'],['editorial','magazine-style'],['motionblur','a sense of speed']];
+  card(100,560,880,1120,'saved prompt keywords',`${K.map(([n,d],i)=>`<div class="abs" style="left:24px;top:${100+i*100}px;width:832px;height:90px;border-radius:24px;${i===4?'background:#2f7bf5;':''}display:flex;align-items:center;padding:0 28px;gap:24px">
+    <span class="mono" style="font-size:26px;font-weight:700;color:${i===4?'#cfe0ff':'#9aa0b4'}">${String(i+1).padStart(2,'0')}</span><span style="font-weight:800;font-size:46px;letter-spacing:-.02em;color:${i===4?'#fff':'#14151b'}"><span style="color:${i===4?'#fff':'#2f7bf5'}">/</span>${n}</span><span style="margin-left:auto;font-weight:600;font-size:24px;color:${i===4?'#e3ecff':'#8a90a6'}">${d}</span></div>`).join('')}`);},
+
+// announcement frame between sections (as in the reference: "Second." pill + typed blue keyword)
+announce(){bg();add(`<div class="pill" style="left:540px;top:120px;transform:translate(-50%,-50%);height:70px;padding:0 44px;font-weight:700;font-size:32px">Second.</div>`);
+  add(`<div class="big" style="top:330px">/softli<span style="display:inline-block;width:6px;height:100px;background:#2f7bf5;vertical-align:-12px;margin-left:4px"></span></div>`);
+  card(140,560,800,900,'/productshot',`${svg(800,900,`<path d="M80 120 H720 V560 Q720 640 640 650 H160 Q80 640 80 560 Z" fill="#eef1f7"/><ellipse cx="400" cy="640" rx="130" ry="18" fill="#14151b" opacity=".18" filter="url(#soft)"/>${bottle(400,640,1.1)}`)}`,{style:'filter:blur(3px);opacity:.75'});},
+};
+F[location.hash.slice(1)||'hook']();root.innerHTML=H;
+document.fonts.ready.then(()=>window.ready=true);
+</script>
+</body>
+</html>
