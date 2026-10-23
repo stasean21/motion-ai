@@ -38,9 +38,10 @@ img{display:block}
 <script>
 'use strict';
 // ═══════════ 10 photo prompt keywords — v2 kinetic edit, 63 s seamless loop (approved mockups v2) ═══════════
-const FPS=60,DUR=63,B=63/112,D=9*B;                  // beat ≈0.5625 s; every keyword section = 9 beats
-const T0=i=>i*D, TS=99*B;                            // section starts; save section 99 beats → 63 s
+const FPS=60,B=63/112,DUR=180*B,D=14*B,DH=20*B,MS=1.4; // beat ≈0.5625 s; hook 20 beats, keyword section 14, save 20 → 101.25 s
+const T0=i=>i===0?0:DH+(i-1)*D, TS=160*B;             // section starts
 const b=n=>n*B;
+const bb=x=>x<4?b(x+2):b(7+(x-4)*1.5);   // keyword-section beat map: room before the send, wider gaps after the reveal
 const clamp=(v,a=0,c=1)=>Math.min(c,Math.max(a,v));
 const lerp=(a,c,p)=>a+(c-a)*p;
 const prog=(t,a,c)=>clamp((t-a)/(c-a));
@@ -111,12 +112,13 @@ function trans(S,τ,tin,tout,din=.4,dout=.34){let p={};if(tin&&τ<din)p=TIN[tin]
 
 // ───────── global UI: counter, prompt bar, flying chip, overlays
 const UI=mk(root,'<div class="layer" style="z-index:30"></div>');
-const CNTP=mk(UI,`<div class="glass sq" style="left:540px;top:96px;transform:translate(-50%,-50%);height:66px;padding:0 28px;border-radius:999px;gap:18px;font-weight:800;font-size:28px"><span id="cntw"></span><span class="mono" id="sl" style="font-size:30px;letter-spacing:-.05em">${[...Array(10)].map(()=>`<span style="font-style:italic">/</span>`).join('')}</span></div>`);
+const CNTP=mk(UI,`<div class="glass sq" style="left:540px;top:96px;transform:translate(-50%,-50%);height:66px;padding:0 28px;border-radius:999px;gap:18px;font-weight:800;font-size:28px;white-space:nowrap"><span style="color:#8a90a6;font-weight:700;font-size:24px;letter-spacing:.01em;white-space:nowrap">ChatGPT keyword</span><span id="cntw"></span><span class="mono" id="sl" style="font-size:30px;letter-spacing:-.05em">${[...Array(10)].map(()=>`<span style="font-style:italic">/</span>`).join('')}</span></div>`);
 const CNT=odo($('cntw'),2,{suf:'<span style="color:#9aa0b4">/10</span>'});const SL=[...$('sl').children];
-const PBAR=mk(UI,`<div class="glass" style="left:60px;top:1712px;width:960px;height:124px;border-radius:62px;display:flex;align-items:center;padding:0 130px 0 44px;font-weight:600;font-size:38px;white-space:nowrap;overflow:hidden"><span id="prT"></span><span id="prK" class="chip" style="position:relative;display:inline-block;margin-left:4px;padding:4px 18px;font-size:34px;box-shadow:none"></span><span id="prX" style="font-weight:700"></span><span id="prC" style="display:inline-block;width:4px;height:44px;background:#2f7bf5;margin-left:6px"></span></div>`);
+const PBAR=mk(UI,`<div class="glass" style="left:60px;top:1712px;width:960px;height:124px;border-radius:62px;display:flex;align-items:center;padding:0 130px 0 22px;font-weight:600;font-size:36px;white-space:nowrap;overflow:hidden"><span id="gtag" style="display:inline-flex;align-items:center;gap:8px;padding:8px 18px;margin-right:18px;border-radius:999px;background:rgba(20,22,30,.07);font-weight:800;font-size:26px;color:#5a5e70"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/></svg>ChatGPT</span><span id="prT"></span><span id="prK" class="chip" style="position:relative;display:inline-block;margin-left:4px;padding:4px 18px;font-size:34px;box-shadow:none"></span><span id="prX" style="font-weight:700"></span><span id="prC" style="display:inline-block;width:4px;height:44px;background:#2f7bf5;margin-left:6px"></span></div>`);
 const prT=$('prT'),prK=$('prK'),prX=$('prX'),prC=$('prC');
 const SEND=mk(UI,`<div class="sq" style="position:absolute;left:908px;top:1728px;width:92px;height:92px;border-radius:50%;background:#2f7bf5"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19.5V5M5.6 11.2L12 4.8l6.4 6.4"/></svg></div>`);
 const SR=mk(UI,'<div class="abs" style="left:954px;top:1774px"></div>');const SR1=ring(SR,46,'#2f7bf5',6),SR2=ring(SR,46,'#2f7bf5',4);
+const GEN=mk(UI,`<div class="glass sq" style="left:540px;top:1662px;height:58px;padding:0 26px;border-radius:999px;gap:12px;font-weight:700;font-size:25px;color:#454857;white-space:nowrap"><b style="font-weight:800;color:#111218">ChatGPT</b>·<span>Creating image</span><span id="gdots" style="letter-spacing:.1em;color:#2f7bf5;font-weight:900"></span></div>`);
 const FCHIP=mk(UI,`<div class="chip" style="transform-origin:50% 50%"></div>`);
 const OV=mk(root,'<div class="layer" style="z-index:40;pointer-events:none"></div>');
 const FLASH=mk(OV,'<div class="abs" style="inset:0;background:#fff"></div>');
@@ -127,12 +129,14 @@ const STRK=mk(OV,'<div class="layer"></div>');const STR=[...Array(28)].map((_,i)
 
 // prompt state (per frame)
 let PS;
-function prReset(){PS={t:'',k:'',x:'',cur:1,kq:1,dark:0,kO:1}}
+function prReset(){PS={t:'',k:'',x:'',cur:1,kq:1,dark:0,kO:1,gen:[-1,-1]}}
 const typed=(s,t,t0,cps=.032)=>s.slice(0,Math.floor(clamp((t-t0)/cps,0,s.length)));
 function prApply(t){prT.innerHTML=PS.t;prK.textContent=PS.k;prK.style.display=PS.k?'inline-block':'none';prX.innerHTML=PS.x;
   const sc=PS.k?lerp(1.25,1,E.back(PS.kq)):1;prK.style.transform=`scale(${sc})`;prK.style.opacity=PS.kO;
   prC.style.opacity=PS.cur?(Math.floor(t*4)%2?.25:1):0;
-  PBAR.classList.toggle('gdark',PS.dark>.5);CNTP.classList.toggle('gdark',PS.dark>.5);PBAR.style.color=PS.dark>.5?'#d8dae3':'#454857'}
+  PBAR.classList.toggle('gdark',PS.dark>.5);CNTP.classList.toggle('gdark',PS.dark>.5);PBAR.style.color=PS.dark>.5?'#d8dae3':'#454857';$('gtag').style.background=PS.dark>.5?'rgba(255,255,255,.12)':'rgba(20,22,30,.07)';$('gtag').style.color=PS.dark>.5?'#d8dae3':'#5a5e70';
+  const [g0,g1]=PS.gen,gi=prog(t,g0,g0+.25),go=prog(t,g1-.2,g1);GEN.classList.toggle('gdark',PS.dark>.5);GEN.style.color=PS.dark>.5?'#d8dae3':'#454857';GEN.firstChild.style.color=PS.dark>.5?'#fff':'#111218';
+  GEN.style.transform=`translate(-50%,-50%) translateY(${(1-E.back(gi))*30+go*20}px) scale(${lerp(.8,1,E.out(gi))})`;vis(GEN,g0>=0&&t>=g0&&t<g1?clamp(gi*3)*(1-go):0,go*8);$('gdots').textContent='...'.slice(0,1+Math.floor(t*6)%3)}
 // chip that pops near the headline, arcs down and lands as the keyword in the prompt
 function chipFly(t,word,fx,fy,tPop,tLand){const tFly=tLand-.3;
   if(t<tPop){vis(FCHIP,0);return 0}
@@ -151,7 +155,8 @@ function sendFX(t,ts){const q=prog(t,ts,ts+.14);SEND.style.transform=`scale(${1-
 
 // ═════════════════ SECTIONS ═════════════════
 // ── 00 HOOK
-const S0=scene();S0.t0=0;S0.D=D;
+const S0=scene();S0.t0=0;S0.D=DH;
+const H={h1:.06,h2:.3,t1:b(4),t2:b(4.5),tOut:b(7),send:b(7.5),lb:b(9),strike:b(10),stop:b(11),gu:b(11.5),chips:b(12.5),desc:b(15),shot:b(15.5)};
 {const S=S0;S.F=frame(S.cam,150,640,780,975,['00a','00b']);
  S.scan=mk(S.F.fx,'<div class="abs" style="left:0;width:100%;height:220px;background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.75) 50%,rgba(255,255,255,0))"></div>');
  S.imp=mk(S.cam,`<div class="abs" style="left:180px;top:1100px;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.35)"><div class="tiny" style="color:#fff">IMPROVEMENT</div><div id="impn" style="font-weight:900;font-size:130px;letter-spacing:-.04em"></div></div>`);
@@ -159,45 +164,47 @@ const S0=scene();S0.t0=0;S0.D=D;
  S.lb=W(S.cam,'LOOK BETTER?<span class="abs" id="lbs" style="left:-10px;right:-10px;top:50%;height:14px;margin-top:-7px;background:#ff3b30;border-radius:7px;transform-origin:0 50%"></span>',540,1440,110,{style:'color:#b9bed0'});S.lbs=$('lbs');
  S.cards=[['02b',300,1620,-1],['06b',560,1560,0],['09b',820,1610,1]].map(([k,x,y,d])=>({k,x,y,d,chip:mk(S.type,`<div class="chip" style="left:${x}px;top:${y}px;transform:translate(-50%,-50%)">/${{'02b':'softlight','06b':'macro','09b':'editorial'}[k]}</div>`),
    card:mk(S.type,`<div class="abs" style="left:${x-150}px;top:${y-188}px;width:300px;height:375px;border-radius:34px;overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.25)"><img src="${SRC(k)}" style="width:100%;height:100%;object-fit:cover"></div>`)}));
- S.h1=W(S.type,'WANT',540,240,150);S.h2=W(S.type,'BETTER PHOTOS?',540,385,112,{cls:'B'});
+ S.h1=W(S.type,'MAKING PHOTOS',540,235,112);S.h2=W(S.type,'IN <span style="display:inline-block;padding:0 .2em .06em;border-radius:.24em;background:#2f7bf5;color:#fff">ChatGPT</span>?',540,400,150);
+ S.t1=W(S.type,'THEN THIS',540,250,165);S.t2=W(S.type,'IS FOR <span class="B">YOU.</span>',540,420,165);
  S.stop=W(S.type,'STOP',540,420,330,{style:'text-shadow:0 30px 60px rgba(20,30,80,.18)'});
  S.gu=W(S.type,'GUESSING.',560,640,150,{cls:'B'});S.gg=[1,2,3].map(i=>W(S.type,'GUESSING.',560,640,150,{cls:'B'}));
  S.d1=W(S.type,'DESCRIBE',540,330,190);S.d2=W(S.type,'THE <span class="B">SHOT.</span>',540,520,190);
  S.render=(t,τ,loop)=>{
   wrap(S,τ>S.D-.34?TOUT.whipL(prog(τ,S.D-.34,S.D)):{});
   // loop lead-in: the frame comes back out of the collapsing save grid
-  const back=loop?E.outExpo(prog(t,61.2,61.8)):1;
-  const kick=τ>=b(4)?.04*Math.sin(Math.PI*prog(τ,b(4),b(4)+.25)):0;const sh=shake(τ,b(4),20,.4);
-  tp(S.F.el,{s:lerp(.86,1,back)*(1-kick),o:loop?clamp(prog(t,61.2,61.45)):1,blur:(1-back)*8});S.F.el.style.transformOrigin='50% 50%';
-  cam(S.cam,{z:1+.03*prog(τ,0,S.D),...sh});
-  S.F.I['00b'].style.opacity=E.out(prog(τ,.85,1.1));
-  const sq=prog(τ,.6,1.15);S.scan.style.top=lerp(-220,975,E.io(sq))+'px';vis(S.scan,sq>0&&sq<1?1:0);
-  const iq=prog(τ,1.0,1.3);tp(S.imp,{y:(1-E.back(iq))*30,o:clamp(iq*3)*(1-prog(τ,2.2,2.4))});setOdo(S.impO,2*E.out(prog(τ,1.05,1.5)));
+  const back=loop?E.outExpo(prog(t,DUR-2.05,DUR-1.45)):1;
+  const kick=τ>=H.stop?.04*Math.sin(Math.PI*prog(τ,H.stop,H.stop+.25)):0;const sh=shake(τ,H.stop,20,.4),sh2=shake(τ,H.t1,12,.3);
+  tp(S.F.el,{s:lerp(.86,1,back)*(1-kick)*(1-.03*Math.sin(Math.PI*prog(τ,H.t1,H.t1+.3))),o:loop?clamp(prog(t,DUR-2.05,DUR-1.8)):1,blur:(1-back)*8});S.F.el.style.transformOrigin='50% 50%';
+  cam(S.cam,{z:1+.03*prog(τ,0,S.D),dx:sh.dx+sh2.dx,dy:sh.dy+sh2.dy});
+  const sd=H.send;S.F.I['00b'].style.opacity=E.out(prog(τ,sd+.3,sd+.55));
+  const sq=prog(τ,sd+.05,sd+.6);S.scan.style.top=lerp(-220,975,E.io(sq))+'px';vis(S.scan,sq>0&&sq<1?1:0);
+  const iq=prog(τ,sd+.45,sd+.75);tp(S.imp,{y:(1-E.back(iq))*30,o:clamp(iq*3)*(1-prog(τ,H.stop-.1,H.stop+.1))});setOdo(S.impO,2*E.out(prog(τ,sd+.5,sd+.95)));
   // "look better?" → struck → falls
-  const fq=E.in(prog(τ,2.0,2.4));tf(S.lb,mix(A.drop(τ,b(1.5)),{y:fq*420,r:fq*9,o:1-prog(τ,2.2,2.4),blur:fq*10}));S.lbs.style.transform=`scaleX(${E.out(prog(τ,b(3),b(3)+.16))})`;
-  tf(S.h1,mix(A.drop(τ,.06),upOut(τ,1.95)));tf(S.h2,mix(A.drop(τ,.22),upOut(τ,2.0)));
-  tf(S.stop,mix(A.slam(τ,b(4)),blast(τ,b(7)-.1)));
-  const g=A.whipR(τ,b(4.5));tf(S.gu,mix(g,blast(τ,b(7)-.08)));
-  S.gg.forEach((e,i)=>{const lag=A.whipR(τ,b(4.5)-.035*(i+1));tf(e,{...lag,o:lag.o*(.16-.04*i)*(1-prog(τ,b(4.5)+.3,b(4.5)+.45)),blur:lag.blur+6+i*4})});
-  tf(S.d1,A.slam(τ,b(7)));tf(S.d2,A.slam(τ,b(7.5)));
-  S.cards.forEach((c,i)=>{const tc=b(5+i*.5);const q=prog(τ,tc,tc+.35);
+  const fq=E.in(prog(τ,H.strike+.3,H.strike+.7));tf(S.lb,mix(A.drop(τ,H.lb),{y:fq*420,r:fq*9,o:1-prog(τ,H.strike+.5,H.strike+.7),blur:fq*10}));S.lbs.style.transform=`scaleX(${E.out(prog(τ,H.strike,H.strike+.16))})`;
+  tf(S.h1,mix(A.drop(τ,H.h1),blast(τ,H.t1-.08)));tf(S.h2,mix(A.slam(τ,H.h2),blast(τ,H.t1-.06)));
+  tf(S.t1,mix(A.slam(τ,H.t1),upOut(τ,H.tOut)));tf(S.t2,mix(A.slam(τ,H.t2),upOut(τ,H.tOut+.06)));
+  tf(S.stop,mix(A.slam(τ,H.stop),blast(τ,H.desc-.1)));
+  const g=A.whipR(τ,H.gu);tf(S.gu,mix(g,blast(τ,H.desc-.08)));
+  S.gg.forEach((e,i)=>{const lag=A.whipR(τ,H.gu-.035*(i+1));tf(e,{...lag,o:lag.o*(.16-.04*i)*(1-prog(τ,H.gu+.3,H.gu+.45)),blur:lag.blur+6+i*4})});
+  tf(S.d1,A.slam(τ,H.desc));tf(S.d2,A.slam(τ,H.shot));
+  S.cards.forEach((c,i)=>{const tc=H.chips+b(i*.5);const q=prog(τ,tc,tc+.35);
     tf(c.chip,{y:(1-E.back(q))*(1774-c.y),x:(1-E.out(q))*(540-c.x),s:lerp(.4,1,E.back(q)),o:clamp(q*4)});
     const f=prog(τ,tc+.12,tc+.75);const s=lerp(.25,3.6,E.in(f));const dx=(c.x-540)*2.6*E.in(f),dy=(c.y-1100)*2.2*E.in(f)-900*E.in(f);
     tp(c.card,{x:dx,y:dy,s,o:f>0&&f<1?1-prog(f,.75,1):0,blur:E.in(f)*16});c.card.style.transformOrigin='50% 50%'});
   // prompt
-  if(loop){PS.t='';PS.cur=1;const n=typed('Make it look better.',t,61.75,.034);PS.t=n;return}
-  if(τ<b(3))PS.t='Make it look better.';
-  else if(τ<b(4))PS.t='Make it <s style="text-decoration-color:#ff3b30;text-decoration-thickness:4px;color:#9a9fb0">look better.</s>';
-  else if(τ<b(7))PS.t=τ<b(4)+.18?`<span style="opacity:${1-prog(τ,b(4),b(4)+.18)}">Make it look better.</span>`:'';
-  else PS.t=typed('Describe the shot.',τ,b(7)+.05);
-  sendFX(τ,b(1));
+  if(loop){PS.t=typed('Make it look better.',t,DUR-1.5,.034);PS.cur=1;return}
+  if(τ<H.strike)PS.t='Make it look better.';
+  else if(τ<H.stop)PS.t='Make it <s style="text-decoration-color:#ff3b30;text-decoration-thickness:4px;color:#9a9fb0">look better.</s>';
+  else if(τ<H.desc)PS.t=τ<H.stop+.18?`<span style="opacity:${1-prog(τ,H.stop,H.stop+.18)}">Make it look better.</span>`:'';
+  else PS.t=typed('Describe the shot.',τ,H.desc+.05);
+  sendFX(τ,sd);PS.gen=[sd+.05,sd+.55];
  };}
 
 // ── keyword section factory: shared beat grid (type → chip → send → reveal → infographics)
 function kwScene(i,o){const S=scene({dark:o.dark});S.t0=T0(i);S.D=D;S.i=i;Object.assign(S,o);return S}
-const KB={type:.35,pop:b(2),land:b(3),send:b(3.5),m0:b(4)};
+const KB={type:.9,pop:b(5),land:b(6),send:b(6.5),m0:b(7)};
 function promptKW(S,τ,desc,word,fx=540,fy=430){PS.t=typed(desc,τ,KB.type);const landed=chipFly(τ,word,fx,fy,KB.pop,KB.land);
-  if(landed){PS.k=word;PS.kq=prog(τ,KB.land,KB.land+.25)}PS.cur=1;sendFX(τ,KB.send)}
+  if(landed){PS.k=word;PS.kq=prog(τ,KB.land,KB.land+.25)}PS.cur=1;sendFX(τ,KB.send);PS.gen=[S.t0+KB.send+.05,S.t0+KB.m0+.75*MS]}
 
 // ── 01 PRODUCT SHOT
 const S1=kwScene(1,{});
@@ -212,21 +219,21 @@ const S1=kwScene(1,{});
  S.cap=mk(S.cam,`<div class="glass lbl" style="left:540px;top:1580px;color:#111218">CLEAN PRODUCT PHOTOGRAPHY</div>`);
  S.h1=W(S.type,'<span class="B">/</span>PRODUCT',540,250,190);S.h2=letters(S.type,'SHOT',540,440,190);
  S.render=(t,τ)=>{trans(S,τ,'whipR',null);
-  const dive=E.inExpo(prog(τ,S.D-.45,S.D));const kick=.07*Math.sin(Math.PI*prog(τ,KB.m0,KB.m0+.5))*(1-prog(τ,KB.m0+.25,KB.m0+.5)*.0);
+  const dive=E.inExpo(prog(τ,S.D-.45,S.D));const kick=.07*Math.sin(Math.PI*prog(τ,KB.m0,KB.m0+.5*MS))*(1-prog(τ,KB.m0+.25*MS,KB.m0+.5*MS)*.0);
   cam(S.cam,{x:lerp(540,540,dive),y:lerp(960,700,dive),z:(1+.035*prog(τ,0,S.D)+kick)*lerp(1,4.5,dive)});
   S.type.style.transform=`translate(540px,400px) scale(${1+dive*1.4}) translate(-540px,-400px)`;vis(S.type,1-dive,dive*20);
   tf(S.h1,A.drop(τ,.12));S.h2.L.forEach((l,k)=>tp(l,{...(()=>{const d=A.drop(τ,.26+k*.07,.45);return {y:d.y,o:d.o,blur:d.blur}})()}));
   // distraction boxes (before)
-  const wp=E.io(prog(τ,KB.m0,KB.m0+.55));
-  S.boxes.forEach((bx,k)=>{const q=prog(τ,b(1+k*.5),b(1+k*.5)+.35);const gone=prog(wp,1-bx.x0-.25,1-bx.x0);tp(bx.el,{s:E.back(q)*(1-gone*.3),o:clamp(q*4)*(1-gone),blur:gone*8})});
-  const dq=prog(τ,b(1),b(1)+.35);tp(S.dc,{s:E.back(dq),o:clamp(dq*4)*(1-prog(τ,b(7),b(7)+.3))});
-  const cnt=τ<KB.m0?Math.min(3,[b(1),b(1.5),b(2)].filter(x=>τ>=x+.1).length+(τ>=b(1)?0:0)):3*(1-E.io(prog(τ,b(4.5),b(5.5))));
-  setOdo(S.dcO,cnt);S.dcn.style.color=τ>b(5.4)?'#34c759':'#ff3b30';
+  const wp=E.io(prog(τ,KB.m0,KB.m0+.55*MS));
+  S.boxes.forEach((bx,k)=>{const q=prog(τ,bb(1+k*.5),bb(1+k*.5)+.35);const gone=prog(wp,1-bx.x0-.25,1-bx.x0);tp(bx.el,{s:E.back(q)*(1-gone*.3),o:clamp(q*4)*(1-gone),blur:gone*8})});
+  const dq=prog(τ,bb(1),bb(1)+.35);tp(S.dc,{s:E.back(dq),o:clamp(dq*4)*(1-prog(τ,bb(7),bb(7)+.3))});
+  const cnt=τ<KB.m0?Math.min(3,[bb(1),bb(1.5),bb(2)].filter(x=>τ>=x+.1).length+(τ>=bb(1)?0:0)):3*(1-E.io(prog(τ,bb(4.5),bb(5.5))));
+  setOdo(S.dcO,cnt);S.dcn.style.color=τ>bb(5.4)?'#34c759':'#ff3b30';
   // diagonal wipe → studio shot
   const a=lerp(140,0,wp);F.I['01b'].style.clipPath=`polygon(${a}% 0,100% 0,100% 100%,${a-40}% 100%)`;
   S.edge.style.background=wp>0&&wp<1?`linear-gradient(112deg,transparent ${25+a/2-3}%,rgba(255,255,255,.95) ${25+a/2-.6}%,#fff ${25+a/2}%,rgba(255,255,255,0) ${25+a/2+2.5}%)`:'none';
-  S.c1.set(prog(τ,b(5.5),b(5.5)+.7));S.c2.set(prog(τ,b(6),b(6)+.7));
-  const cq=E.out(prog(τ,b(6.5),b(6.5)+.6));S.cap.style.transform=`translate(-50%,-50%) scale(${lerp(.9,1,cq)})`;S.cap.style.letterSpacing=lerp(.7,.22,cq)+'em';vis(S.cap,cq,(1-cq)*10);
+  S.c1.set(prog(τ,bb(5.5),bb(5.5)+.7));S.c2.set(prog(τ,bb(6),bb(6)+.7));
+  const cq=E.out(prog(τ,bb(6.5),bb(6.5)+.6));S.cap.style.transform=`translate(-50%,-50%) scale(${lerp(.9,1,cq)})`;S.cap.style.letterSpacing=lerp(.7,.22,cq)+'em';vis(S.cap,cq,(1-cq)*10);
   promptKW(S,τ,'Sneaker on a table, ','/productshot');PS.kO=1-dive;
  };}
 
@@ -243,16 +250,16 @@ const S2=kwScene(2,{});
  S.h1=letters(S.type,'SOFT',540,250,190);S.h2=W(S.type,'LIGHT',540,440,190,{cls:'B'});
  S.render=(t,τ)=>{trans(S,τ,'zoomIn',null);cam(S.cam,{z:1+.035*prog(τ,0,S.D)});
   S.h1.L.forEach((l,k)=>tp(l,A.soft(τ,.1+k*.09,.6)));const lq=E.out(prog(τ,.3,1.1));tf(S.h2,{o:lq,blur:(1-lq)*18});S.h2.style.letterSpacing=lerp(.35,-.045,lq)+'em';
-  const m=prog(τ,KB.m0,KB.m0+.7);const mq=E.io(m);
+  const m=prog(τ,KB.m0,KB.m0+.7*MS);const mq=E.io(m);
   // hard bulb → softbox
-  const bq=prog(τ,b(1),b(1)+.35);const w=lerp(104,360,mq);S.bulb.style.width=w+'px';S.bulb.style.borderRadius=lerp(52,30,mq)+'px';
+  const bq=prog(τ,bb(1),bb(1)+.35);const w=lerp(104,360,mq);S.bulb.style.width=w+'px';S.bulb.style.borderRadius=lerp(52,30,mq)+'px';
   S.bulb.style.transform=`translate(-50%,-50%) scale(${E.back(bq)*(1+.25*Math.sin(Math.PI*m))})`;vis(S.bulb,clamp(bq*4));S.sbl.style.opacity=prog(w,250,330);S.sbl.style.width=prog(w,180,330)*170+'px';
-  [...S.rays.querySelectorAll('path')].forEach((p,k)=>{const L=+p.dataset.l;p.setAttribute('stroke-dashoffset',L*(1-E.out(prog(τ,b(1.3)+k*.05,b(1.3)+k*.05+.3))))});vis(S.rays,1-prog(τ,KB.m0,KB.m0+.25));
-  vis(S.cone,prog(τ,KB.m0+.2,KB.m0+.7));
-  const dp=E.io(prog(τ,KB.m0+.15,KB.m0+.95));const bx=lerp(-.35,1.35,dp);S.band.style.left=bx*F.w-150+'px';vis(S.band,dp>0&&dp<1?1:0);F.I['02b'].style.clipPath=`inset(0 ${(1-clamp(bx+.05))*100}% 0 0)`;
-  const gq=prog(τ,b(1.5),b(1.5)+.35);tp(S.gc,{s:E.back(gq),o:clamp(gq*4)});
+  [...S.rays.querySelectorAll('path')].forEach((p,k)=>{const L=+p.dataset.l;p.setAttribute('stroke-dashoffset',L*(1-E.out(prog(τ,bb(1.3)+k*.05,bb(1.3)+k*.05+.3))))});vis(S.rays,1-prog(τ,KB.m0,KB.m0+.25*MS));
+  vis(S.cone,prog(τ,KB.m0+.2*MS,KB.m0+.7*MS));
+  const dp=E.io(prog(τ,KB.m0+.15*MS,KB.m0+.95*MS));const bx=lerp(-.35,1.35,dp);S.band.style.left=bx*F.w-150+'px';vis(S.band,dp>0&&dp<1?1:0);F.I['02b'].style.clipPath=`inset(0 ${(1-clamp(bx+.05))*100}% 0 0)`;
+  const gq=prog(τ,bb(1.5),bb(1.5)+.35);tp(S.gc,{s:E.back(gq),o:clamp(gq*4)});
   const c1=lerp(168,60,mq),c2=lerp(176,284,mq);S.gp.setAttribute('d',`M0 100 C${c1} 100 ${c2} 10 344 10`);S.gv.innerHTML=m<.5?'HARD':'SOFT';
-  const sq=prog(τ,b(4.5),b(4.5)+.3);tp(S.sw,{y:(1-E.back(sq))*30,o:clamp(sq*3)});setOdo(S.swO,86*E.out(prog(τ,b(4.5),b(6))));
+  const sq=prog(τ,bb(4.5),bb(4.5)+.3);tp(S.sw,{y:(1-E.back(sq))*30,o:clamp(sq*3)});setOdo(S.swO,86*E.out(prog(τ,bb(4.5),bb(6))));
   promptKW(S,τ,'Perfume bottle, ','/softlight');
  };}
 
@@ -270,13 +277,13 @@ const S3=kwScene(3,{});
  S.h2=W(S.type,'LIGHT',540,470,150,{cls:'B'});
  S.render=(t,τ)=>{wrap(S,{});const sh=shake(τ,KB.m0,14,.3);cam(S.cam,{z:1+.035*prog(τ,0,S.D),...sh});
   tf(S.h1,A.slam(τ,.1));tf(S.h2,A.slam(τ,.32));
-  const on=τ>=KB.m0+.03;F.I['03b'].style.opacity=on?1:0;
-  const cq=E.outExpo(prog(τ,KB.m0,KB.m0+.4));tp(S.cut,{x:(1-cq)*-1500,y:(1-cq)*420,o:1});vis(S.beam,on?1:0);
+  const on=τ>=KB.m0+.03*MS;F.I['03b'].style.opacity=on?1:0;
+  const cq=E.outExpo(prog(τ,KB.m0,KB.m0+.4*MS));tp(S.cut,{x:(1-cq)*-1500,y:(1-cq)*420,o:1});vis(S.beam,on?1:0);
   const fl=on?Math.exp(-(τ-KB.m0)*5):0;vis(S.glow,on?.35+.65*fl:0);
-  const sq=prog(τ,b(1),b(1)+.35);tp(S.spot,{s:E.back(sq),o:clamp(sq*4)});
-  [[S.r1,0],[S.r2,.15]].forEach(([r,d])=>{const k=((τ-b(1)-d)%1.125)/1.125;r.style.transform=`scale(${.6+k*.8})`;vis(r,τ>b(1)+d?(1-k)*.6:0)});
-  const gq=prog(τ,b(5),b(5)+.35);tp(S.gc,{s:E.back(gq),o:clamp(gq*4)});S.gp.setAttribute('stroke-dashoffset',500*(1-E.io(prog(τ,b(5)+.15,b(5)+.6))));
-  S.c1.set(prog(τ,b(5.5),b(5.5)+.7));S.c1.lb.textContent='CONTRAST ×'+(1+Math.floor(2.999*E.out(prog(τ,b(6),b(6)+.5))));
+  const sq=prog(τ,bb(1),bb(1)+.35);tp(S.spot,{s:E.back(sq),o:clamp(sq*4)});
+  [[S.r1,0],[S.r2,.15]].forEach(([r,d])=>{const k=((τ-bb(1)-d)%1.125)/1.125;r.style.transform=`scale(${.6+k*.8})`;vis(r,τ>bb(1)+d?(1-k)*.6:0)});
+  const gq=prog(τ,bb(5),bb(5)+.35);tp(S.gc,{s:E.back(gq),o:clamp(gq*4)});S.gp.setAttribute('stroke-dashoffset',500*(1-E.io(prog(τ,bb(5)+.15,bb(5)+.6))));
+  S.c1.set(prog(τ,bb(5.5),bb(5.5)+.7));S.c1.lb.textContent='CONTRAST ×'+(1+Math.floor(2.999*E.out(prog(τ,bb(6),bb(6)+.5))));
   promptKW(S,τ,'Sunglasses, ','/hardlight');
  };}
 
@@ -293,12 +300,12 @@ const S4=kwScene(4,{dark:1});
  S.render=(t,τ)=>{wrap(S,{});cam(S.cam,{z:1+.035*prog(τ,0,S.D)});
   const gl=.5+.5*Math.sin(τ*6);S.h1.L.forEach((l,k)=>{const q=prog(τ,.15+k*.12,.45+k*.12);l.style.opacity=q;l.style.textShadow=`0 0 ${30*q*(.6+.4*gl)}px rgba(140,190,255,.9),0 0 ${80*q}px rgba(47,123,245,.7)`;l.style.transform=`scale(${lerp(1.3,1,E.out(q))})`});
   tf(S.h2,A.soft(τ,.5,.6));
-  const dim=prog(τ,KB.m0,KB.m0+.3);F.I['04a'].style.filter=`brightness(${1-.45*dim})`;
-  const tr=E.io(prog(τ,KB.m0+.25,KB.m0+1.2));S.ap.setAttribute('stroke-dashoffset',S.L*(1-tr));const P=S.ap.getPointAtLength(S.L*tr);
-  S.spk.setAttribute('cx',P.x);S.spk.setAttribute('cy',P.y);S.spk.style.opacity=tr>0&&tr<1?1:0;S.ap.style.opacity=tr>0?1-.5*prog(τ,KB.m0+1.3,KB.m0+2):0;
+  const dim=prog(τ,KB.m0,KB.m0+.3*MS);F.I['04a'].style.filter=`brightness(${1-.45*dim})`;
+  const tr=E.io(prog(τ,KB.m0+.25*MS,KB.m0+1.2*MS));S.ap.setAttribute('stroke-dashoffset',S.L*(1-tr));const P=S.ap.getPointAtLength(S.L*tr);
+  S.spk.setAttribute('cx',P.x);S.spk.setAttribute('cy',P.y);S.spk.style.opacity=tr>0&&tr<1?1:0;S.ap.style.opacity=tr>0?1-.5*prog(τ,KB.m0+1.3*MS,KB.m0+2*MS):0;
   F.I['04b'].style.clipPath=`inset(0 ${(1-clamp((P.x-100)/880+.02))*100*(tr>0?1:0)+(tr>0?0:100)}% 0 0)`;
-  const sq=prog(τ,b(5.5),b(5.5)+.35);tp(S.sep,{s:E.back(sq),o:clamp(sq*4)});setOdo(S.sepO,72*E.out(prog(τ,b(5.5),b(7))));
-  const bq=prog(τ,b(1.5),b(1.5)+.35);tp(S.beh,{s:E.back(bq),o:clamp(bq*4)});
+  const sq=prog(τ,bb(5.5),bb(5.5)+.35);tp(S.sep,{s:E.back(sq),o:clamp(sq*4)});setOdo(S.sepO,72*E.out(prog(τ,bb(5.5),bb(7))));
+  const bq=prog(τ,bb(1.5),bb(1.5)+.35);tp(S.beh,{s:E.back(bq),o:clamp(bq*4)});
   promptKW(S,τ,'Headphones, ','/rimlight');
  };}
 
@@ -317,11 +324,11 @@ const S5=kwScene(5,{});
   cam(S.cam,{x:540,y:lerp(960,1200,dive),z:(1+.035*prog(τ,0,S.D))*lerp(1,4.5,dive)});
   S.type.style.transform=`translate(540px,350px) scale(${1+dive*1.4}) translate(-540px,-350px)`;vis(S.type,1-dive,dive*20);
   tf(S.h1,A.drop(τ,.1));tf(S.h2,A.drop(τ,.25));
-  const m=E.io(prog(τ,KB.m0,KB.m0+1.1));vis(S.arc,prog(τ,b(1),b(1)+.4));
-  const P=S.ap.getPointAtLength(S.L*lerp(.5,.86,m));const sq=prog(τ,b(1),b(1)+.4);S.sun.style.transform=`translate(${P.x}px,${P.y}px) scale(${E.back(sq)})`;vis(S.sun,clamp(sq*4));
+  const m=E.io(prog(τ,KB.m0,KB.m0+1.1*MS));vis(S.arc,prog(τ,bb(1),bb(1)+.4));
+  const P=S.ap.getPointAtLength(S.L*lerp(.5,.86,m));const sq=prog(τ,bb(1),bb(1)+.4);S.sun.style.transform=`translate(${P.x}px,${P.y}px) scale(${E.back(sq)})`;vis(S.sun,clamp(sq*4));
   const a=lerp(140,0,m);F.I['05b'].style.clipPath=`polygon(${a}% 0,100% 0,100% 100%,${a-40}% 100%)`;vis(S.warm,m);
-  const tq=prog(τ,b(1.5),b(1.5)+.35);tp(S.tc,{s:E.back(tq),o:clamp(tq*4)});const mins=lerp(720,1122,m);setOdo(S.hO,Math.floor(mins/60));setOdo(S.mO,mins%60);
-  const kq=prog(τ,b(2),b(2)+.35);tp(S.kc,{s:E.back(kq),o:clamp(kq*4)});setOdo(S.kO,lerp(5600,3200,m));S.knob.style.left=lerp(200,24,m)+'px';
+  const tq=prog(τ,bb(1.5),bb(1.5)+.35);tp(S.tc,{s:E.back(tq),o:clamp(tq*4)});const mins=lerp(720,1122,m);setOdo(S.hO,Math.floor(mins/60));setOdo(S.mO,mins%60);
+  const kq=prog(τ,bb(2),bb(2)+.35);tp(S.kc,{s:E.back(kq),o:clamp(kq*4)});setOdo(S.kO,lerp(5600,3200,m));S.knob.style.left=lerp(200,24,m)+'px';
   promptKW(S,τ,'Honey jar, ','/goldenhour');PS.kO=1-dive;
  };}
 
@@ -337,13 +344,13 @@ const S6=kwScene(6,{});
  S.fl=mk(S.cam,'<div class="glass lbl" style="left:80px;top:1600px;color:#111218">FOCUS: <span class="B">TEXTURE</span></div>');
  S.h1=W(S.type,'MACRO',540,250,220);
  S.render=(t,τ)=>{trans(S,τ,'zoomIn','up');cam(S.cam,{z:1+.03*prog(τ,0,S.D)});tf(S.h1,A.slam(τ,.1));
-  const zin=E.inExpo(prog(τ,KB.m0,KB.m0+.55));const sw=τ>=KB.m0+.55;
+  const zin=E.inExpo(prog(τ,KB.m0,KB.m0+.55*MS));const sw=τ>=KB.m0+.55*MS;
   F.I['06a'].style.transform=`scale(${1+zin*3})`;F.I['06a'].style.filter=`blur(${zin*6}px)`;F.I['06b'].style.opacity=sw?1:0;
-  const rq=E.outExpo(prog(τ,KB.m0+.55,KB.m0+1));F.I['06b'].style.transform=`scale(${lerp(1.35,1,rq)})`;F.I['06b'].style.filter=sw&&rq<1?`blur(${(1-rq)*10}px)`:'none';
-  const bq=prog(τ,b(1),b(1)+.4);let d=lerp(330,170,E.io(prog(τ,b(1.2),b(2.4))));d=lerp(d,110,zin);if(sw)d=lerp(110,230,rq);
-  S.bk.forEach(k=>{tp(k.el,{x:S.cx+k.sx*d-40,y:S.cy+k.sy*d-40,o:clamp(bq*3)})});vis(S.dot,clamp(bq*3)*(1-prog(τ,KB.m0+.3,KB.m0+.55)));
-  const zq=prog(τ,KB.m0,KB.m0+.15);tf(S.zx,{s:E.back(zq),o:clamp(zq*4)});setOdo(S.zO,1+9*E.out(prog(τ,KB.m0,KB.m0+.9)));
-  const mq=prog(τ,b(5.5),b(5.5)+.35);tp(S.mm,{s:E.back(mq),o:clamp(mq*4)});const fq=prog(τ,b(6),b(6)+.35);tp(S.fl,{x:(1-E.out(fq))*-200,o:clamp(fq*3)});
+  const rq=E.outExpo(prog(τ,KB.m0+.55*MS,KB.m0+1*MS));F.I['06b'].style.transform=`scale(${lerp(1.35,1,rq)})`;F.I['06b'].style.filter=sw&&rq<1?`blur(${(1-rq)*10}px)`:'none';
+  const bq=prog(τ,bb(1),bb(1)+.4);let d=lerp(330,170,E.io(prog(τ,bb(1.2),bb(2.4))));d=lerp(d,110,zin);if(sw)d=lerp(110,230,rq);
+  S.bk.forEach(k=>{tp(k.el,{x:S.cx+k.sx*d-40,y:S.cy+k.sy*d-40,o:clamp(bq*3)})});vis(S.dot,clamp(bq*3)*(1-prog(τ,KB.m0+.3*MS,KB.m0+.55*MS)));
+  const zq=prog(τ,KB.m0,KB.m0+.15*MS);tf(S.zx,{s:E.back(zq),o:clamp(zq*4)});setOdo(S.zO,1+9*E.out(prog(τ,KB.m0,KB.m0+.9*MS)));
+  const mq=prog(τ,bb(5.5),bb(5.5)+.35);tp(S.mm,{s:E.back(mq),o:clamp(mq*4)});const fq=prog(τ,bb(6),bb(6)+.35);tp(S.fl,{x:(1-E.out(fq))*-200,o:clamp(fq*3)});
   promptKW(S,τ,'Wristwatch, ','/macro');
  };}
 
@@ -357,15 +364,15 @@ const S7=kwScene(7,{});
  S.vl=mk(S.cam,'<svg class="abs" style="left:0;top:0" width="1080" height="1920"><path d="M150 1420 L900 700 M150 1420 L900 1440" stroke="#2f7bf5" stroke-width="3" stroke-dasharray="10 10" opacity=".6"/></svg>');
  S.lab=mk(S.cam,'<div class="glass lbl" style="left:900px;top:520px;color:#111218;transform-origin:100% 50%">EYE LEVEL<span id="gr7"> → <span class="B">GROUND</span></span></div>');S.gr=$('gr7');
  S.h1=W(S.type,'LOW',560,250,230);S.h2=W(S.type,'ANGLE',560,1560,190,{cls:'B'});
- S.render=(t,τ)=>{trans(S,τ,'fromBelow','whipL');const land=prog(τ,KB.m0+.5,KB.m0+.62);const sh=shake(τ,KB.m0+.55,12,.3);cam(S.cam,{z:1+.03*prog(τ,0,S.D),...sh});
+ S.render=(t,τ)=>{trans(S,τ,'fromBelow','whipL');const land=prog(τ,KB.m0+.5*MS,KB.m0+.62*MS);const sh=shake(τ,KB.m0+.55*MS,12,.3);cam(S.cam,{z:1+.03*prog(τ,0,S.D),...sh});
   tf(S.h1,A.drop(τ,.15));const r=A.rise(τ,.3);tf(S.h2,{...r,sy:1.15*(r.s||1)});
-  const rq=E.out(prog(τ,.2,.8));S.rul.style.transform=`scaleY(${rq})`;S.rl.forEach((l,i)=>{l.style.opacity=prog(rq,i/4,i/4+.25);l.style.color=i===3&&τ>KB.m0+.5?'#2f7bf5':'#a0a6ba'});
-  const dq=E.in(prog(τ,KB.m0,KB.m0+.55));const cy=lerp(560,1360,dq)+(τ>KB.m0+.55?-20*Math.sin(Math.PI*prog(τ,KB.m0+.55,KB.m0+.8)):0);
-  const cq=prog(τ,b(1),b(1)+.35);tp(S.camt,{y:cy,s:E.back(cq),o:clamp(cq*4)});
-  S.gh.forEach((g,i)=>{const lag=E.in(prog(τ-.04*(i+1),KB.m0,KB.m0+.55));tp(g,{y:lerp(560,1360,lag),o:dq>0&&dq<1?.5-.13*i:0,blur:4+i*4})});
-  const sp=E.io(prog(τ,KB.m0+.3,KB.m0+.75));F.I['07a'].style.transform=`translateY(${-sp*F.h}px)`;F.I['07b'].style.transform=`translateY(${(1-E.back(prog(τ,KB.m0+.3,KB.m0+.85)))*F.h}px)`;
-  vis(S.vl,prog(τ,b(5.5),b(5.5)+.3));
-  const lq=prog(τ,b(1.5),b(1.5)+.35);S.lab.style.transform=`translate(-100%,-50%) scale(${E.back(lq)})`;vis(S.lab,clamp(lq*4));S.gr.style.opacity=prog(τ,KB.m0+.55,KB.m0+.8);
+  const rq=E.out(prog(τ,.2,.8));S.rul.style.transform=`scaleY(${rq})`;S.rl.forEach((l,i)=>{l.style.opacity=prog(rq,i/4,i/4+.25);l.style.color=i===3&&τ>KB.m0+.5*MS?'#2f7bf5':'#a0a6ba'});
+  const dq=E.in(prog(τ,KB.m0,KB.m0+.55*MS));const cy=lerp(560,1360,dq)+(τ>KB.m0+.55*MS?-20*Math.sin(Math.PI*prog(τ,KB.m0+.55*MS,KB.m0+.8*MS)):0);
+  const cq=prog(τ,bb(1),bb(1)+.35);tp(S.camt,{y:cy,s:E.back(cq),o:clamp(cq*4)});
+  S.gh.forEach((g,i)=>{const lag=E.in(prog(τ-.04*(i+1),KB.m0,KB.m0+.55*MS));tp(g,{y:lerp(560,1360,lag),o:dq>0&&dq<1?.5-.13*i:0,blur:4+i*4})});
+  const sp=E.io(prog(τ,KB.m0+.3*MS,KB.m0+.75*MS));F.I['07a'].style.transform=`translateY(${-sp*F.h}px)`;F.I['07b'].style.transform=`translateY(${(1-E.back(prog(τ,KB.m0+.3*MS,KB.m0+.85*MS)))*F.h}px)`;
+  vis(S.vl,prog(τ,bb(5.5),bb(5.5)+.3));
+  const lq=prog(τ,bb(1.5),bb(1.5)+.35);S.lab.style.transform=`translate(-100%,-50%) scale(${E.back(lq)})`;vis(S.lab,clamp(lq*4));S.gr.style.opacity=prog(τ,KB.m0+.55*MS,KB.m0+.8*MS);
   promptKW(S,τ,'Skateboard, ','/lowangle');
  };}
 
@@ -380,12 +387,12 @@ const S8=kwScene(8,{});
  S.h1=W(S.type,'MINIMAL',540,300,140);
  S.render=(t,τ)=>{trans(S,τ,'whipR','pageOut');cam(S.cam,{z:1+.03*prog(τ,0,S.D)});
   const hq=E.out(prog(τ,.1,4.2));S.h1.style.letterSpacing=lerp(-.04,.2,hq)+'em';S.h1.style.paddingLeft=lerp(0,.2,hq)+'em';const hi=prog(τ,.1,.4);tf(S.h1,{o:hi,blur:(1-hi)*14,s:lerp(1.2,1,E.out(hi))});
-  const m=prog(τ,KB.m0,KB.m0+1.2);const mq=E.outQ(m);
+  const m=prog(τ,KB.m0,KB.m0+1.2*MS);const mq=E.outQ(m);
   S.sh.forEach(s=>{const tx=s.x+(s.mx-s.x)*2.2,ty=s.y+(s.my-s.y)*2.2;tp(s.el,{x:lerp(s.x,tx,mq),y:lerp(s.y,ty,mq),r:s.r*mq*1.6,s:lerp(1,.85,mq),o:1-prog(m,.55,1),blur:mq*12});
     s.el.style.boxShadow=`0 30px 60px rgba(0,0,0,${.25*clamp(m*5)})`});
   vis(F.el,τ>=KB.m0?1:0);
-  const cq=prog(τ,b(1.5),b(1.5)+.35);tp(S.cc,{s:E.back(cq),o:clamp(cq*4)});setOdo(S.cO,7*(1-E.io(prog(τ,KB.m0+.1,KB.m0+1.1))));
-  const lq=E.out(prog(τ,b(5.5),b(5.5)+.6));S.line.style.transform=`scaleX(${lq})`;vis(S.mr,lq);
+  const cq=prog(τ,bb(1.5),bb(1.5)+.35);tp(S.cc,{s:E.back(cq),o:clamp(cq*4)});setOdo(S.cO,7*(1-E.io(prog(τ,KB.m0+.1*MS,KB.m0+1.1*MS))));
+  const lq=E.out(prog(τ,bb(5.5),bb(5.5)+.6));S.line.style.transform=`scaleX(${lq})`;vis(S.mr,lq);
   promptKW(S,τ,'Ceramic vase, ','/minimal');
  };}
 
@@ -401,10 +408,10 @@ const S9=kwScene(9,{});
  S.render=(t,τ)=>{trans(S,τ,'pageIn','whipL');cam(S.cam,{z:1+.03*prog(τ,0,S.D)});
   const d=A.drop(τ,.2);tf(S.h1,{...d,sx:.92*d.s,sy:d.s});
   S.gd.forEach((g,i)=>{g.style.transform=`scaleY(${E.out(prog(τ,.2+i*.05,.8+i*.05))})`});
-  const cq=prog(τ,b(1),b(1)+.5);tp(S.col,{x:(1-E.outExpo(cq))*-260,o:cq});
-  const pq=E.inExpo(prog(τ,KB.m0,KB.m0+.6))*.0+E.io(prog(τ,KB.m0,KB.m0+.7));
+  const cq=prog(τ,bb(1),bb(1)+.5);tp(S.col,{x:(1-E.outExpo(cq))*-260,o:cq});
+  const pq=E.inExpo(prog(τ,KB.m0,KB.m0+.6*MS))*.0+E.io(prog(τ,KB.m0,KB.m0+.7*MS));
   S.page.style.transform=`perspective(1400px) rotateY(${pq*-100}deg)`;S.page.style.opacity=1-prog(pq,.75,1);S.page.style.visibility=pq>=1?'hidden':'visible';
-  S.c1.set(prog(τ,b(5.5),b(5.5)+.7));const bq=prog(τ,b(6.5),b(6.5)+.5);tp(S.body,{y:(1-E.out(bq))*30,o:bq});
+  S.c1.set(prog(τ,bb(5.5),bb(5.5)+.7));const bq=prog(τ,bb(6.5),bb(6.5)+.5);tp(S.body,{y:(1-E.out(bq))*30,o:bq});
   promptKW(S,τ,'Leather handbag, ','/editorial');
  };}
 
@@ -420,13 +427,13 @@ const S10=kwScene(10,{});
  S.render=(t,τ)=>{trans(S,τ,'whipR','whipL');cam(S.cam,{z:1+.03*prog(τ,0,S.D)});
   tf(S.h1,A.drop(τ,.1));const gm=prog(τ,.3,.7);S.gm.style.opacity=gm*.9;S.gm.style.transform=`translate(-50%,-50%) translateX(${(1-E.out(gm))*300}px)`;
   const w=A.whipR(τ,.35);tf(S.h2,{...w,sx:(w.sx||1)*1.2});S.h2g.forEach((g,i)=>{tf(g,{x:(w.x||0)-60*(i+1)*clamp(prog(τ,.35,.6)),sx:1.2,o:.1*(4-i)*(w.o||0),blur:4+i*3})});
-  const m0=b(5);const wp=E.io(prog(τ,m0,m0+.8));F.I['10b'].style.clipPath=`inset(0 ${(1-wp)*100}% 0 0)`;
+  const m0=bb(5);const wp=E.io(prog(τ,m0,m0+.8));F.I['10b'].style.clipPath=`inset(0 ${(1-wp)*100}% 0 0)`;
   S.st.forEach((s,i)=>{const sp=1800+hash(i)*1400;const L=1500;const x=((τ*sp+hash(i+2)*L)%L)-300;const on=τ>m0?Math.min(1,(τ-m0)*4):0;tp(s,{x:x,o:on*(.5+.5*hash(i+5))})});
-  S.bxr.setAttribute('stroke-dashoffset',2080*(1-E.io(prog(τ,b(6.5),b(6.5)+.5))));const sq=prog(τ,b(7),b(7)+.3);tp(S.sl,{s:E.back(sq),o:clamp(sq*4)});
-  const cq=prog(τ,b(7),b(7)+.35);tp(S.sc,{s:E.back(cq),o:clamp(cq*4)});setOdo(S.shO,1+29*E.out(prog(τ,b(7),b(8))));
+  S.bxr.setAttribute('stroke-dashoffset',2080*(1-E.io(prog(τ,bb(6.5),bb(6.5)+.5))));const sq=prog(τ,bb(7),bb(7)+.3);tp(S.sl,{s:E.back(sq),o:clamp(sq*4)});
+  const cq=prog(τ,bb(7),bb(7)+.35);tp(S.sc,{s:E.back(cq),o:clamp(cq*4)});setOdo(S.shO,1+29*E.out(prog(τ,bb(7),bb(8))));
   // prompt: keyword first, then the sharpness rule
   const landed=chipFly(τ,'/motionblur',540,430,KB.pop,KB.land);PS.t='';if(landed){PS.k='/motionblur';PS.kq=prog(τ,KB.land,KB.land+.25)}
-  PS.x=landed?typed('. Keep the bike sharp.',τ,KB.land+.12,.03):'';PS.cur=1;sendFX(τ,b(4.5));
+  PS.x=landed?typed('. Keep the bike sharp.',τ,KB.land+.12,.03):'';PS.cur=1;sendFX(τ,bb(4.5));PS.gen=[S.t0+bb(4.5)+.05,S.t0+bb(5)+1.1];
  };}
 
 // ── SAVE (55.69 → 63) + loop back into the hook
@@ -435,17 +442,17 @@ const SS=scene();SS.t0=TS;SS.D=63-TS;
  S.tiles=K.map(([k,n],i)=>{const c=i%2,r=Math.floor(i/2);return {x:70+c*480,y:520+r*212,el:mk(S.cam,`<div class="glass" style="left:0;top:0;width:460px;height:192px;border-radius:30px;transform-origin:50% 50%"><img src="${SRC(k)}" style="position:absolute;left:10px;top:10px;width:138px;height:172px;object-fit:cover;border-radius:22px"><div class="abs" style="left:170px;top:44px"><div class="tiny">${String(i+1).padStart(2,'0')}</div><div style="font-weight:800;font-size:38px;color:#2f7bf5;letter-spacing:-.02em">/${n}</div></div></div>`)}});
  S.bm=card(S.cam,840,180,150,150,`<div class="sq" style="height:100%"><svg width="76" height="76" viewBox="0 0 24 24"><defs><clipPath id="bmc"><rect id="bmr" x="0" y="24" width="24" height="24"/></clipPath></defs><path d="M6 3.5h12v17l-6-4.2-6 4.2z" fill="none" stroke="#2f7bf5" stroke-width="2" stroke-linejoin="round"/><path d="M6 3.5h12v17l-6-4.2-6 4.2z" fill="#2f7bf5" clip-path="url(#bmc)"/></svg></div>`,{r:44});S.bmr=$('bmr');
  S.bring=mk(S.cam,'<div class="abs" style="left:915px;top:255px"></div>');S.br=ring(S.bring,90,'#2f7bf5',4);
- S.h1=W(S.type,'SAVE',540,250,250);S.h2=W(S.type,'THIS<span class="B">.</span>',540,430,140);
+ S.h1=W(S.type,'SAVE',540,230,250);S.h2=W(S.type,'THIS<span class="B">.</span>',540,395,140);S.h3=W(S.type,'FOR YOUR NEXT <span style="display:inline-block;padding:0 .25em .08em;border-radius:.3em;background:#2f7bf5;color:#fff">ChatGPT</span> PROMPT',540,478,40,{style:'letter-spacing:.04em;font-weight:800'});
  S.render=(t,τ)=>{wrap(S,{});cam(S.cam,{});
-  const col=E.inExpo(prog(τ,b(9),b(9)+.5));   // 60.75 → 61.25 collapse
+  const col=E.inExpo(prog(τ,b(16),b(16)+.5));   // collapse back into the hook card
   S.tiles.forEach((T,i)=>{const t0=.04+i*.06;const q=E.outExpo(prog(τ,t0,t0+.5));const x=lerp(T.x+900,T.x,q),y=T.y;
-    const cx=540-230,cy=1128-96;tp(T.el,{x:lerp(x,cx,col),y:lerp(y,cy,col),s:lerp(1,.6,col),o:clamp(prog(τ,t0,t0+.1))*(1-prog(τ,b(9)+.35,b(9)+.55)),blur:(1-q)*14+col*6})});
-  tf(S.h1,mix(A.slam(τ,b(1)),upOut(τ,b(9)-.05)));tf(S.h2,mix(A.slam(τ,b(1.5)),upOut(τ,b(9))));
-  const bq=prog(τ,b(2),b(2)+.35);tp(S.bm,{s:E.back(bq)*(1-col),o:clamp(bq*4)*(1-col)});S.bmr.setAttribute('y',lerp(24,0,E.io(prog(τ,b(2.5),b(3.2)))));
-  const rk=prog(τ,b(3.2),b(3.2)+.6);S.br.style.transform=`scale(${1+rk*.8})`;vis(S.br,rk>0&&rk<1?(1-rk)*.7:0);
+    const cx=540-230,cy=1128-96;tp(T.el,{x:lerp(x,cx,col),y:lerp(y,cy,col),s:lerp(1,.6,col),o:clamp(prog(τ,t0,t0+.1))*(1-prog(τ,b(16)+.35,b(16)+.55)),blur:(1-q)*14+col*6})});
+  tf(S.h1,mix(A.slam(τ,b(1)),upOut(τ,b(16)-.05)));tf(S.h2,mix(A.slam(τ,b(1.5)),upOut(τ,b(16))));tf(S.h3,mix(A.drop(τ,b(2.5)),upOut(τ,b(16)+.04)));
+  const bq=prog(τ,b(4),b(4)+.35);tp(S.bm,{s:E.back(bq)*(1-col),o:clamp(bq*4)*(1-col)});S.bmr.setAttribute('y',lerp(24,0,E.io(prog(τ,b(4.5),b(5.2)))));
+  const rk=prog(τ,b(5.2),b(5.2)+.6);S.br.style.transform=`scale(${1+rk*.8})`;vis(S.br,rk>0&&rk<1?(1-rk)*.7:0);
   // prompt
-  if(τ<b(9)){PS.t=typed('Describe the scene + ',τ,.25);PS.k=τ>=b(2)?'/keyword':'';PS.kq=prog(τ,b(2),b(2)+.25)}
-  else if(τ<b(9)+.25){PS.t=`<span style="opacity:${1-prog(τ,b(9),b(9)+.25)}">Describe the scene + </span>`;PS.k='/keyword';PS.kO=1-prog(τ,b(9),b(9)+.25)}
+  if(τ<b(16)){PS.t=typed('Describe the scene + ',τ,.25);PS.k=τ>=b(3)?'/keyword':'';PS.kq=prog(τ,b(3),b(3)+.25)}
+  else if(τ<b(16)+.25){PS.t=`<span style="opacity:${1-prog(τ,b(16),b(16)+.25)}">Describe the scene + </span>`;PS.k='/keyword';PS.kO=1-prog(τ,b(16),b(16)+.25)}
   PS.cur=1;
  };}
 
@@ -464,39 +471,40 @@ const SECT=[S0,S1,S2,S3,S4,S5,S6,S7,S8,S9,S10];
 function renderAt(t){
   prReset();
   SCN.forEach(S=>S.el.style.display='none');
-  const loop=t>=61.15;
+  const loop=t>=DUR-2.1;
   SECT.forEach((S,i)=>{const τ=t-S.t0;if(τ>=0&&τ<S.D){S.el.style.display='block';S.render(t,τ)}});
   if(t>=TS){SS.el.style.display='block';SS.render(t,t-TS)}
-  if(loop){S0.el.style.display='block';S0.render(t,t-63,true)}
+  if(loop){S0.el.style.display='block';S0.render(t,t-DUR,true)}
   PS.dark=(t>=T0(4)&&t<T0(5))?1:0;
   // counter
-  let n=0;const si=Math.floor(t/D);if(t<TS){n=si===0?0:si-1+E.out(prog(t-T0(si),.05,.45))}else n=10*(1-E.io(prog(t,61.3,61.85)));
+  let n=0;let si=0;while(si<10&&t>=T0(si+1))si++;if(t<TS){n=si===0?0:si-1+E.out(prog(t-T0(si),.05,.45))}else n=10*(1-E.io(prog(t,DUR-1.95,DUR-1.4)));
   setOdo(CNT,n);const fill=Math.round(n);SL.forEach((s,k)=>{s.style.color=k<fill?'#2f7bf5':(PS.dark?'#4a4d5a':'#c6cbdb')});
   prApply(t);overlays(t);
-  BLOB1.style.transform=`translate(${Math.sin(t*2*Math.PI/63)*90}px,${Math.cos(t*2*Math.PI/63*2)*70}px)`;BLOB2.style.transform=`translate(${Math.cos(t*2*Math.PI/63)*-80}px,${Math.sin(t*2*Math.PI/63*3)*60}px)`;
+  BLOB1.style.transform=`translate(${Math.sin(t*2*Math.PI/DUR)*90}px,${Math.cos(t*2*Math.PI/DUR*2)*70}px)`;BLOB2.style.transform=`translate(${Math.cos(t*2*Math.PI/DUR)*-80}px,${Math.sin(t*2*Math.PI/DUR*3)*60}px)`;
 }
 
 // ───────── sound events
 const SFX=[];const sx=(t,type,g=1,pan=0,extra)=>SFX.push(Object.assign({t:+t.toFixed(3),type,g,pan},extra||{}));
 const keys=(t0,s,cps=.032,seed=0)=>[...s].forEach((c,k)=>c!==' '&&sx(t0+k*cps,'key',.2,(hash(k+seed)-.5)*.5,{s:k+seed}));
 // hook
-sx(.06,'swish',.35,-.2,{d:.35});sx(.22,'swish',.35,.2,{d:.35});sx(b(1),'click',.8,.4);sx(.6,'air',.4,0,{d:.6});sx(1.05,'shimmer',.3,0);
-[1.15,1.3,1.45].forEach(x=>sx(x,'tick',.35,.2));sx(b(1.5),'snap',.4);sx(b(3),'erase',.55);sx(2.0,'lowswish',.4,0,{d:.5});
-sx(b(4),'thud',.9);sx(b(4),'accent',.45,0,{n:0});sx(b(4.5)-.05,'whip',.55,.3,{d:.4});
-[0,1,2].forEach(i=>{const tc=b(5+i*.5);sx(tc,'pop',.45,(i-1)*.5);sx(tc+.15,'whoosh',.45,(i-1)*.6,{d:.6})});
-sx(b(7)-.1,'swish',.4,0,{d:.3});sx(b(7),'thud',.75);sx(b(7.5),'thud',.75);sx(b(7.5),'accent',.4,0,{n:1});keys(b(7)+.05,'Describe the shot.',.032,40);
+sx(H.h1,'swish',.35,-.2,{d:.35});sx(H.h2,'thud',.6);sx(H.t1,'thud',.85);sx(H.t1,'accent',.45,0,{n:0});sx(H.t2,'thud',.7);sx(H.tOut,'swish',.35,0,{d:.35});
+sx(H.send,'click',.8,.4);sx(H.send+.05,'air',.4,0,{d:.6});sx(H.send+.5,'shimmer',.3,0);
+[.6,.75,.9].forEach(x=>sx(H.send+x,'tick',.35,.2));sx(H.lb,'snap',.4);sx(H.strike,'erase',.55);sx(H.strike+.3,'lowswish',.4,0,{d:.5});
+sx(H.stop,'thud',.9);sx(H.stop,'accent',.45,0,{n:0});sx(H.gu-.05,'whip',.55,.3,{d:.4});
+[0,1,2].forEach(i=>{const tc=H.chips+b(i*.5);sx(tc,'pop',.45,(i-1)*.5);sx(tc+.15,'whoosh',.45,(i-1)*.6,{d:.6})});
+sx(H.desc-.1,'swish',.4,0,{d:.3});sx(H.desc,'thud',.75);sx(H.shot,'thud',.75);sx(H.shot,'accent',.4,0,{n:1});keys(H.desc+.05,'Describe the shot.',.032,40);
 // keyword sections
 const sec=[
- {mech:[[0,'shutter',.6],[.05,'swish',.5,{d:.5}],[b(1)-KB.m0,'tick',.4],[b(1.5)-KB.m0,'snap',.45],[b(2)-KB.m0,'snap',.45]],in:'whip',desc:'Sneaker on a table, ',info:[b(5.5),b(6),b(6.5)]},
- {mech:[[0,'air',.6,{d:1.0}],[.3,'rise',.4,{d:1}],[b(1.3)-KB.m0,'swish',.35,{d:.4}]],in:'dive',desc:'Perfume bottle, ',info:[b(4.5),b(1.5)]},
- {mech:[[0,'shutter',.9],[.02,'thud',.5],[.05,'swish',.4,{d:.4}]],in:'air',desc:'Sunglasses, ',info:[b(5),b(5.5),b(6)]},
- {mech:[[.25,'rise',.6,{d:1.1}],[1.1,'bell',.4]],in:'dark',desc:'Headphones, ',info:[b(5.5),b(1.5)]},
- {mech:[[0,'air',.5,{d:1.1}],[.7,'bell',.4]],in:'glow',desc:'Honey jar, ',info:[b(1.5),b(2)]},
- {mech:[[0,'swoosh',.6,{d:.6}],[.55,'focus',.7],[.6,'thud',.4]],in:'dive',desc:'Wristwatch, ',info:[b(5.5),b(6)]},
- {mech:[[0,'lowswish',.7,{d:.6}],[.55,'thud',.75],[.4,'swish',.3,{d:.4}]],in:'up',desc:'Skateboard, ',info:[b(5.5),b(1.5)]},
- {mech:[[.0,'swish',.5,{d:.4}],[.15,'snap',.4],[.25,'swish',.4,{d:.4}],[.35,'snap',.35]],in:'whip',desc:'Ceramic vase, ',info:[b(1.5),b(5.5)]},
- {mech:[[0,'fold',.6,{d:.7}]],in:'page',desc:'Leather handbag, ',info:[b(1),b(5.5),b(6.5)]},
- {mech:[[b(5)-KB.m0,'speed',.8,{d:1.2}]],in:'whip',desc:'',info:[b(6.5),b(7)]},
+ {mech:[[0,'shutter',.6],[.05,'swish',.5,{d:.5}],[bb(1)-KB.m0,'tick',.4],[bb(1.5)-KB.m0,'snap',.45],[bb(2)-KB.m0,'snap',.45]],in:'whip',desc:'Sneaker on a table, ',info:[bb(5.5),bb(6),bb(6.5)]},
+ {mech:[[0,'air',.6,{d:1.0}],[.3,'rise',.4,{d:1}],[bb(1.3)-KB.m0,'swish',.35,{d:.4}]],in:'dive',desc:'Perfume bottle, ',info:[bb(4.5),bb(1.5)]},
+ {mech:[[0,'shutter',.9],[.02,'thud',.5],[.05,'swish',.4,{d:.4}]],in:'air',desc:'Sunglasses, ',info:[bb(5),bb(5.5),bb(6)]},
+ {mech:[[.25,'rise',.6,{d:1.1}],[1.1,'bell',.4]],in:'dark',desc:'Headphones, ',info:[bb(5.5),bb(1.5)]},
+ {mech:[[0,'air',.5,{d:1.1}],[.7,'bell',.4]],in:'glow',desc:'Honey jar, ',info:[bb(1.5),bb(2)]},
+ {mech:[[0,'swoosh',.6,{d:.6}],[.55,'focus',.7],[.6,'thud',.4]],in:'dive',desc:'Wristwatch, ',info:[bb(5.5),bb(6)]},
+ {mech:[[0,'lowswish',.7,{d:.6}],[.55,'thud',.75],[.4,'swish',.3,{d:.4}]],in:'up',desc:'Skateboard, ',info:[bb(5.5),bb(1.5)]},
+ {mech:[[.0,'swish',.5,{d:.4}],[.15,'snap',.4],[.25,'swish',.4,{d:.4}],[.35,'snap',.35]],in:'whip',desc:'Ceramic vase, ',info:[bb(1.5),bb(5.5)]},
+ {mech:[[0,'fold',.6,{d:.7}]],in:'page',desc:'Leather handbag, ',info:[bb(1),bb(5.5),bb(6.5)]},
+ {mech:[[bb(5)-KB.m0,'speed',.8,{d:1.2}]],in:'whip',desc:'',info:[bb(6.5),bb(7)]},
 ];
 sec.forEach((s,k)=>{const i=k+1,a=T0(i);
   if(s.in==='whip')sx(a-.3,'whip',.6,0,{d:.55});if(s.in==='dive'){sx(a-.6,'dive',.6,0,{d:.9})}if(s.in==='page')sx(a-.35,'fold',.5,0,{d:.6});if(s.in==='up')sx(a-.35,'lowswish',.55,0,{d:.6});
@@ -504,14 +512,14 @@ sec.forEach((s,k)=>{const i=k+1,a=T0(i);
   sx(a+.1,'thud',.6);sx(a+.12,'tick',.35,.3);sx(a+.3,'thud',.45);
   keys(a+KB.type,s.desc,.032,i*20);
   sx(a+KB.pop,'pop',.5,-.2);sx(a+KB.land-.3,'swish',.4,.2,{d:.35});sx(a+KB.land,'tick',.5,.3);
-  if(i===10){keys(a+KB.land+.12,'. Keep the bike sharp.',.03,300);sx(a+b(4.5),'click',.8,.4)}else sx(a+KB.send,'click',.8,.4);
-  s.mech.forEach(([o,ty,g,ex])=>sx(a+KB.m0+o,ty,g,0,ex));
+  if(i===10){keys(a+KB.land+.12,'. Keep the bike sharp.',.03,300);sx(a+bb(4.5),'click',.8,.4)}else sx(a+KB.send,'click',.8,.4);
+  s.mech.forEach(([o,ty,g,ex])=>sx(a+KB.m0+(o<0||i===10?o:o*MS),ty,g,0,ex));
   s.info.forEach(o=>sx(a+o,'pop',.35,.3));
 });
-sx(T0(4)+b(5.5)+.2,'tick',.3);
+sx(T0(4)+bb(5.5)+.2,'tick',.3);
 for(let k=0;k<10;k++)sx(TS+.04+k*.06+.1,'tick',.3,(k%2?.3:-.3),{hi:1});sx(TS-.3,'whip',.55,0,{d:.55});
-sx(TS+b(1),'thud',.85);sx(TS+b(1.5),'thud',.7);sx(TS+b(1.5),'accent',.45,0,{n:1});sx(TS+b(2),'pop',.45);sx(TS+b(2.5),'shimmer',.4);keys(TS+.25,'Describe the scene + ',.032,500);
-sx(TS+b(9),'fold',.6,0,{d:.6});sx(61.3,'swish',.4,0,{d:.4});keys(61.75,'Make it look better.',.034,700);
+sx(TS+b(1),'thud',.85);sx(TS+b(1.5),'thud',.7);sx(TS+b(1.5),'accent',.45,0,{n:1});sx(TS+b(2.5),'swish',.35,0,{d:.35});sx(TS+b(3),'tick',.45);sx(TS+b(4),'pop',.45);sx(TS+b(4.5),'shimmer',.4);keys(TS+.25,'Describe the scene + ',.032,500);
+sx(TS+b(16),'fold',.6,0,{d:.6});sx(DUR-1.95,'swish',.4,0,{d:.4});keys(DUR-1.5,'Make it look better.',.034,700);
 window.SFX=SFX;window.renderAt=renderAt;window.DUR=DUR;window.SCN=SECT.map(S=>({t0:S.t0}));
 Promise.all([document.fonts.ready,...[...document.images].map(i=>i.complete?1:new Promise(r=>i.onload=i.onerror=r))]).then(()=>{renderAt(0);window.ready=true});
 </script>
