@@ -1,0 +1,47 @@
+1
+00:00:00,300 --> 00:00:04,700
+Want better AI photos? Try these ten keywords in your next ChatGPT image prompt.
+
+2
+00:00:05,250 --> 00:00:09,500
+Product shot: give your subject a clean, commercial presentation.
+
+3
+00:00:10,250 --> 00:00:14,500
+Soft light: ask for gentle shadows and smooth transitions.
+
+4
+00:00:15,250 --> 00:00:19,300
+Hard light: create crisp shadows and a bolder look.
+
+5
+00:00:20,250 --> 00:00:24,500
+Rim light: separate your subject with an illuminated edge.
+
+6
+00:00:25,250 --> 00:00:29,100
+Golden hour: bring in warm, low evening light.
+
+7
+00:00:30,250 --> 00:00:34,500
+Macro: move closer to reveal texture and tiny details.
+
+8
+00:00:35,250 --> 00:00:39,100
+Low angle: make the subject feel more imposing.
+
+9
+00:00:40,250 --> 00:00:44,500
+Minimal: remove distractions and give the subject room.
+
+10
+00:00:45,250 --> 00:00:49,300
+Editorial: try a styled, magazine-inspired composition.
+
+11
+00:00:50,250 --> 00:00:54,800
+Motion blur: suggest speed. Specify what should stay sharp.
+
+12
+00:00:55,300 --> 00:01:01,800
+Add these to a clear description of your scene. Save this before your next generation.

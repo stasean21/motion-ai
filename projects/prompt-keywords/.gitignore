@@ -1,0 +1,4 @@
+out/*.part*
+out/*.mp4.txt
+out/render.log
+photos/raw/
