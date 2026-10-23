@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>10 photo prompt keywords — keyframes v3 (real photos)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#eef0f6}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#14151b}
+#root{position:absolute;inset:0;overflow:hidden}
+.abs{position:absolute}
+.sq{display:flex;align-items:center;justify-content:center}
+.mono{font-family:'DejaVu Sans Mono',monospace}
+:root{--blue:#2f7bf5;--sky:#a9c1ee}
+/* glass but light, like the reference's white cards */
+.card{position:absolute;border-radius:40px;overflow:hidden;background:linear-gradient(160deg,rgba(255,255,255,.92),rgba(255,255,255,.74));
+  -webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);border:1.5px solid rgba(255,255,255,.95);
+  box-shadow:0 30px 60px -28px rgba(40,50,110,.30),0 6px 16px -8px rgba(40,50,110,.10),inset 0 2px 0 #fff}
+.pill{position:absolute;border-radius:999px;display:flex;align-items:center;justify-content:center;white-space:nowrap;background:rgba(255,255,255,.82);
+  border:1.5px solid #fff;box-shadow:0 10px 24px -12px rgba(40,50,110,.28)}
+.karaoke{position:absolute;left:60px;width:960px;top:190px;text-align:center;font-weight:600;font-size:52px;line-height:1.22;letter-spacing:-.015em}
+.karaoke .u{color:var(--sky)} .karaoke .k{color:var(--blue)}
+.gpt{display:inline-flex;align-items:center;gap:8px;padding:2px 16px;border-radius:999px;background:#fff;box-shadow:0 6px 16px -8px rgba(40,50,110,.3);font-size:36px;vertical-align:middle}
+.gpt::before{content:'';width:10px;height:10px;border-radius:50%;background:#c9cede}
+.kw{position:absolute;font-weight:600;letter-spacing:-.03em;color:var(--blue);white-space:nowrap}
+.tag{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:999px;background:#e9f0ff;color:var(--blue);font-weight:700;font-size:26px}
+.tag::before{content:'';width:9px;height:9px;border-radius:50%;background:#b9c3d8}
+.photo{position:absolute;border-radius:28px;overflow:hidden}
+.ph-tag{position:absolute;right:16px;bottom:14px;padding:5px 12px;border-radius:10px;background:rgba(0,0,0,.35);color:#fff;font:700 15px 'Inter Display';letter-spacing:.06em;z-index:5}
+.cursor{position:absolute;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
+.mb{filter:blur(6px)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+'use strict';
+const root=document.getElementById('root');
+const IC={send:'<path d="M12 19.5V5M5.6 11.2L12 4.8l6.4 6.4"/>',cam:'<rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.6"/><path d="M8.5 7l1.6-2.6h3.8L15.5 7"/>',
+  sun:'<circle cx="12" cy="12" r="4.4"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7L7 17M17 7l1.7-1.7"/>',
+  bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>',bookmark:'<path d="M6 3.5h12v17l-6-4.2-6 4.2z"/>',
+  search:'<circle cx="10.8" cy="10.8" r="6.8"/><path d="M16 16l4.6 4.6"/>'};
+const icon=(n,s,c,sw=2.2)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
+// real photos (provided by the user, 4:5). kind → file
+const PH={boring:'00a',boring2:'00b',messy:'01a',product:'01b',soft0:'02a',soft:'02b',hard0:'03a',hard:'03b',rim0:'04a',rim:'04b',golden0:'05a',golden:'05b',
+  macro0:'06a',macro:'06b',low0:'07a',low:'07b',clutter:'08a',minimal:'08b',editorial0:'09a',editorial:'09b',blur0:'10a',blur:'10b'};
+const img=(k,style='')=>`<img src="assets/ph/${PH[k]}.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;${style}">`;
+function photo(kind,x,y,w,h){return `<div class="photo" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px">${img(kind)}</div>`}
+
+// ── reference-style pieces
+const progress=(n)=>`<div class="pill" style="left:390px;top:96px;height:62px;padding:0 26px;gap:18px;font-weight:700;font-size:26px"><span><b>${n}</b><span style="color:#9aa0b4">/10</span></span>
+  <span class="mono" style="letter-spacing:-.05em;font-size:30px;font-weight:700">${[...Array(10)].map((_,i)=>`<span style="color:${i<n?'#2f7bf5':'#c6cbdb'};font-style:italic">/</span>`).join('')}</span></div>`;
+// karaoke: words before `said` are black, the rest light; keys are blue when said
+function karaoke(text,said,keys=[],top=190){const w=text.split(' ');return `<div class="karaoke" style="top:${top}px">${w.map((x,i)=>x==='ChatGPT'?`<span class="gpt" style="opacity:${i<said?1:.45}">ChatGPT</span>`:`<span class="${i>=said?'u':(keys.includes(i)?'k':'')}">${x}</span>`).join(' ')}</div>`}
+const cursor=(x,y,press=0)=>`<svg class="cursor" style="left:${x}px;top:${y}px;transform:scale(${press?.9:1})" width="64" height="72" viewBox="0 0 32 36"><path d="M11 2.5c1.4 0 2.5 1.1 2.5 2.5v9.2l1.1-.2c1.2-.2 2.3.5 2.6 1.6l.1.4.6-.1c1.2-.2 2.3.5 2.6 1.7l.1.3.4-.1c1.3-.2 2.5.7 2.7 2l.9 6.2c.4 2.8-1.2 5.5-3.8 6.5l-2.2.8c-2.3.9-4.9.3-6.6-1.5l-5.8-6.1c-.9-1-.9-2.5.1-3.4.9-.8 2.3-.8 3.2 0l.9.9V5c0-1.4 1.1-2.5 2.5-2.5z" fill="#fff" stroke="#14151b" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+// the working card: tag + photo + prompt line (keyword lands inside the prompt)
+function workCard(tag,kind,prompt,{x=190,y=560,w=700,ph=820,caret=1,extra='',photoHTML}={}){
+  return `<div class="card" style="left:${x}px;top:${y}px;width:${w}px;height:${ph+190}px">
+    <div class="abs" style="left:28px;top:24px"><span class="tag">${tag}</span></div>
+    ${photoHTML||photo(kind,28,84,w-56,ph-30)}
+    <div class="abs" style="left:28px;top:${ph+74}px;width:${w-56}px;height:86px;border-radius:24px;background:#f2f4fa;display:flex;align-items:center;padding:0 100px 0 26px;font-weight:600;font-size:28px;color:#4a4d5c;white-space:nowrap;overflow:hidden">${prompt}${caret?'<span style="display:inline-block;width:3px;height:36px;background:#2f7bf5;margin-left:4px"></span>':''}</div>
+    <div class="sq" style="position:absolute;right:38px;top:${ph+84}px;width:66px;height:66px;border-radius:50%;background:#2f7bf5">${icon('send',34,'#fff',3)}</div>${extra}</div>`}
+const kwChip=(k)=>`<span style="color:#2f7bf5;font-weight:700">/${k}</span>`;
+const bigKw=(k,x,y,size=120,style='')=>`<div class="kw" style="left:${x}px;top:${y}px;font-size:${size}px;${style}">/${k}</div>`;
+const trail=(x1,y1,x2,y2)=>`<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><path d="M${x1} ${y1} Q ${(x1+x2)/2+120} ${(y1+y2)/2-80} ${x2} ${y2}" stroke="#2f7bf5" stroke-width="5" fill="none" stroke-dasharray="2 14" stroke-linecap="round" opacity=".55"/></svg>`;
+const wipeHTML=(a,b,pos,w,h)=>`<div class="abs" style="left:28px;top:84px;width:${w}px;height:${h}px;border-radius:28px;overflow:hidden">${photo(a,0,0,w,h,false)}<div class="abs" style="left:0;top:0;width:${pos*w}px;height:${h}px;overflow:hidden">${photo(b,0,0,w,h,false)}</div>
+  <div class="abs" style="left:${pos*w-3}px;top:0;width:6px;height:${h}px;background:#fff;box-shadow:0 0 20px rgba(0,0,0,.25)"></div><div class="pill" style="left:${pos*w-34}px;top:${h/2-34}px;width:68px;height:68px;font-weight:900;font-size:26px">‹›</div><div class="ph-tag">PLACEHOLDER</div></div>`;
+const BASEP='White sneaker, orange heel tab,&nbsp;';
+const F={};
+F['01']=()=>progress(0)+karaoke('Want better AI photos? Try these ten keywords in your next ChatGPT image prompt.',9,[5,6])+
+  workCard('prompt','boring','Make it <s style="text-decoration-color:#e5484d;text-decoration-thickness:4px;color:#b2b6c4">look better.</s>',{y:620})+
+  `<div class="kw mb" style="left:700px;top:600px;font-size:64px;transform:rotate(-8deg)">/softlight</div><div class="kw" style="left:60px;top:1040px;font-size:64px;transform:rotate(6deg)">/macro</div><div class="kw" style="left:690px;top:1350px;font-size:64px;transform:rotate(-4deg)">/editorial</div>`+
+  trail(820,680,700,1520)+cursor(800,1520);
+F['02']=()=>progress(1)+karaoke('Product shot: give your subject a clean, commercial presentation.',5,[0,1])+bigKw('productshot',140,420,110)+
+  `<div class="card" style="left:190px;top:620px;width:700px;height:1010px"><div class="abs" style="left:28px;top:24px"><span class="tag">/productshot</span></div>${wipeHTML('messy','product',.62,644,790)}
+   <div class="abs" style="left:28px;top:894px;width:644px;height:86px;border-radius:24px;background:#f2f4fa;display:flex;align-items:center;padding:0 26px;font-weight:600;font-size:28px;color:#4a4d5c">${BASEP}${kwChip('productshot')}</div></div>`+cursor(578,1080);
+F['03']=()=>progress(2)+karaoke('Soft light: ask for gentle shadows and smooth transitions.',6,[0,1])+
+  workCard('/softlight','soft',BASEP+kwChip('softlight'),{y:560})+
+  `<div class="card" style="left:110px;top:1600px;width:860px;height:150px;border-radius:40px">
+     <div class="abs" style="left:34px;top:30px;display:flex;align-items:center;gap:14px;font-weight:700;font-size:28px">${icon('bulb',40,'#2f7bf5')}Light softness</div>
+     <div class="abs" style="left:34px;top:96px;width:792px;height:12px;border-radius:6px;background:#e3e7f1"><div style="width:78%;height:100%;border-radius:6px;background:#2f7bf5"></div></div>
+     <div class="abs" style="left:${34+792*.78-22}px;top:80px;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.25)"></div></div>`+cursor(740,1690);
+F['04']=()=>progress(3)+karaoke('Hard light: create crisp shadows and a bolder look.',4,[0,1])+
+  workCard('/hardlight','hard',BASEP,{y:620})+bigKw('hardlight',560,1390,64,'transform:rotate(-12deg);filter:blur(1.5px)')+trail(520,450,700,1660)+
+  `<div class="kw" style="left:250px;top:400px;font-size:96px;opacity:.18;filter:blur(8px)">/hardlight</div>`;
+F['05']=()=>progress(4)+karaoke('Rim light: separate your subject with an illuminated edge.',7,[0,1])+
+  workCard('/rimlight','rim',BASEP+kwChip('rimlight'),{y:560,caret:0})+
+  `<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><circle cx="300" cy="960" r="18" fill="#fff" filter="drop-shadow(0 0 12px #fff)"/><path d="M300 960 Q 420 860 560 870 T 820 960" stroke="#fff" stroke-width="5" fill="none" stroke-dasharray="3 12" opacity=".8"/></svg>`;
+F['06']=()=>progress(5)+karaoke('Golden hour: bring in warm, low evening light.',5,[0,1])+
+  workCard('/goldenhour','golden',BASEP+kwChip('goldenhour'),{y:620,caret:0})+
+  `<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><path d="M120 1180 Q 540 300 960 1180" stroke="#ff9a3c" stroke-width="5" fill="none" stroke-dasharray="3 14"/></svg>
+   <div class="card sq" style="left:830px;top:740px;width:130px;height:130px;border-radius:50%">${icon('sun',70,'#ff8a1a')}</div>`;
+F['07']=()=>progress(6)+karaoke('Macro: move closer to reveal texture and tiny details.',6,[0])+
+  workCard('/macro','product',BASEP+kwChip('macro'),{y:620,caret:0})+
+  `<div class="abs" style="left:300px;top:700px;width:520px;height:520px;border-radius:50%;overflow:hidden;border:10px solid #fff;box-shadow:0 30px 60px -20px rgba(40,50,110,.45)">${photo('macro',0,0,520,520,false)}</div>
+   <div class="abs" style="left:700px;top:1150px;width:40px;height:150px;border-radius:20px;background:#fff;transform:rotate(-40deg);box-shadow:0 10px 20px rgba(0,0,0,.2)"></div>`;
+F['08']=()=>progress(7)+karaoke('Low angle: make the subject feel more imposing.',5,[0,1])+
+  workCard('/lowangle','low',BASEP+kwChip('lowangle'),{y:620,caret:0})+
+  `<div class="abs" style="left:950px;top:640px;width:6px;height:780px;border-radius:3px;background:repeating-linear-gradient(180deg,#9fb6e8 0 10px,transparent 10px 24px)"></div>
+   <div class="card sq" style="left:893px;top:1260px;width:120px;height:120px;border-radius:34px;flex-direction:column">${icon('cam',56,'#2f7bf5')}</div><div class="abs" style="left:938px;top:1390px;font-weight:900;font-size:40px;color:#2f7bf5">↓</div>`;
+F['09']=()=>progress(8)+karaoke('Minimal: remove distractions and give the subject room.',4,[0])+
+  `<div class="card" style="left:190px;top:620px;width:700px;height:1010px"><div class="abs" style="left:28px;top:24px"><span class="tag">/minimal</span></div>${photo('minimal',28,84,644,790)}
+   <div class="abs" style="left:28px;top:894px;width:644px;height:86px;border-radius:24px;background:#f2f4fa;display:flex;align-items:center;padding:0 26px;font-weight:600;font-size:28px;color:#4a4d5c">${BASEP}${kwChip('minimal')}</div></div>
+   <div class="abs mb" style="left:-40px;top:700px;width:240px;height:170px;background:#e6d3b8;border-radius:16px;transform:rotate(-14deg)"></div>
+   <div class="abs mb" style="left:900px;top:560px;width:150px;height:150px;border-radius:50%;background:#c7cbe0"></div>
+   <div class="abs mb" style="left:880px;top:1380px;width:0;height:0;border-left:80px solid transparent;border-right:80px solid transparent;border-bottom:140px solid #f2c9b8;transform:rotate(18deg)"></div>`;
+F['10']=()=>progress(9)+karaoke('Editorial: try a styled, magazine-inspired composition.',5,[0])+
+  workCard('/editorial','editorial',BASEP+kwChip('editorial'),{y:620,caret:0})+
+  `<div class="pill" style="left:80px;top:1060px;height:64px;padding:0 24px;font-weight:700;font-size:26px;gap:10px"><span style="width:14px;height:14px;border-radius:4px;background:#e9dccb"></span>pedestal</div>
+   <div class="pill" style="left:820px;top:860px;height:64px;padding:0 24px;font-weight:700;font-size:26px;gap:10px"><span style="width:14px;height:14px;border-radius:7px 7px 0 0;background:#b85d31"></span>prop</div>`;
+F['11']=()=>progress(10)+karaoke('Motion blur: suggest speed. Specify what should stay sharp.',8,[0,1])+
+  workCard('/motionblur','blur',kwChip('motionblur')+'.&nbsp;<b style="color:#14151b">Keep the shoe sharp.</b>',{y:620,caret:0})+
+  [...Array(6)].map((_,i)=>`<div class="abs" style="left:${-60+i*30}px;top:${760+i*120}px;width:${260-i*20}px;height:10px;border-radius:5px;background:linear-gradient(90deg,rgba(47,123,245,0),rgba(47,123,245,.5))"></div>`).join('');
+F['12']=()=>{const K=[['productshot','product'],['softlight','soft'],['hardlight','hard'],['rimlight','rim'],['goldenhour','golden'],['macro','macro'],['lowangle','low'],['minimal','minimal'],['editorial','editorial'],['motionblur','blur']];
+  return progress(10)+karaoke('Add these to a clear description of your scene. Save this before your next generation.',13,[])+
+  `<div class="pill" style="left:250px;top:470px;height:72px;padding:0 30px;font-weight:700;font-size:28px;gap:12px;letter-spacing:.06em">${icon('bookmark',30,'#2f7bf5')}SAVE FOR YOUR NEXT PROMPT</div>`+
+  K.map(([k,kind],i)=>{const c=i%2,r=Math.floor(i/2);const x=90+c*460,y=580+r*250;return `<div class="card" style="left:${x}px;top:${y}px;width:440px;height:232px;border-radius:30px">
+     ${photo(kind,10,10,170,212,false)}<div class="abs" style="left:198px;top:62px"><div style="font-weight:700;font-size:22px;color:#9aa0b4">${String(i+1).padStart(2,'0')}</div><div style="font-weight:700;font-size:34px;color:#2f7bf5;letter-spacing:-.02em">/${k}</div></div></div>`}).join('')};
+
+// ───── v3: real photos, one reveal mechanic per keyword (each frame = the peak of its mechanic)
+const PW=644,PHh=790;
+const box=(inner)=>`<div class="abs" style="left:28px;top:84px;width:${PW}px;height:${PHh}px;border-radius:28px;overflow:hidden">${inner}</div>`;
+const card=(tag,inner,prompt,y=620,extra='')=>`<div class="card" style="left:190px;top:${y}px;width:700px;height:1010px"><div class="abs" style="left:28px;top:24px"><span class="tag">${tag}</span></div>${box(inner)}
+  <div class="abs" style="left:28px;top:894px;width:644px;height:86px;border-radius:24px;background:#f2f4fa;display:flex;align-items:center;padding:0 100px 0 26px;font-weight:600;font-size:28px;color:#4a4d5c;white-space:nowrap;overflow:hidden">${prompt}</div>
+  <div class="sq" style="position:absolute;right:38px;top:904px;width:66px;height:66px;border-radius:50%;background:#2f7bf5">${icon('send',34,'#fff',3)}</div>${extra}</div>`;
+const P_=(k)=>'Product photo,&nbsp;'+kwChip(k);
+F['01']=()=>progress(0)+karaoke('Want better AI photos? Try these ten keywords in your next ChatGPT image prompt.',9,[5,6])+
+  card('prompt',img('boring2'),'Make it <s style="text-decoration-color:#e5484d;text-decoration-thickness:4px;color:#b2b6c4">look better.</s>')+
+  `<div class="kw mb" style="left:700px;top:600px;font-size:64px;transform:rotate(-8deg)">/softlight</div><div class="kw" style="left:60px;top:1040px;font-size:64px;transform:rotate(6deg)">/macro</div><div class="kw" style="left:690px;top:1380px;font-size:64px;transform:rotate(-4deg)">/editorial</div>`+cursor(800,1520);
+F['02']=()=>progress(1)+karaoke('Product shot: give your subject a clean, commercial presentation.',5,[0,1])+bigKw('productshot',140,420,110)+
+  card('/productshot',img('messy')+`<div class="abs" style="left:0;top:0;width:${PW*.58}px;height:${PHh}px;overflow:hidden"><img src="assets/ph/01b.jpg" style="position:absolute;left:0;top:0;width:${PW}px;height:${PHh}px;object-fit:cover"></div>
+   <div class="abs" style="left:${PW*.58-3}px;top:0;width:6px;height:${PHh}px;background:#fff;box-shadow:0 0 20px rgba(0,0,0,.3)"></div><div class="pill" style="left:${PW*.58-34}px;top:${PHh/2-34}px;width:68px;height:68px;font-weight:900;font-size:26px">‹›</div>`,P_('productshot'))+cursor(560,1090);
+// softlight: a huge diffuser panel sweeps across — behind it the image is already soft
+F['03']=()=>progress(2)+karaoke('Soft light: ask for gentle shadows and smooth transitions.',6,[0,1])+
+  card('/softlight',img('soft0')+`<div class="abs" style="left:0;top:0;width:${PW*.5}px;height:${PHh}px;overflow:hidden"><img src="assets/ph/02b.jpg" style="position:absolute;left:0;top:0;width:${PW}px;height:${PHh}px;object-fit:cover"></div>
+   <div class="abs" style="left:${PW*.5-110}px;top:-40px;width:220px;height:${PHh+80}px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.92) 45%,rgba(255,255,255,.92) 55%,rgba(255,255,255,0));filter:blur(6px)"></div>`,P_('softlight'))+
+  `<div class="card sq" style="left:820px;top:560px;width:170px;height:170px;border-radius:44px;flex-direction:column;gap:4px">${icon('bulb',64,'#2f7bf5')}<span style="font-weight:800;font-size:20px;color:#2f7bf5">DIFFUSED</span></div>`;
+// hardlight: the keyword lands, a flash snaps the hard shadow in
+F['04']=()=>progress(3)+karaoke('Hard light: create crisp shadows and a bolder look.',4,[0,1])+
+  card('/hardlight',img('hard')+`<div class="abs" style="inset:0;background:radial-gradient(circle at 20% 15%,rgba(255,255,255,.95),rgba(255,255,255,.35) 40%,rgba(255,255,255,0) 70%)"></div>`,'Product photo,&nbsp;'+kwChip('hardlight'))+
+  `<div class="kw" style="left:250px;top:400px;font-size:96px;opacity:.16;filter:blur(8px)">/hardlight</div>`+trail(520,470,500,1560)+
+  `<div class="card sq" style="left:820px;top:560px;width:170px;height:170px;border-radius:44px;flex-direction:column;gap:4px">${icon('bulb',50,'#14151b')}<span style="font-weight:800;font-size:20px">SPOT</span></div>`;
+// rimlight: lights out, a spark runs along the headband and leaves the glowing edge behind it
+F['05']=()=>progress(4)+karaoke('Rim light: separate your subject with an illuminated edge.',7,[0,1])+
+  card('/rimlight',img('rim0','filter:brightness(.55)')+`<div class="abs" style="inset:0;clip-path:polygon(0 0,62% 0,62% 100%,0 100%)">${img('rim')}</div>
+   <svg class="abs" style="left:0;top:0" width="${PW}" height="${PHh}"><circle cx="${PW*.62}" cy="${PHh*.2}" r="14" fill="#fff" style="filter:drop-shadow(0 0 14px #fff) drop-shadow(0 0 30px #fff)"/></svg>`,P_('rimlight'));
+// goldenhour: the cursor drags the sun down an arc; warmth follows it diagonally
+F['06']=()=>progress(5)+karaoke('Golden hour: bring in warm, low evening light.',5,[0,1])+
+  card('/goldenhour',img('golden0')+`<div class="abs" style="inset:0;clip-path:polygon(0 0,78% 0,30% 100%,0 100%)">${img('golden')}</div>`,P_('goldenhour'))+
+  `<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><path d="M110 1240 Q 540 280 970 1240" stroke="#ff9a3c" stroke-width="5" fill="none" stroke-dasharray="3 14"/></svg>
+   <div class="card sq" style="left:785px;top:610px;width:130px;height:130px;border-radius:50%">${icon('sun',70,'#ff8a1a')}</div>`+cursor(860,690);
+// macro: a lens dives into the watch
+F['07']=()=>progress(6)+karaoke('Macro: move closer to reveal texture and tiny details.',6,[0])+
+  card('/macro',img('macro0'),P_('macro'))+
+  `<div class="abs" style="left:310px;top:740px;width:500px;height:500px;border-radius:50%;overflow:hidden;border:10px solid #fff;box-shadow:0 30px 60px -20px rgba(40,50,110,.45)">${img('macro')}</div>
+   <div class="abs" style="left:705px;top:1180px;width:44px;height:170px;border-radius:22px;background:#fff;transform:rotate(-40deg);box-shadow:0 10px 20px rgba(0,0,0,.2)"></div>`;
+// lowangle: the camera tile drops down the rail, the card dips and flips to the low view
+F['08']=()=>progress(7)+karaoke('Low angle: make the subject feel more imposing.',5,[0,1])+
+  card('/lowangle',`<div class="abs" style="left:0;top:${-PHh*.78}px;width:${PW}px;height:${PHh}px">${img('low0')}</div><div class="abs" style="left:0;top:${PHh*.22}px;width:${PW}px;height:${PHh}px">${img('low')}</div>
+   <div class="abs" style="left:0;top:${PHh*.22-3}px;width:${PW}px;height:6px;background:#fff;box-shadow:0 0 20px rgba(0,0,0,.3)"></div>`,P_('lowangle'))+
+  `<div class="abs" style="left:950px;top:640px;width:6px;height:800px;border-radius:3px;background:repeating-linear-gradient(180deg,#9fb6e8 0 10px,transparent 10px 24px)"></div>
+   <div class="card sq" style="left:893px;top:860px;width:120px;height:120px;border-radius:34px">${icon('cam',56,'#2f7bf5')}</div><div class="abs" style="left:938px;top:990px;font-weight:900;font-size:40px;color:#2f7bf5">↓</div>`;
+// minimal: the cluttered photo shatters into tiles that fly off — the clean shot is underneath
+F['09']=()=>{const tiles=[[0,0,-260,-180,-14],[1,0,300,-200,12],[0,1,-320,160,10],[1,1,280,240,-12]];
+  return progress(8)+karaoke('Minimal: remove distractions and give the subject room.',4,[0])+
+  card('/minimal',img('minimal'),P_('minimal'))+
+  tiles.map(([c,r,dx,dy,rot])=>`<div class="abs" style="left:${218+c*PW/2+dx}px;top:${704+r*PHh/2+dy}px;width:${PW/2}px;height:${PHh/2}px;overflow:hidden;border-radius:18px;transform:rotate(${rot}deg) scale(.86);opacity:.9;filter:blur(3px);box-shadow:0 20px 40px rgba(0,0,0,.2)"><img src="assets/ph/08a.jpg" style="position:absolute;left:${-c*PW/2}px;top:${-r*PHh/2}px;width:${PW}px;height:${PHh}px;object-fit:cover"></div>`).join('')};
+// editorial: the catalogue shot slides back like a page, the magazine shot lands on top
+F['10']=()=>progress(9)+karaoke('Editorial: try a styled, magazine-inspired composition.',5,[0])+
+  `<div class="card" style="left:80px;top:540px;width:560px;height:700px;opacity:.65;filter:blur(2px)">${photo('editorial0',20,20,520,660)}</div>`+
+  card('/editorial',img('editorial'),P_('editorial'),660);
+// motionblur: streaks wipe across — behind them the background is moving, the bike stays sharp
+F['11']=()=>progress(10)+karaoke('Motion blur: suggest speed. Specify what should stay sharp.',8,[0,1])+
+  card('/motionblur',img('blur0')+`<div class="abs" style="inset:0;clip-path:polygon(0 0,60% 0,60% 100%,0 100%)">${img('blur')}</div>
+   ${[...Array(9)].map((_,i)=>`<div class="abs" style="left:${PW*.6-260+(i%3)*30}px;top:${60+i*82}px;width:${240-(i%3)*40}px;height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.85))"></div>`).join('')}`,kwChip('motionblur')+'.&nbsp;<b style="color:#14151b">Keep the bike sharp.</b>');
+F['12']=()=>{const K=[['productshot','product'],['softlight','soft'],['hardlight','hard'],['rimlight','rim'],['goldenhour','golden'],['macro','macro'],['lowangle','low'],['minimal','minimal'],['editorial','editorial'],['motionblur','blur']];
+  return progress(10)+karaoke('Add these to a clear description of your scene. Save this before your next generation.',13,[])+
+  `<div class="pill" style="left:250px;top:470px;height:72px;padding:0 30px;font-weight:700;font-size:28px;gap:12px;letter-spacing:.06em">${icon('bookmark',30,'#2f7bf5')}SAVE FOR YOUR NEXT PROMPT</div>`+
+  K.map(([k,kind],i)=>{const c=i%2,r=Math.floor(i/2);const x=90+c*460,y=580+r*250;return `<div class="card" style="left:${x}px;top:${y}px;width:440px;height:232px;border-radius:30px">
+     ${photo(kind,10,10,170,212)}<div class="abs" style="left:198px;top:62px"><div style="font-weight:700;font-size:22px;color:#9aa0b4">${String(i+1).padStart(2,'0')}</div><div style="font-weight:700;font-size:34px;color:#2f7bf5;letter-spacing:-.02em">/${k}</div></div></div>`}).join('')};
+const id=(location.hash||'#01').slice(1);root.innerHTML=F[id]();
+Promise.all([document.fonts.ready,...[...document.images].map(i=>i.complete?1:new Promise(r=>i.onload=i.onerror=r))]).then(()=>window.ready=true);
+</script>
+</body>
+</html>
