@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>prompt keywords v2 mockups</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#eef0f6}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#111218}
+#root{position:absolute;inset:0;overflow:hidden}
+.abs{position:absolute}
+.sq{display:flex;align-items:center;justify-content:center}
+.mono{font-family:'DejaVu Sans Mono',monospace}
+.glass{position:absolute;background:linear-gradient(160deg,rgba(255,255,255,.62),rgba(255,255,255,.28));-webkit-backdrop-filter:blur(26px) saturate(1.7);backdrop-filter:blur(26px) saturate(1.7);
+  border:1.5px solid rgba(255,255,255,.9);box-shadow:0 30px 60px -28px rgba(30,40,90,.35),0 6px 16px -8px rgba(30,40,90,.12),inset 0 2px 0 rgba(255,255,255,.95)}
+.gdark{background:linear-gradient(160deg,rgba(60,62,72,.55),rgba(20,22,28,.35));border-color:rgba(255,255,255,.22);color:#fff}
+.W{position:absolute;white-space:nowrap;font-weight:900;letter-spacing:-.045em;line-height:.86;transform:translate(-50%,-50%)}
+.B{color:#2f7bf5}.O{color:#ff6a00}.G{color:#a9afc2}
+.chip{position:absolute;transform:translate(-50%,-50%);padding:14px 28px;border-radius:999px;background:#2f7bf5;color:#fff;font-weight:800;font-size:40px;letter-spacing:-.02em;white-space:nowrap;box-shadow:0 18px 30px -12px rgba(47,123,245,.6)}
+.lbl{position:absolute;padding:12px 22px;border-radius:999px;font-weight:800;font-size:26px;letter-spacing:.08em;white-space:nowrap}
+.tiny{font-weight:800;font-size:22px;letter-spacing:.14em;color:#8a90a6}
+img{display:block}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+ <filter id="mbx" x="-50%" y="-10%" width="200%" height="120%"><feGaussianBlur stdDeviation="22 0"/></filter>
+ <filter id="mbx2" x="-50%" y="-10%" width="200%" height="120%"><feGaussianBlur stdDeviation="9 0"/></filter>
+ <filter id="mby" x="-10%" y="-50%" width="120%" height="200%"><feGaussianBlur stdDeviation="0 18"/></filter>
+</defs></svg>
+<div id="root"></div>
+<script>
+'use strict';
+const root=document.getElementById('root');
+const SRC=k=>`assets/ph/${k}.jpg`;
+const PX=100,PY=540,PW=880,PH=1100;                 // default photo rect (4:5)
+const px=n=>PX+n*PW,py=n=>PY+n*PH;
+let H='';
+const add=s=>H+=s;
+function bg(dark){add(dark?`<div class="abs" style="inset:0;background:radial-gradient(90% 60% at 50% 40%,#2a2c35,#121318 70%)"></div>`:
+ `<div class="abs" style="inset:0;background:radial-gradient(110% 55% at 50% 0%,#fbfbfd 0%,#f1f2f7 55%,#e9ebf2 100%)"></div>
+  <div class="abs" style="left:-260px;top:300px;width:900px;height:900px;border-radius:50%;background:radial-gradient(circle,rgba(160,190,255,.45),rgba(160,190,255,0) 65%)"></div>
+  <div class="abs" style="right:-300px;top:1100px;width:1000px;height:1000px;border-radius:50%;background:radial-gradient(circle,rgba(255,190,150,.35),rgba(255,190,150,0) 65%)"></div>`)}
+function counter(n,dark){const sl=[...Array(10)].map((_,i)=>`<span style="color:${i<n?'#2f7bf5':dark?'#4a4d5a':'#c6cbdb'};font-style:italic">/</span>`).join('');
+  add(`<div class="glass ${dark?'gdark':''} sq" style="left:540px;top:96px;transform:translate(-50%,-50%);height:66px;padding:0 28px;border-radius:999px;gap:18px;font-weight:800;font-size:28px">
+   <span>${String(n).padStart(2,'0')}<span style="color:#9aa0b4">/10</span></span><span class="mono" style="font-size:30px;letter-spacing:-.05em">${sl}</span></div>`)}
+function photo(k,o={}){const x=o.x??PX,y=o.y??PY,w=o.w??PW,h=o.h??PH,r=o.r??44,extra=o.style||'';
+  add(`<div class="glass" style="left:${x-14}px;top:${y-14}px;width:${w+28}px;height:${h+28}px;border-radius:${r+12}px;${o.wrap||''}"><div class="abs" style="left:14px;top:14px;width:${w}px;height:${h}px;border-radius:${r}px;overflow:hidden;${extra}">
+  <img src="${SRC(k)}" style="width:100%;height:100%;object-fit:cover;${o.img||''}">${o.inner||''}</div></div>`)}
+function prompt(txt,o={}){const dark=o.dark;add(`<div class="glass ${dark?'gdark':''}" style="left:60px;top:1712px;width:960px;height:124px;border-radius:62px;display:flex;align-items:center;padding:0 130px 0 44px;font-weight:600;font-size:38px;color:${dark?'#d8dae3':'#454857'};white-space:nowrap;overflow:hidden">${txt}<span style="display:inline-block;width:4px;height:44px;background:#2f7bf5;margin-left:6px"></span></div>
+  <div class="sq" style="position:absolute;left:${1020-20-92}px;top:${1712+16}px;width:92px;height:92px;border-radius:50%;background:#2f7bf5;${o.press?'transform:scale(.86);box-shadow:0 0 0 18px rgba(47,123,245,.18),0 0 0 40px rgba(47,123,245,.08)':''}"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19.5V5M5.6 11.2L12 4.8l6.4 6.4"/></svg></div>`)}
+const kw=s=>`<span style="color:#2f7bf5;font-weight:800">${s}</span>`;
+function W(t,x,y,size,o={}){add(`<div class="W ${o.cls||''}" style="left:${x}px;top:${y}px;font-size:${size}px;${o.color?`color:${o.color};`:''}${o.mb?`filter:url(#${o.mb});`:''}${o.blur?`filter:blur(${o.blur}px);`:''}opacity:${o.o??1};transform:translate(-50%,-50%) ${o.tf||''};${o.style||''}">${t}</div>`)}
+// a word with a motion trail (ghost copies along the travel direction)
+function trail(t,x,y,size,dx,dy,o={}){for(let i=4;i>=1;i--)W(t,x-dx*i,y-dy*i,size,{...o,o:.09*(5-i),blur:4+i*3});W(t,x,y,size,o)}
+function chip(t,x,y,o={}){add(`<div class="chip" style="left:${x}px;top:${y}px;${o.style||''};transform:translate(-50%,-50%) ${o.tf||''}">${t}</div>`)}
+function callout(dx,dy,lx,ly,label,o={}){const c=o.c||'#2f7bf5';add(`<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><path d="M${dx} ${dy} L${lx} ${ly}" stroke="${o.dark?'#fff':'#fff'}" stroke-width="4"/><circle cx="${dx}" cy="${dy}" r="12" fill="#fff"/><circle cx="${dx}" cy="${dy}" r="26" fill="none" stroke="#fff" stroke-width="3" opacity=".7"/><circle cx="${dx}" cy="${dy}" r="6" fill="${c}"/></svg>
+  <div class="glass lbl" style="left:${lx}px;top:${ly}px;transform:translate(${o.al==='r'?'-100%':o.al==='c'?'-50%':'0'},-50%);color:${c}">${label}</div>`)}
+function ring(x,y,r,c='#2f7bf5',w=6,op=.8){add(`<div class="abs" style="left:${x-r}px;top:${y-r}px;width:${2*r}px;height:${2*r}px;border-radius:50%;border:${w}px solid ${c};opacity:${op}"></div>`)}
+function streaks(n,y0,y1,c='rgba(255,255,255,.95)',seed=1,x0=-100,x1=1180){for(let i=0;i<n;i++){const h=(Math.sin((i+seed)*91.7)*43758.5)%1,hh=Math.abs(h);const y=y0+(y1-y0)*i/n;const w=200+hh*500;const x=x0+((x1-x0-w)*Math.abs((Math.sin((i+seed)*12.3)*9999)%1));
+  add(`<div class="abs" style="left:${x}px;top:${y}px;width:${w}px;height:${4+hh*8}px;border-radius:8px;background:linear-gradient(90deg,rgba(255,255,255,0),${c})"></div>`)}}
+const ICO={bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>',cam:'<rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.6"/><path d="M8.5 7l1.6-2.6h3.8L15.5 7"/>',
+ sun:'<circle cx="12" cy="12" r="4.4"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7L7 17M17 7l1.7-1.7"/>',bookmark:'<path d="M6 3.5h12v17l-6-4.2-6 4.2z"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>'};
+const ic=(n,s,c,sw=2.2)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${ICO[n]}</svg>`;
+function card(x,y,w,h,inner,o={}){add(`<div class="glass ${o.dark?'gdark':''}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;border-radius:${o.r??36}px;${o.style||''}">${inner}</div>`)}
+// odometer digits caught mid-roll
+function odo(txt,x,y,size,o={}){const blurIdx=o.rolling??-1;add(`<div class="abs" style="left:${x}px;top:${y}px;transform:translate(-50%,-50%);display:flex;font-weight:900;font-size:${size}px;letter-spacing:-.04em;line-height:1;${o.color?`color:${o.color}`:''}">${[...txt].map((c,i)=>i===blurIdx?`<span style="display:inline-block;filter:blur(3px);transform:translateY(-14px);opacity:.75">${c}</span>`:`<span>${c}</span>`).join('')}</div>`)}
+
+// ════════════════ FRAMES ════════════════
+const F={
+// 1 HOOK — "STOP GUESSING" slam over the boring mug, three results fly through the camera
+hook(){bg();counter(0);
+  photo('00b',{x:150,y:640,w:780,h:975,inner:`<div class="abs" style="inset:0;background:rgba(255,255,255,.25)"></div>`});
+  // fly-through cards (scale up past camera)
+  add(`<div class="abs" style="left:-180px;top:180px;width:620px;height:775px;border-radius:50px;overflow:hidden;filter:blur(10px);opacity:.92;box-shadow:0 40px 80px rgba(0,0,0,.25)"><img src="${SRC('02b')}" style="width:100%;height:100%;object-fit:cover"></div>`);
+  add(`<div class="abs" style="left:770px;top:1150px;width:300px;height:375px;border-radius:30px;overflow:hidden;filter:blur(3px);box-shadow:0 30px 60px rgba(0,0,0,.25)"><img src="${SRC('06b')}" style="width:100%;height:100%;object-fit:cover"></div>`);
+  add(`<div class="abs" style="left:640px;top:520px;width:150px;height:188px;border-radius:18px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,.25)"><img src="${SRC('09b')}" style="width:100%;height:100%;object-fit:cover"></div>`);
+  W('STOP',540,420,330,{style:'text-shadow:0 30px 60px rgba(20,30,80,.18)'});
+  trail('GUESSING.',560,640,150,40,0,{cls:'B'});
+  // struck-out "look better"
+  W('<span style="position:relative">LOOK BETTER<span class="abs" style="left:-10px;right:-10px;top:52%;height:14px;background:#ff3b30;border-radius:7px"></span></span>',540,1430,110,{color:'#b9bed0',o:.95,tf:'rotate(-3deg)'});
+  odo('+2%',300,1210,120,{color:'#fff',rolling:1});
+  add(`<div class="abs tiny" style="left:180px;top:1110px;color:#fff">IMPROVEMENT</div>`);
+  chip('/softlight',300,1620,{tf:'scale(.9)'});chip('/macro',560,1560,{tf:'scale(.8)',style:'opacity:.9'});chip('/editorial',820,1610,{tf:'scale(.7)',style:'opacity:.8;filter:blur(2px)'});
+  prompt('Make it <s style="text-decoration-color:#ff3b30;text-decoration-thickness:4px;color:#aab">look better.</s>',{press:1});},
+
+// 2 PRODUCT SHOT — diagonal wipe caught mid-way: clutter boxes on the left, clean studio + callouts on the right
+productshot(){bg();counter(1);
+  add(`<div class="abs" style="left:${PX}px;top:${PY}px;width:${PW}px;height:${PH}px;border-radius:44px;overflow:hidden;box-shadow:0 40px 80px -30px rgba(30,40,90,.4)">
+   <img class="abs" src="${SRC('01a')}" style="inset:0;width:100%;height:100%;object-fit:cover">
+   <img class="abs" src="${SRC('01b')}" style="inset:0;width:100%;height:100%;object-fit:cover;clip-path:polygon(62% 0,100% 0,100% 100%,22% 100%)">
+   <div class="abs" style="left:0;top:0;width:100%;height:100%;background:linear-gradient(112deg,transparent 41%,rgba(255,255,255,.95) 43.5%,#fff 44%,rgba(255,255,255,.0) 47%)"></div></div>`);
+  // distraction boxes
+  [[px(.0)+8,py(.31),100,175],[px(.04),py(.02),420,300]].forEach(([x,y,w,h])=>{add(`<div class="abs" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;border:5px dashed #ff3b30;border-radius:18px"></div><div class="sq abs" style="left:${x+w-26}px;top:${y-26}px;width:52px;height:52px;border-radius:50%;background:#ff3b30">${ic('x',30,'#fff',3.4)}</div>`)});
+  card(140,1080,300,120,`<div class="tiny" style="position:absolute;left:28px;top:22px">DISTRACTIONS</div><div style="position:absolute;left:28px;top:48px;font-weight:900;font-size:64px;color:#ff3b30;line-height:1">3<span style="color:#c4c8d6;font-size:40px"> → 0</span></div>`,{r:30});
+  callout(px(.62),py(.665),980,py(.83),'SOFT CONTACT SHADOW',{al:'r'});
+  callout(px(.82),py(.18),980,py(.07),'SEAMLESS BACKDROP',{al:'r'});
+  W('<span class="B">/</span>PRODUCT',540,250,190);
+  // SHOT letters dropping in a cascade
+  add(`<div class="W" style="left:540px;top:440px;font-size:190px">${[...'SHOT'].map((c,i)=>`<span style="display:inline-block;transform:translateY(${[0,0,-30,-90][i]}px);opacity:${[1,1,.85,.5][i]};${i>2?`filter:blur(4px)`:''}">${c}</span>`).join('')}</div>`);
+  add(`<div class="glass lbl" style="left:540px;top:1580px;transform:translate(-50%,-50%);color:#111218;letter-spacing:.22em">CLEAN PRODUCT PHOTOGRAPHY</div>`);
+  prompt(`Sneaker on a table, ${kw('/productshot')}`,{press:1});},
+
+// 3 SOFT LIGHT — lamp morphs into a softbox, light cone, shadow-edge graph, diffuser wipe
+softlight(){bg();counter(2);
+  add(`<div class="abs" style="left:${PX}px;top:${PY}px;width:${PW}px;height:${PH}px;border-radius:44px;overflow:hidden;box-shadow:0 40px 80px -30px rgba(30,40,90,.4)">
+   <img class="abs" src="${SRC('02a')}" style="inset:0;width:100%;height:100%;object-fit:cover">
+   <img class="abs" src="${SRC('02b')}" style="inset:0;width:100%;height:100%;object-fit:cover;clip-path:inset(0 0 0 52%)">
+   <div class="abs" style="left:${PW*.52-170}px;top:-40px;width:300px;height:${PH+80}px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.96) 45%,rgba(255,255,255,.96) 60%,rgba(255,255,255,0));filter:blur(10px)"></div>
+   <div class="abs" style="left:0;top:0;width:100%;height:100%;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0) 40%);clip-path:polygon(60% 0,100% 0,100% 55%,62% 30%)"></div></div>`);
+  // softbox (morph from bulb) with wide cone
+  add(`<svg class="abs" style="left:0;top:0" width="1080" height="1920"><defs><linearGradient id="cone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+   <path d="M600 610 L1000 610 L1080 1300 L420 1300 Z" fill="url(#cone)"/></svg>`);
+  card(620,560,360,104,`<div class="sq" style="height:100%;gap:14px;font-weight:800;font-size:28px;color:#2f7bf5;letter-spacing:.08em">${ic('bulb',40,'#2f7bf5')}SOFTBOX</div>`,{r:30});
+  // ghost of the small hard bulb it grew from
+  add(`<div class="abs sq" style="left:740px;top:560px;width:104px;height:104px;border-radius:50%;border:3px dashed rgba(47,123,245,.5)"></div>`);
+  // edge graph card
+  card(120,1270,400,250,`<div class="tiny" style="position:absolute;left:28px;top:24px">SHADOW EDGE</div>
+   <svg class="abs" style="left:28px;top:70px" width="344" height="120"><path d="M0 100 L150 100 L150 10 L344 10" stroke="#c5cad8" stroke-width="4" fill="none" stroke-dasharray="8 8"/><path d="M0 100 C120 100 200 10 344 10" stroke="#2f7bf5" stroke-width="7" fill="none" stroke-linecap="round"/></svg>
+   <div style="position:absolute;left:28px;top:194px;font-weight:900;font-size:40px;color:#2f7bf5">SOFT <span style="color:#c4c8d6;text-decoration:line-through;font-size:28px">HARD</span></div>`,{r:32});
+  odo('86%',820,1440,120,{color:'#fff',rolling:1});add(`<div class="abs tiny" style="left:700px;top:1340px;color:#fff">SOFTNESS</div>`);
+  // SOFT LIGHT letters focusing in (blur → sharp, wide tracking tightening)
+  add(`<div class="W" style="left:540px;top:250px;font-size:190px">${[...'SOFT'].map((c,i)=>`<span style="display:inline-block;filter:blur(${[0,0,3,10][i]}px);opacity:${[1,1,.8,.45][i]}">${c}</span>`).join('')}</div>`);
+  add(`<div class="W B" style="left:540px;top:440px;font-size:190px;letter-spacing:.02em;filter:blur(1.5px)">LIGHT</div>`);
+  prompt(`Perfume bottle, ${kw('/softlight')}`);},
+
+// 4 HARD LIGHT — spot snaps on: flash, crisp diagonal shadow cuts across the type
+hardlight(){bg();counter(3);
+  photo('03b',{});
+  // hard shadow slicing the giant word
+  W('HARD',540,300,300);
+  add(`<div class="abs" style="left:-100px;top:150px;width:1400px;height:600px;background:#14151b;opacity:.55;clip-path:polygon(0 82%,100% 22%,100% 40%,0 100%);mix-blend-mode:multiply"></div>`);
+  W('LIGHT',540,470,150,{cls:'B'});
+  // spot + narrow beam
+  add(`<svg class="abs" style="left:0;top:0" width="1080" height="1920"><path d="M180 640 L560 1080 L470 1160 Z" fill="#fff" opacity=".7"/></svg>`);
+  card(110,580,140,140,`<div class="sq" style="height:100%;flex-direction:column;gap:2px;color:#ff6a00;font-weight:800;font-size:20px;letter-spacing:.1em">${ic('bulb',54,'#ff6a00')}SPOT</div>`,{r:70});
+  ring(180,650,110,'#ff6a00',4,.5);ring(180,650,170,'#ff6a00',3,.25);
+  card(620,1290,380,240,`<div class="tiny" style="position:absolute;left:28px;top:24px">SHADOW EDGE</div>
+   <svg class="abs" style="left:28px;top:70px" width="324" height="110"><path d="M0 95 L150 95 L150 10 L324 10" stroke="#ff6a00" stroke-width="7" fill="none" stroke-linejoin="round"/></svg>
+   <div style="position:absolute;left:28px;top:186px;font-weight:900;font-size:40px;color:#ff6a00">CRISP</div>`,{r:32});
+  callout(px(.6),py(.55),px(.08),py(.86),'CONTRAST ×3',{c:'#ff6a00'});
+  add(`<div class="abs" style="inset:0;background:radial-gradient(circle at 17% 34%,rgba(255,255,255,.9),rgba(255,255,255,0) 35%)"></div>`);
+  prompt(`Sunglasses, ${kw('/hardlight')}`,{press:1});},
+
+// 5 RIM LIGHT — world goes dark, a light traces the edge, the word itself is only a lit outline
+rimlight(){bg(1);counter(4,1);
+  photo('04b',{wrap:'background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18)'});
+  W('RIM',540,260,250,{color:'transparent',style:'-webkit-text-stroke:5px #fff;text-shadow:0 0 30px rgba(140,190,255,.9),0 0 80px rgba(47,123,245,.7)'});
+  W('LIGHT',540,450,150,{color:'#2f7bf5',style:'text-shadow:0 0 40px rgba(47,123,245,.9)'});
+  // tracing spark along the band
+  add(`<svg class="abs" style="left:0;top:0" width="1080" height="1920"><path d="M300 1200 C 300 760, 780 760, 780 1200" stroke="#fff" stroke-width="5" fill="none" stroke-dasharray="1200" stroke-dashoffset="420" style="filter:drop-shadow(0 0 10px #9cc3ff) drop-shadow(0 0 26px #2f7bf5)"/><circle cx="694" cy="868" r="16" fill="#fff" style="filter:drop-shadow(0 0 14px #fff) drop-shadow(0 0 40px #9cc3ff)"/></svg>`);
+  card(690,1300,320,200,`<div class="tiny" style="position:absolute;left:26px;top:24px;color:#9aa0b8">SEPARATION</div><div style="position:absolute;left:26px;top:58px;font-weight:900;font-size:96px;color:#fff;line-height:1">72<span style="font-size:48px;color:#2f7bf5">%</span></div>`,{dark:1,r:32});
+  card(70,1340,190,150,`<div class="sq" style="height:100%;flex-direction:column;gap:6px;color:#fff;font-weight:800;font-size:20px;letter-spacing:.1em">${ic('bulb',48,'#9cc3ff')}BEHIND</div>`,{dark:1,r:32});
+  prompt(`Headphones, ${kw('/rimlight')}`,{dark:1});},
+
+// 6 GOLDEN HOUR — sun on an arc, clock + colour-temperature counters, warm grade sweeps in
+goldenhour(){bg();counter(5);
+  add(`<div class="abs" style="inset:0;background:linear-gradient(180deg,rgba(255,170,80,.0) 20%,rgba(255,160,70,.28))"></div>`);
+  photo('05b',{inner:`<div class="abs" style="inset:0;background:linear-gradient(105deg,rgba(255,255,255,0) 55%,rgba(120,140,170,.45) 62%)"></div>`});
+  add(`<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><path d="M60 1120 Q 540 200 1020 1120" stroke="#ff9a3c" stroke-width="5" fill="none" stroke-dasharray="3 16" stroke-linecap="round"/></svg>`);
+  add(`<div class="abs sq" style="left:830px;top:770px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,#fff3c4,#ffb347 60%,#ff8a1a);box-shadow:0 0 80px 30px rgba(255,160,60,.55)"></div>`);
+  W('GOLDEN',540,250,200,{cls:'O'});W('HOUR',540,440,200);
+  card(110,1300,290,200,`<div class="tiny" style="position:absolute;left:26px;top:24px">TIME</div><div style="position:absolute;left:26px;top:60px;font-weight:900;font-size:90px;line-height:1">18:4<span style="display:inline-block;filter:blur(3px);transform:translateY(-10px);opacity:.75">2</span></div>`,{r:32});
+  card(680,1300,290,200,`<div class="tiny" style="position:absolute;left:26px;top:24px">COLOR TEMP</div><div style="position:absolute;left:26px;top:60px;font-weight:900;font-size:90px;line-height:1;color:#ff6a00">3200<span style="font-size:44px">K</span></div><div style="position:absolute;left:26px;top:160px;height:12px;width:238px;border-radius:6px;background:linear-gradient(90deg,#ff7a1a,#ffd9a0,#cfe0ff)"><div style="position:absolute;left:30px;top:-6px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div></div>`,{r:32});
+  prompt(`Honey jar, ${kw('/goldenhour')}`);},
+
+// 7 MACRO — lens punch-in: zoom ×10 counter, focus brackets, mini map of where we are
+macro(){bg();counter(6);
+  photo('06b',{x:60,y:520,w:960,h:1200,inner:`<div class="abs" style="inset:0;box-shadow:inset 0 0 120px rgba(0,0,0,.25)"></div>`});
+  // focus brackets
+  const b=(x,y,s,r)=>add(`<div class="abs" style="left:${x}px;top:${y}px;width:80px;height:80px;border:${s}px solid #fff;border-${r[0]}:none;border-${r[1]}:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))"></div>`);
+  b(340,900,7,['right','bottom']);b(660,900,7,['left','bottom']);b(340,1220,7,['right','top']);b(660,1220,7,['left','top']);
+  add(`<div class="abs" style="left:520px;top:1100px;width:40px;height:40px;border-radius:50%;border:4px solid #ffd60a"></div>`);
+  W('×10',540,560,260,{color:'#fff',style:'text-shadow:0 10px 40px rgba(0,0,0,.35)'});
+  W('MACRO',540,250,220);
+  // minimap with zoom box + connecting lines
+  card(700,1380,280,320,`<img src="${SRC('06a')}" style="position:absolute;left:12px;top:12px;width:256px;height:296px;object-fit:cover;border-radius:24px"><div class="abs" style="left:120px;top:150px;width:46px;height:56px;border:4px solid #ffd60a;border-radius:6px"></div>`,{r:34});
+  add(`<div class="glass lbl" style="left:80px;top:1600px;color:#111218">FOCUS: <span class="B">TEXTURE</span></div>`);
+  prompt(`Wristwatch, ${kw('/macro')}`);},
+
+// 8 LOW ANGLE — camera drops down a height ruler, frame swings to the low view
+lowangle(){bg();counter(7);
+  photo('07b',{x:180,y:560,w:720,h:900});
+  // height ruler on the left
+  add(`<div class="abs" style="left:70px;top:560px;width:6px;height:1060px;background:repeating-linear-gradient(180deg,#9fb6e8 0 4px,transparent 4px 40px)"></div>`);
+  ['1.6 m','1.0 m','0.5 m','0.1 m'].forEach((s,i)=>add(`<div class="abs tiny" style="left:90px;top:${560+i*340}px;color:${i===3?'#2f7bf5':'#a0a6ba'}">${s}</div>`));
+  // camera tile mid-drop with vertical blur trail
+  for(let i=3;i>=1;i--)add(`<div class="abs" style="left:28px;top:${1360-i*90}px;width:120px;height:120px;border-radius:34px;background:rgba(47,123,245,${.06*(4-i)});filter:blur(${i*4}px)"></div>`);
+  card(28,1360,120,120,`<div class="sq" style="height:100%;flex-direction:column">${ic('cam',54,'#2f7bf5')}<b style="color:#2f7bf5;font-size:28px;line-height:1">↓</b></div>`,{r:34});
+  // view lines from the camera up to the board
+  add(`<svg class="abs" style="left:0;top:0" width="1080" height="1920"><path d="M150 1420 L900 700 M150 1420 L900 1440" stroke="#2f7bf5" stroke-width="3" stroke-dasharray="10 10" opacity=".6"/></svg>`);
+  // word set "from below": big & tall
+  W('LOW',560,250,230);W('ANGLE',560,1560,190,{cls:'B',tf:'scaleY(1.15)'});
+  add(`<div class="glass lbl" style="left:900px;top:520px;transform:translate(-100%,-50%);color:#111218">EYE LEVEL <span style="color:#c4c8d6;text-decoration:line-through">→</span> <span class="B">GROUND</span></div>`);
+  prompt(`Skateboard, ${kw('/lowangle')}`);},
+
+// 9 MINIMAL — clutter tiles blast out of the frame, counter falls to 0, huge negative space
+minimal(){bg();counter(8);
+  photo('08b',{x:240,y:700,w:600,h:750});
+  // shards of the cluttered photo flying away
+  [[-60,520,300,360,-14,8],[790,480,280,330,12,6],[-40,1300,320,380,10,10],[810,1320,260,320,-12,5]].forEach(([x,y,w,h,r,b],i)=>{
+    add(`<div class="abs" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;border-radius:24px;overflow:hidden;transform:rotate(${r}deg);filter:blur(${b}px);opacity:.85;box-shadow:0 30px 60px rgba(0,0,0,.2)"><img src="${SRC('08a')}" style="position:absolute;left:${-(i%2)*300}px;top:${-Math.floor(i/2)*360}px;width:600px;height:750px;object-fit:cover"></div>`)});
+  add(`<div class="W" style="left:540px;top:300px;font-size:150px;letter-spacing:.32em;padding-left:.32em">MINIMAL</div>`);
+  card(390,1520,300,110,`<div class="sq" style="height:100%;gap:16px"><span class="tiny">CLUTTER</span><b style="font-size:62px;font-weight:900;color:#2f7bf5">0</b><span style="font-size:30px;color:#c4c8d6;text-decoration:line-through;font-weight:800">7</span></div>`,{r:55});
+  add(`<div class="abs" style="left:240px;top:470px;width:600px;height:2px;background:#c9cede"></div><div class="abs tiny" style="left:540px;top:490px;transform:translateX(-50%)">MORE ROOM</div>`);
+  prompt(`Ceramic vase, ${kw('/minimal')}`);},
+
+// 10 EDITORIAL — the screen becomes a magazine spread: grid guides, serif-weight type, page turning
+editorial(){bg();counter(9);
+  // layout grid guides
+  for(let i=0;i<=6;i++)add(`<div class="abs" style="left:${60+i*160}px;top:0;width:1px;height:1920px;background:rgba(47,123,245,.18)"></div>`);
+  photo('09b',{x:300,y:430,w:720,h:900});
+  add(`<div class="abs" style="left:60px;top:430px;width:220px;height:900px;display:flex;flex-direction:column;justify-content:space-between">
+    <div class="tiny" style="color:#111218">ISSUE 09</div><div style="font-weight:900;font-size:120px;line-height:.85;letter-spacing:-.05em">09</div><div class="tiny">STILL LIFE<br>— SS26</div></div>`);
+  W('EDITORIAL',540,250,170,{tf:'scaleX(.92)'});
+  // previous page peeling away to the left
+  add(`<div class="abs" style="left:-420px;top:430px;width:620px;height:900px;border-radius:40px;overflow:hidden;transform:perspective(1400px) rotateY(58deg);transform-origin:100% 50%;opacity:.9;filter:blur(2px);box-shadow:-30px 30px 60px rgba(0,0,0,.25)"><img src="${SRC('09a')}" style="width:100%;height:100%;object-fit:cover"></div>`);
+  callout(px(.55),py(.86),300,1430,'SCULPTURAL PROP',{al:'l'});
+  add(`<div class="abs" style="left:300px;top:1500px;width:720px;font-weight:600;font-size:34px;line-height:1.3;color:#5a5e70">Styled, magazine-inspired composition. Directional light. <span class="B" style="font-weight:800">Balance.</span></div>`);
+  prompt(`Leather handbag, ${kw('/editorial')}`);},
+
+// 11 MOTION BLUR — the whole screen streaks, type stretched by speed, bike stays sharp
+motionblur(){bg();counter(10);
+  photo('10b',{x:60,y:600,w:960,h:1000});
+  streaks(26,560,1660,'rgba(255,255,255,.9)',3);
+  add(`<div class="abs" style="left:-200px;top:180px;width:1600px;filter:url(#mbx)"><div class="W" style="left:800px;top:120px;font-size:220px;color:#c9cde0">MOTION</div></div>`);
+  W('MOTION',540,300,220);trail('BLUR',600,470,190,50,0,{cls:'B',tf:'scaleX(1.2)'});
+  add(`<div class="abs" style="left:300px;top:930px;width:500px;height:400px;border:5px solid #34c759;border-radius:30px"></div><div class="lbl" style="left:300px;top:885px;background:#34c759;color:#fff">SHARP ✓</div>`);
+  card(80,1400,300,170,`<div class="tiny" style="position:absolute;left:26px;top:22px">SHUTTER</div><div style="position:absolute;left:26px;top:56px;font-weight:900;font-size:88px;line-height:1">1/30<span style="font-size:40px"> s</span></div>`,{r:32});
+  prompt(`${kw('/motionblur')}. Keep the bike sharp.`);},
+
+// 12 SAVE — ten tiles snap into a grid, giant SAVE THIS, bookmark fills; loops back to the mug
+save(){bg();counter(10);
+  const K=[['01b','productshot'],['02b','softlight'],['03b','hardlight'],['04b','rimlight'],['05b','goldenhour'],['06b','macro'],['07b','lowangle'],['08b','minimal'],['09b','editorial'],['10b','motionblur']];
+  K.forEach(([k,n],i)=>{const c=i%2,r=Math.floor(i/2);const x=70+c*480,y=520+r*212,fly=i===9;
+    add(`<div class="glass" style="left:${x}px;top:${y}px;width:460px;height:192px;border-radius:30px;${fly?'transform:translate(160px,180px) scale(1.15);filter:blur(6px);opacity:.7':''}"><img src="${SRC(k)}" style="position:absolute;left:10px;top:10px;width:138px;height:172px;object-fit:cover;border-radius:22px">
+     <div class="abs" style="left:170px;top:44px"><div class="tiny">${String(i+1).padStart(2,'0')}</div><div style="font-weight:800;font-size:38px;color:#2f7bf5;letter-spacing:-.02em">/${n}</div></div></div>`)});
+  W('SAVE',540,250,250);W('THIS<span class="B">.</span>',540,430,140);
+  card(840,180,150,150,`<div class="sq" style="height:100%"><svg width="76" height="76" viewBox="0 0 24 24"><path d="M6 3.5h12v17l-6-4.2-6 4.2z" fill="#2f7bf5" stroke="#2f7bf5" stroke-width="2" stroke-linejoin="round"/></svg></div>`,{r:44});
+  ring(915,255,110,'#2f7bf5',4,.35);
+  prompt(`Describe the scene + ${kw('/keyword')}`);},
+};
+const k=location.hash.slice(1)||'hook';F[k]();root.innerHTML=H;
+Promise.all([document.fonts.ready,...[...document.images].map(i=>i.complete?1:new Promise(r=>i.onload=i.onerror=r))]).then(()=>window.ready=true);
+</script>
+</body>
+</html>
