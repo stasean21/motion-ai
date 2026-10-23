@@ -17,8 +17,8 @@ body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antia
 .gpt{display:inline-flex!important;align-items:center;gap:8px;padding:2px 18px;border-radius:999px;background:#fff;box-shadow:0 6px 16px -8px rgba(40,50,110,.3);font-size:40px;vertical-align:middle}
 .gpt::before{content:'';width:10px;height:10px;border-radius:50%;background:#c9cede}
 .card{position:absolute;border-radius:46px;background:#fff;box-shadow:0 46px 90px -40px rgba(40,50,110,.4),0 10px 24px -12px rgba(40,50,110,.14);overflow:hidden}
-.tag{position:absolute;left:36px;top:30px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:28px;color:#2f7bf5;white-space:nowrap}
-.tag::before{content:'';width:10px;height:10px;border-radius:50%;background:#c3c9d8}
+.tag{position:absolute;left:36px;top:22px;display:flex;align-items:center;gap:14px;font-weight:800;font-size:52px;letter-spacing:-.02em;color:#2f7bf5;white-space:nowrap}
+.tag::before{content:'';width:14px;height:14px;border-radius:50%;background:#c3c9d8}
 .lab{font-weight:700;font-size:24px;letter-spacing:.07em;color:#8a90a6}
 .layer{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:0 0}
 .cl{position:absolute;inset:0}
@@ -273,10 +273,10 @@ R[6]=(τ,c)=>{
   const bq=prog(τ,z0+.35,z1+.3);tc(c.big,{s:lerp(.3,1,E.outExpo(bq)),o:clamp(bq*3)*(1-prog(τ,SEC-.6,SEC-.2)),blur:(1-E.out(bq))*10});
   return [[1.4,900,1900],[z0-.5,CX-180,CY-130],[z0-.35,CX-180,CY-130,1],[z0-.2,CX-180,CY-130],[z0+.3,1000,1900]]};
 R[7]=(τ,c)=>{
-  const t0=wordT(7,2),t1=t0+1.2;const p=E.io(prog(τ,t0,t1));tp(c.cam,{y:lerp(84,650,p)});
+  const t0=wordT(7,1),p=E.io(prog(τ,t0,t0+2.2));tp(c.cam,{y:lerp(84,650,p)});
   c.ticks.forEach((tk,k)=>{tk.style.color=Math.round(p*3)===k?'#2f7bf5':'#a3a9bb'});
-  const tl=E.io(prog(τ,t0+.9,t0+2.2))*(1-E.io(prog(τ,SEC-1.1,SEC-.35)));c.word.style.transform=`translate(-50%,-100%) scaleY(${lerp(.9,1.3,p)*lerp(1,1.55,tl)})`;
-  return [[1.4,900,1900],[t0-.25,CX-330,CY-390+120],[t0-.1,CX-330,CY-390+120,1],[t1,CX-330,CY-390+680,1],[t1+.15,CX-330,CY-390+680],[t1+.7,1000,1900]]};
+  c.word.style.transform=`translate(-50%,-100%) scaleY(${lerp(1,1.45,p)})`;
+  return []};
 R[8]=(τ,c)=>{
   const s0=wordT(8,1);
   c.cl.forEach((w,k)=>{const t0=s0+.15+k*.07;const q=E.in(prog(τ,t0,t0+.45));const dir=w.x<380?-1:1;tp(w.el,{x:dir*q*900,y:(w.y-380)*q*.5,r:dir*q*14,o:1-prog(q,.6,1),blur:q*14})});
@@ -305,7 +305,7 @@ R[11]=(τ,c)=>{
   return []};
 
 // ───────── camera: always breathing; per-section pushes; the macro dive
-function tilt3d(i,τ){if(i!==7)return '';const t0=wordT(7,2)+.9;const p=E.io(prog(τ,t0,t0+1.3)),po=E.io(prog(τ,SEC-1.1,SEC-.35));const a=38*p*(1-po);
+function tilt3d(i,τ){return '';if(i!==7)return '';const t0=wordT(7,2)+.9;const p=E.io(prog(τ,t0,t0+1.3)),po=E.io(prog(τ,SEC-1.1,SEC-.35));const a=38*p*(1-po);
   return `translateY(${-60*p*(1-po)}px) perspective(1300px) rotateX(${a}deg) scale(${1+.1*p*(1-po)})`}
 function camAt(t){const i=secAt(t),τ=t-S[i].t0;
   let z=1+.015*Math.sin(t*.7),r=1.1*Math.sin(t*.55),x=CX,y=CY,sy=CY;
@@ -316,15 +316,16 @@ function camAt(t){const i=secAt(t),τ=t-S[i].t0;
   if(i===6){ // dive into the highlighted word, hold, then pull back out to the card
     const z0=wordT(6,3);const din=E.inExpo(prog(τ,z0-.2,z0+.45)),dout=E.outExpo(prog(τ,z0+.45,z0+1.3));
     const fx=CX-410+44+300,fy=CY-320+110+120;const k=din*(1-dout);z*=lerp(1,7,k);x=lerp(CX,fx,k);y=lerp(CY,fy,k)}
-  if(i===7){const t0=wordT(7,2)+.9;const p=E.io(prog(τ,t0,t0+1.3))*(1-E.io(prog(τ,SEC-1.1,SEC-.35)));y+=90*p;z*=1+.06*p}
+  let rx=0;if(i===7){const t0=wordT(7,1);const p=E.io(prog(τ,t0,t0+2.2)),po=E.io(prog(τ,SEC-1.0,SEC-.3));const k=p*(1-po);
+    rx=lerp(-12*E.out(prog(τ,AN.land,t0)),30,k);if(po>0)rx=30*(1-po);sy=CY-lerp(0,170,k)+60*E.out(prog(τ,AN.land,t0))*(1-p);z*=1+.08*k}
   if(i===11){const pin=E.io(prog(τ,.2,1.4));z*=lerp(1,.94,pin)}
-  return {z,r,x,y,sy}}
+  return {z,r,x,y,sy,rx}}
 
 // ───────── per frame
 function renderAt(t){
   t=((t%DUR)+DUR)%DUR;const i=secAt(t),τ=t-S[i].t0,s=S[i],prev=S[(i+NS-1)%NS];
   // camera
-  const cm=camAt(t);WORLD.style.transform=`translate(540px,${cm.sy}px) rotate(${cm.r}deg) scale(${cm.z}) translate(${-cm.x}px,${-cm.y}px)`;
+  const cm=camAt(t);WORLD.style.transform=`translate(540px,${cm.sy}px) perspective(1500px) rotateX(${cm.rx||0}deg) rotate(${cm.r}deg) scale(${cm.z}) translate(${-cm.x}px,${-cm.y}px)`;
   // card size morph + content crossfade (old shrinks & blurs out, new grows in)
   const mq=E.io(prog(τ,AN.m0,AN.m1));const w=lerp(prev.w,s.w,mq),h=lerp(prev.h,s.h,mq);
   const breathe=1+.012*Math.sin(t*1.3);
