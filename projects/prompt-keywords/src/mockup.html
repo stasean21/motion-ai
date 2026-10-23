@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>10 photo prompt keywords — keyframes</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#f5f5f7}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#0d0d12}
+#root{position:absolute;inset:0;overflow:hidden}
+.abs{position:absolute}
+.blob{position:absolute;width:1400px;height:1400px;border-radius:50%;opacity:.42}
+.sq{display:flex;align-items:center;justify-content:center}
+.cap{position:absolute;font-weight:900;letter-spacing:-.045em;line-height:.93;white-space:nowrap}
+.mono{font-family:'DejaVu Sans Mono',monospace}
+.O{color:#ff6a00}
+.card{position:absolute;border-radius:56px;overflow:hidden;background:linear-gradient(160deg,rgba(255,255,255,.66) 0%,rgba(255,255,255,.30) 100%);
+  -webkit-backdrop-filter:blur(24px) saturate(1.9);backdrop-filter:blur(24px) saturate(1.9);border:1.5px solid rgba(255,255,255,.8);
+  box-shadow:0 34px 70px -26px rgba(30,30,70,.28),0 8px 20px -8px rgba(30,30,70,.10),inset 0 2px 0 rgba(255,255,255,.95),inset 0 -1.5px 0 rgba(255,255,255,.55),
+    inset 14px 18px 34px -16px rgba(255,255,255,.85),inset -14px -18px 36px -16px rgba(110,130,190,.28)}
+.card::before,.pill::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;
+  background:linear-gradient(135deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,0) 30%,rgba(255,255,255,0) 70%,rgba(255,255,255,.22) 100%)}
+.pill{position:absolute;border-radius:999px;display:flex;align-items:center;justify-content:center;white-space:nowrap;
+  background:rgba(255,255,255,.45);-webkit-backdrop-filter:blur(18px) saturate(1.8);backdrop-filter:blur(18px) saturate(1.8);border:1.5px solid rgba(255,255,255,.85);
+  box-shadow:0 16px 34px -14px rgba(20,40,80,.3),inset 0 2px 0 rgba(255,255,255,.95),inset 8px 10px 20px -10px rgba(255,255,255,.8)}
+.chip{position:absolute;border-radius:999px;display:flex;align-items:center;white-space:nowrap;font-weight:800;color:#fff;
+  background:linear-gradient(160deg,rgba(255,170,80,.95),rgba(255,106,0,.88));border:1.5px solid rgba(255,255,255,.65);
+  box-shadow:0 14px 30px -10px rgba(255,110,0,.55),inset 0 2px 0 rgba(255,255,255,.7)}
+.photo{position:absolute;border-radius:44px;overflow:hidden}
+.ph-tag{position:absolute;right:22px;bottom:20px;padding:6px 14px;border-radius:12px;background:rgba(0,0,0,.35);color:#fff;font:700 18px 'Inter Display';letter-spacing:.06em;z-index:5}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+'use strict';
+const root=document.getElementById('root');
+const BLOBP=[[150,300],[920,760],[180,1500],[900,1680]];
+const bg=(c=['#ffd2b0','#c9d6ff','#ffe2c9','#d9ccff'])=>`<div class="abs" style="inset:0;background:radial-gradient(120% 60% at 50% 0%,#ffffff 0%,#f5f5f7 55%,#ececf0 100%)">${BLOBP.map((p,i)=>`<div class="blob" style="left:${p[0]-700}px;top:${p[1]-700}px;background:radial-gradient(circle,${c[i]} 0%,${c[i]}00 64%)"></div>`).join('')}</div>`;
+const IC={send:'<path d="M12 19.5V5M5.6 11.2L12 4.8l6.4 6.4"/>',bookmark:'<path d="M6 3.5h12v17l-6-4.2-6 4.2z"/>',cam:'<rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.6"/><path d="M8.5 7l1.6-2.6h3.8L15.5 7"/>',
+  sun:'<circle cx="12" cy="12" r="4.4"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7L7 17M17 7l1.7-1.7"/>',
+  bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>'};
+const icon=(n,s,c,sw=2.2)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
+
+// ── placeholder sneaker (side view, toe right). Real generated photos replace every photo slot.
+let sid=0;
+function sneaker(w,o={}){const u=++sid;const dark=o.dark,warm=o.warm;
+  const up=dark?'#55575e':warm?'#fff3e2':'#ffffff',up2=dark?'#3a3c42':warm?'#f1dcc0':'#e7e8ec',sole=dark?'#6a6c72':warm?'#fbefe0':'#f4f4f6',edge=o.rim?'#ffffff':'none';
+  return `<svg width="${w}" height="${w*.5}" viewBox="0 0 600 300" style="display:block;overflow:visible${o.rim?';filter:drop-shadow(0 -2px 3px rgba(255,255,255,.9)) drop-shadow(0 -1px 10px rgba(255,255,255,.55))':''}">
+   <defs><linearGradient id="u${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${up}"/><stop offset="1" stop-color="${up2}"/></linearGradient>
+   <pattern id="m${u}" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="4.5" cy="4.5" r="1.6" fill="${dark?'#2c2d31':'#d9dbe0'}"/></pattern></defs>
+   <path d="M40 232 Q36 196 70 186 L150 168 Q196 90 268 74 Q330 62 372 96 L430 140 Q520 158 560 196 Q584 220 572 240 L560 250 L52 250 Z" fill="url(#u${u})" stroke="${edge}" stroke-width="${o.rim?3:0}"/>
+   <path d="M180 162 Q215 100 268 88 Q318 80 352 110 L404 150 Q330 160 250 176 Z" fill="url(#m${u})" opacity=".9"/>
+   ${[0,1,2,3,4].map(i=>`<path d="M${262+i*26} ${92+i*12} L${300+i*24} ${120+i*8}" stroke="${dark?'#8a8c93':'#c9cbd2'}" stroke-width="7" stroke-linecap="round"/>`).join('')}
+   <path d="M40 232 Q40 206 64 200 L66 248 Z" fill="#ff6a00"/><path d="M52 198 Q64 150 96 160 L104 190 Z" fill="#ff7a1a"/>
+   <path d="M30 246 L580 236 Q592 252 572 268 L60 276 Q30 274 30 246 Z" fill="${sole}" stroke="${dark?'#4a4c52':'#dcdde2'}" stroke-width="3"/>
+   <path d="M34 266 L572 260 Q560 280 540 282 L66 286 Q40 284 34 266 Z" fill="${dark?'#2a2b30':'#cfd1d8'}"/>
+   <path d="M440 232 Q500 226 548 216" stroke="${dark?'#7a7c83':'#d4d6dc'}" stroke-width="4" fill="none"/></svg>`}
+// photo slot: kind decides the placeholder look
+function photo(kind,x,y,w,h,label=true){
+  const S=(sw,o)=>sneaker(sw,o);let inner='',bgc='#ececec';
+  const shadowSoft=(cx,cy,rx)=>`<div class="abs" style="left:${cx-rx}px;top:${cy-rx*.09}px;width:${rx*2}px;height:${rx*.18}px;border-radius:50%;background:radial-gradient(rgba(0,0,0,.28),rgba(0,0,0,0) 70%)"></div>`;
+  const sw=w*.82,sx=(w-sw)/2,sy=h*.42;
+  if(kind==='boring'){bgc='linear-gradient(180deg,#dcdcdc,#cfcfcf)';inner=`<div class="abs" style="left:${w*.2}px;top:${h*.5}px;filter:brightness(.92) contrast(.9)">${S(w*.55)}</div><div class="abs" style="left:${w*.28}px;top:${h*.5+w*.26}px;width:${w*.5}px;height:${w*.05}px;background:rgba(0,0,0,.45);filter:blur(1px);border-radius:40%"></div>`}
+  if(kind==='messy'){bgc='linear-gradient(180deg,#cfc6ba 0%,#b8a58e 55%,#9c8668 56%,#8a7458 100%)';inner=`<div class="abs" style="left:${w*.06}px;top:${h*.32}px;width:${w*.22}px;height:${w*.26}px;border-radius:18px 18px 30px 30px;background:#e9e2d6;box-shadow:inset -10px 0 0 #d5ccbe"></div>
+     <div class="abs" style="left:${w*.66}px;top:${h*.38}px;width:${w*.3}px;height:${w*.06}px;background:#f5f2ea;transform:rotate(-8deg)"></div><div class="abs" style="left:${w*.7}px;top:${h*.2}px;width:${w*.22}px;height:${w*.3}px;background:#5d6b7a;border-radius:10px"></div>
+     <div class="abs" style="left:${sx}px;top:${sy+20}px">${S(sw)}</div>`}
+  if(kind==='product'){bgc='radial-gradient(120% 80% at 50% 30%,#ffffff,#eceef2 70%,#e2e4ea)';inner=shadowSoft(w/2,sy+sw*.47,sw*.46)+`<div class="abs" style="left:${sx}px;top:${sy}px">${S(sw)}</div>`}
+  if(kind==='soft'){bgc='radial-gradient(130% 90% at 30% 20%,#ffffff,#eef0f4 70%,#e6e8ee)';inner=`<div class="abs" style="left:${w*.05}px;top:${sy+sw*.4}px;width:${w*.9}px;height:${sw*.2}px;border-radius:50%;background:radial-gradient(rgba(0,0,0,.18),rgba(0,0,0,0) 72%);filter:blur(10px)"></div><div class="abs" style="left:${sx}px;top:${sy}px;filter:brightness(1.03)">${S(sw)}</div>`}
+  if(kind==='hard'){bgc='linear-gradient(180deg,#f7f7f7,#ededed)';inner=`<div class="abs" style="left:${sx+sw*.25}px;top:${sy+sw*.33}px;width:${sw*.9}px;height:${sw*.22}px;background:#2a2b30;opacity:.55;transform:skewX(-50deg);clip-path:polygon(0 0,80% 0,100% 100%,10% 100%)"></div><div class="abs" style="left:${sx}px;top:${sy}px;filter:contrast(1.25) brightness(1.05)">${S(sw)}</div>`}
+  if(kind==='rim'){bgc='radial-gradient(90% 70% at 50% 40%,#3d4048,#24262b 70%,#1c1d21)';inner=`<div class="abs" style="left:${w*.25}px;top:${sy-sw*.25}px;width:${w*.5}px;height:${w*.5}px;border-radius:50%;background:radial-gradient(rgba(255,255,255,.25),rgba(255,255,255,0) 70%)"></div><div class="abs" style="left:${sx}px;top:${sy}px">${S(sw,{dark:1,rim:1})}</div>`}
+  if(kind==='golden'){bgc='linear-gradient(180deg,#ffb36b 0%,#ffd39c 30%,#f6e2c4 55%,#e6cfae 56%,#d9bf98 100%)';inner=`<div class="abs" style="left:${w*.62}px;top:${h*.12}px;width:${w*.3}px;height:${w*.3}px;border-radius:50%;background:radial-gradient(#fff6d8,#ffd27a 40%,rgba(255,180,90,0) 70%)"></div>
+     <div class="abs" style="left:${sx-sw*.55}px;top:${sy+sw*.4}px;width:${sw*1.1}px;height:${sw*.14}px;background:rgba(120,60,10,.35);transform:skewX(60deg);filter:blur(3px);border-radius:40%"></div><div class="abs" style="left:${sx}px;top:${sy}px">${S(sw,{warm:1})}</div>`}
+  if(kind==='macro'){bgc=`radial-gradient(circle at 50% 50%,#ffffff,#eceef2)`;inner=`<div class="abs" style="inset:0;background:radial-gradient(circle,#c9ccd4 0 7px,transparent 8px) 0 0/34px 34px,radial-gradient(circle,#e3e5ea 0 7px,transparent 8px) 17px 17px/34px 34px,#f7f8fa;filter:blur(${0}px)"></div>
+     <div class="abs" style="left:0;top:${h*.58}px;width:${w}px;height:${h*.42}px;background:#ff6a00;box-shadow:inset 0 14px 30px rgba(0,0,0,.18)"></div>
+     <div class="abs" style="left:0;top:${h*.56}px;width:${w}px;height:16px;background:repeating-linear-gradient(90deg,#fff 0 30px,transparent 30px 50px)"></div>
+     <div class="abs" style="inset:0;background:radial-gradient(60% 50% at 50% 56%,rgba(255,255,255,0),rgba(255,255,255,0) 50%,rgba(240,240,244,.65));"></div>`}
+  if(kind==='low'){bgc='linear-gradient(180deg,#e9ecf2 0%,#f6f7f9 70%,#dfe1e6 71%,#d4d6dc 100%)';inner=`<div class="abs" style="left:${sx-w*.06}px;top:${sy-h*.04}px;transform:perspective(900px) rotateX(-18deg) scale(1.18);transform-origin:50% 100%">${S(sw)}</div>`}
+  if(kind==='clutter'){bgc='radial-gradient(120% 80% at 50% 30%,#ffffff,#eceef2 70%,#e2e4ea)';inner=`<div class="abs" style="left:${w*.06}px;top:${h*.28}px;width:${w*.34}px;height:${w*.24}px;background:#e6d3b8;border-radius:10px;box-shadow:inset 0 -18px 0 #d6bf9f"></div>
+     <div class="abs" style="left:${w*.62}px;top:${h*.22}px;width:${w*.2}px;height:${w*.2}px;border-radius:50%;background:#c7cbe0"></div><div class="abs" style="left:${w*.72}px;top:${h*.3}px;width:0;height:0;border-left:${w*.1}px solid transparent;border-right:${w*.1}px solid transparent;border-bottom:${w*.17}px solid #f2c9b8"></div>
+     <div class="abs" style="left:${w*.02}px;top:${h*.62}px;width:${w*.96}px;height:${h*.12}px;background:linear-gradient(170deg,#f0e6ff,#d9cdf0);border-radius:40% 60% 30% 50%"></div>`+shadowSoft(w/2,sy+sw*.47,sw*.46)+`<div class="abs" style="left:${sx}px;top:${sy}px">${S(sw)}</div>`}
+  if(kind==='minimal'){bgc='linear-gradient(180deg,#f3f3f1,#e9e9e6)';inner=shadowSoft(w/2,sy+sw*.42*.9+10,sw*.34)+`<div class="abs" style="left:${w*.18}px;top:${sy+20}px">${S(w*.64)}</div>`}
+  if(kind==='editorial'){bgc='linear-gradient(180deg,#e9d8c5 0%,#e2cdb6 60%,#d8c0a6 100%)';inner=`<div class="abs" style="left:${w*.08}px;top:${h*.58}px;width:${w*.62}px;height:${h*.42}px;background:linear-gradient(90deg,#f4ede4,#e7dccd);box-shadow:20px 0 0 #d9ccbb"></div>
+     <div class="abs" style="left:${w*.66}px;top:${h*.18}px;width:${w*.26}px;height:${h*.64}px;border-radius:${w*.13}px ${w*.13}px 0 0;background:linear-gradient(90deg,#c96b3c,#a9532a)"></div>
+     <div class="abs" style="left:${w*.06}px;top:${h*.58-w*.4}px;transform:scale(.95)">${S(w*.66)}</div>`}
+  if(kind==='blur'){bgc='#d8dbe2';inner=`<div class="abs" style="inset:0;background:repeating-linear-gradient(180deg,#c7ccd6 0 18px,#eef0f4 18px 40px,#b9bfcc 40px 52px,#e2e5eb 52px 80px);filter:blur(5px)"></div>
+     <div class="abs" style="inset:0;background:linear-gradient(90deg,rgba(255,255,255,.0),rgba(255,255,255,.35))"></div>${shadowSoft(w/2,sy+sw*.47,sw*.46)}<div class="abs" style="left:${sx}px;top:${sy}px">${S(sw)}</div>`}
+  return `<div class="photo" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${bgc}">${inner}${label?'<div class="ph-tag">PLACEHOLDER</div>':''}</div>`;
+}
+// UI pieces
+const counter=(n)=>`<div class="pill" style="left:70px;top:170px;height:72px;padding:0 30px;font-weight:900;font-size:34px;letter-spacing:.04em">${n}<span style="color:#9a99a6">/10</span></div>`;
+const keyword=(k,label)=>`<div class="cap" style="left:66px;top:260px;font-size:126px"><span class="O">/</span>${k}</div><div class="abs" style="left:72px;top:398px;font-weight:800;font-size:34px;letter-spacing:.16em;color:#8b8a97">${label}</div>`;
+const frameCard=(inner)=>`<div class="card" style="left:60px;top:470px;width:960px;height:1110px;border-radius:64px">${inner}</div>`;
+const promptBar=(text,chips=[])=>`<div class="pill" style="left:60px;top:1620px;width:960px;height:128px;justify-content:flex-start;padding:0 140px 0 44px;gap:14px;font-weight:600;font-size:32px;color:#3a3946">
+  <span style="overflow:hidden;text-overflow:ellipsis">${text}</span>${chips.map(c=>`<span style="padding:10px 20px;border-radius:999px;background:linear-gradient(160deg,#ffae4a,#ff6a00);color:#fff;font-weight:800;font-size:30px">/${c}</span>`).join('')}
+  <span class="sq" style="position:absolute;right:16px;top:16px;width:96px;height:96px;border-radius:50%;background:linear-gradient(160deg,#ffae4a,#ff6a00);box-shadow:0 10px 22px -6px rgba(255,110,0,.6)">${icon('send',48,'#fff',3)}</span></div>`;
+const BASE='White running sneaker, orange heel tab,';
+function scenePage(n,k,label,inner,prompt,chips,extra=''){return bg()+counter(n)+keyword(k,label)+frameCard(inner)+promptBar(prompt,chips)+extra}
+const P=(kind)=>photo(kind,20,20,920,1070);
+const wipe=(a,b,pos)=>`<div class="abs" style="left:20px;top:20px;width:920px;height:1070px;border-radius:44px;overflow:hidden">${photo(a,0,0,920,1070,false)}<div class="abs" style="left:0;top:0;width:${pos*920}px;height:1070px;overflow:hidden">${photo(b,0,0,920,1070,false)}</div>
+  <div class="abs" style="left:${pos*920-3}px;top:0;width:6px;height:1070px;background:#fff;box-shadow:0 0 20px rgba(0,0,0,.25)"></div><div class="pill" style="left:${pos*920-40}px;top:495px;width:80px;height:80px;font-weight:900;font-size:30px">‹›</div>
+  <div class="ph-tag">PLACEHOLDER</div></div>`;
+
+const F={};
+F['01']=()=>bg()+`<div class="cap" style="left:0;width:1080px;top:170px;font-size:128px;text-align:center">STOP<br>GUESSING.</div>
+  <div class="cap" style="left:0;width:1080px;top:420px;font-size:84px;text-align:center"><span class="O">DESCRIBE</span> THE SHOT.</div>`+
+  `<div class="card" style="left:160px;top:580px;width:760px;height:900px;border-radius:56px">${photo('boring',18,18,724,864)}</div>`+
+  `<div class="chip" style="left:640px;top:620px;height:86px;padding:0 30px;font-size:40px">/softlight</div><div class="chip" style="left:90px;top:990px;height:86px;padding:0 30px;font-size:40px">/macro</div><div class="chip" style="left:660px;top:1320px;height:86px;padding:0 30px;font-size:40px">/editorial</div>`+
+  promptBar('Make it <span style="text-decoration:line-through;text-decoration-color:#ff6a00;text-decoration-thickness:4px;background:rgba(255,106,0,.15)">look better.</span>')+
+  `<div class="abs" style="left:0;width:1080px;top:1780px;text-align:center;font-weight:700;font-size:28px;color:#8b8a97;letter-spacing:.06em">Prompt keywords • Slash optional</div>`;
+F['02']=()=>scenePage('01','productshot','CLEAN PRODUCT PHOTOGRAPHY',wipe('messy','product',.62),BASE,['productshot']);
+F['03']=()=>scenePage('02','softlight','SOFT SHADOWS',wipe('hard','soft',.55),BASE,['softlight'],
+  `<div class="card sq" style="left:820px;top:500px;width:170px;height:170px;border-radius:44px;flex-direction:column;gap:4px">${icon('bulb',72,'#ff6a00')}<span style="font-weight:800;font-size:22px">DIFFUSED</span></div>`);
+F['04']=()=>scenePage('03','hardlight','SHARP SHADOWS',wipe('soft','hard',.5),BASE,['hardlight'],
+  `<div class="card sq" style="left:820px;top:500px;width:170px;height:170px;border-radius:44px;flex-direction:column;gap:4px">${icon('bulb',56,'#0d0d12')}<span style="font-weight:800;font-size:22px">SPOT</span></div>`);
+F['05']=()=>scenePage('04','rimlight','LIGHT ALONG THE EDGES',P('rim'),BASE,['rimlight']);
+F['06']=()=>scenePage('05','goldenhour','WARM EVENING LIGHT',P('golden'),BASE,['goldenhour'],`<div class="card sq" style="left:820px;top:500px;width:170px;height:170px;border-radius:44px">${icon('sun',84,'#ff8a1a')}</div>`);
+F['07']=()=>scenePage('06','macro','SHOW THE TEXTURE',P('macro'),BASE,['macro'],
+  `<div class="card" style="left:740px;top:1290px;width:250px;height:250px;border-radius:40px;padding:12px">${photo('product',12,12,226,226,false)}<div class="abs" style="left:40px;top:120px;width:70px;height:56px;border:4px solid #ff6a00;border-radius:10px"></div></div>`);
+F['08']=()=>scenePage('07','lowangle','A STRONGER PERSPECTIVE',P('low'),BASE,['lowangle'],`<div class="card sq" style="left:820px;top:1330px;width:170px;height:170px;border-radius:44px;flex-direction:column">${icon('cam',70,'#0d0d12')}<span style="font-weight:900;font-size:40px;line-height:1">↓</span></div>`);
+F['09']=()=>scenePage('08','minimal','LESS CLUTTER. MORE FOCUS.',wipe('clutter','minimal',.5),BASE,['minimal']);
+F['10']=()=>scenePage('09','editorial','MAGAZINE-STYLE COMPOSITION',P('editorial'),BASE,['editorial']);
+F['11']=()=>scenePage('10','motionblur','ADD A SENSE OF SPEED',P('blur'),'White sneaker. <b style="color:#0d0d12">Keep the shoe sharp.</b>',['motionblur']);
+F['12']=()=>{const K=[['productshot','product'],['softlight','soft'],['hardlight','hard'],['rimlight','rim'],['goldenhour','golden'],['macro','macro'],['lowangle','low'],['minimal','minimal'],['editorial','editorial'],['motionblur','blur']];
+  return bg()+`<div class="cap" style="left:0;width:1080px;top:170px;font-size:96px;text-align:center">SAVE FOR YOUR<br><span class="O">NEXT PROMPT</span></div>`+
+  `<div class="pill" style="left:260px;top:390px;height:76px;padding:0 34px;font-weight:800;font-size:30px;letter-spacing:.12em;gap:12px">${icon('bookmark',34,'#ff6a00')}10 PHOTO PROMPT KEYWORDS</div>`+
+  K.map(([k,kind],i)=>{const c=i%2,r=Math.floor(i/2);const x=70+c*480,y=500+r*262;return `<div class="card" style="left:${x}px;top:${y}px;width:460px;height:246px;border-radius:38px;padding:12px;display:flex;gap:14px;align-items:center">
+     ${photo(kind,12,12,200,222,false)}<div style="margin-left:214px"><div style="font-weight:900;font-size:22px;color:#9a99a6">${String(i+1).padStart(2,'0')}</div><div style="font-weight:900;font-size:36px;letter-spacing:-.03em"><span class="O">/</span>${k}</div></div></div>`}).join('')+
+  `<div class="abs" style="left:0;width:1080px;top:1830px;text-align:center;font-weight:700;font-size:26px;color:#8b8a97">placeholders — real photos replace every tile</div>`};
+
+const id=(location.hash||'#01').slice(1);root.innerHTML=F[id]();
+document.fonts.ready.then(()=>window.ready=true);
+</script>
+</body>
+</html>
