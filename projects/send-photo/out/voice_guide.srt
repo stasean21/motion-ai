@@ -1,0 +1,27 @@
+1
+00:00:00,300 --> 00:00:04,600
+You tap Send. But how does this photo actually reach your friend?
+
+2
+00:00:05,300 --> 00:00:14,500
+It travels as data, divided into small packets. Imagine numbered parcels carrying the information needed to rebuild your picture.
+
+3
+00:00:15,500 --> 00:00:26,500
+Through Wi-Fi or your mobile network, those packets enter the internet. Routers pass them between networks, toward your messaging app's servers.
+
+4
+00:00:27,500 --> 00:00:36,500
+If the route crosses an ocean, the data may travel through an underwater cable, carried by pulses of light.
+
+5
+00:00:37,800 --> 00:00:45,500
+Your friend's phone receives and reassembles the data. The app displays your photo.
+
+6
+00:00:46,500 --> 00:00:50,800
+A whole network behind one tiny action.
+
+7
+00:00:52,500 --> 00:00:55,000
+And it all starts when…

@@ -1,0 +1,18 @@
+Visual cues the voice can land on (seconds). The picture has no subtitles, so small shifts are fine.
+ 0.20  finger presses Send (loop joins here: "…when | you tap Send")
+ 2.35  HOW DOES IT GET THERE? appears
+ 5.75  photo turns into a file            ("It travels as data")
+ 7.1   file splits into numbered packets  ("divided into small packets")
+ 9.8   packets briefly become parcels     ("numbered parcels")
+16.0   WI-FI / MOBILE                     ("Through Wi-Fi or your mobile network")
+17.8   Wi-Fi path chosen (ping)
+19.3   ROUTERS                            ("Routers pass them between networks")
+23.2   APP SERVERS                        ("toward your messaging app's servers")
+28.0   map: UNDERSEA CABLE                ("If the route crosses an ocean")
+30.4   dive under the surface             ("underwater cable")
+33.6   PULSES OF LIGHT                    ("carried by pulses of light")
+38.3   REASSEMBLE                         ("receives and reassembles the data")
+41.1   photo appears, 41.75 message tone  ("The app displays your photo")
+47.3   ONE TAP. A WHOLE NETWORK.          ("A whole network…")
+49.5   tap symbol                         ("…one tiny action")
+51.0   camera returns to the first phone  ("And it all starts when…")
