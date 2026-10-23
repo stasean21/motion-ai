@@ -80,10 +80,11 @@ const BLOB2=mk(root,`<div class="abs" style="left:380px;top:1100px;width:1000px;
 const SCN=[];let fid=0;
 function scene(o={}){const f=fid++;$('defs').insertAdjacentHTML('beforeend',`<filter id="sf${f}" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="0 0"/></filter>`);
   const el=mk(root,`<div class="scene" style="display:none"></div>`);const bg=o.dark?mk(el,`<div class="abs" style="inset:-200px;background:radial-gradient(90% 60% at 50% 40%,#2a2c35,#121318 70%)"></div>`):null;
-  const S={el,bg,f,fe:$('defs').lastElementChild.firstElementChild,cam:mk(el,'<div class="layer"></div>'),type:mk(el,'<div class="layer"></div>'),...o};SCN.push(S);return S}
+  const S={el,bg,f,fe:$('defs').lastElementChild.firstElementChild,cam:mk(el,'<div class="layer"></div>'),type:mk(el,'<div class="layer tl"></div>'),...o};SCN.push(S);return S}
 function wrap(S,{x=0,y=0,s=1,ry=0,o=1,bx=0,by=0,ox='50% 50%'}={}){S.el.style.transformOrigin=ox;S.el.style.transform=`translate(${x}px,${y}px) ${ry?`perspective(1500px) rotateY(${ry}deg) `:''}scale(${s})`;
   S.el.style.opacity=o;if(bx>.3||by>.3){S.fe.setAttribute('stdDeviation',`${bx.toFixed(1)} ${by.toFixed(1)}`);S.el.style.filter=`url(#sf${S.f})`}else S.el.style.filter='none'}
-function W(par,html,x,y,size,o={}){return mk(par,`<div class="W ${o.cls||''}" style="left:${x}px;top:${y}px;font-size:${size}px;${o.style||''}">${html}</div>`)}
+const HS=.72;   // headline scale (smaller titles)
+function W(par,html,x,y,size,o={}){if(par.classList.contains('tl')&&size>=60){size*=HS;if(y<900)y=140+(y-140)*.75}return mk(par,`<div class="W ${o.cls||''}" style="left:${x}px;top:${y}px;font-size:${size}px;${o.style||''}">${html}</div>`)}
 function letters(par,text,x,y,size,o={}){const el=W(par,[...text].map(c=>`<span>${c===' '?'&nbsp;':c}</span>`).join(''),x,y,size,o);return {el,L:[...el.children]}}
 function frame(par,x,y,w,h,keys,o={}){const r=o.r??44;
   const el=mk(par,`<div class="glass" style="left:${x-14}px;top:${y-14}px;width:${w+28}px;height:${h+28}px;border-radius:${r+12}px;${o.wrap||''}"><div class="abs" style="left:14px;top:14px;width:${w}px;height:${h}px;border-radius:${r}px;overflow:hidden;background:#dde1ea"></div></div>`);
@@ -442,7 +443,7 @@ const SS=scene();SS.t0=TS;SS.D=63-TS;
  S.tiles=K.map(([k,n],i)=>{const c=i%2,r=Math.floor(i/2);return {x:70+c*480,y:520+r*212,el:mk(S.cam,`<div class="glass" style="left:0;top:0;width:460px;height:192px;border-radius:30px;transform-origin:50% 50%"><img src="${SRC(k)}" style="position:absolute;left:10px;top:10px;width:138px;height:172px;object-fit:cover;border-radius:22px"><div class="abs" style="left:170px;top:44px"><div class="tiny">${String(i+1).padStart(2,'0')}</div><div style="font-weight:800;font-size:38px;color:#2f7bf5;letter-spacing:-.02em">/${n}</div></div></div>`)}});
  S.bm=card(S.cam,840,180,150,150,`<div class="sq" style="height:100%"><svg width="76" height="76" viewBox="0 0 24 24"><defs><clipPath id="bmc"><rect id="bmr" x="0" y="24" width="24" height="24"/></clipPath></defs><path d="M6 3.5h12v17l-6-4.2-6 4.2z" fill="none" stroke="#2f7bf5" stroke-width="2" stroke-linejoin="round"/><path d="M6 3.5h12v17l-6-4.2-6 4.2z" fill="#2f7bf5" clip-path="url(#bmc)"/></svg></div>`,{r:44});S.bmr=$('bmr');
  S.bring=mk(S.cam,'<div class="abs" style="left:915px;top:255px"></div>');S.br=ring(S.bring,90,'#2f7bf5',4);
- S.h1=W(S.type,'SAVE',540,230,250);S.h2=W(S.type,'THIS<span class="B">.</span>',540,395,140);S.h3=W(S.type,'FOR YOUR NEXT <span style="display:inline-block;padding:0 .25em .08em;border-radius:.3em;background:#2f7bf5;color:#fff">ChatGPT</span> PROMPT',540,478,40,{style:'letter-spacing:.04em;font-weight:800'});
+ S.h1=W(S.type,'SAVE',540,230,250);S.h2=W(S.type,'THIS<span class="B">.</span>',540,395,140);S.h3=W(S.type,'FOR YOUR NEXT <span style="display:inline-block;padding:0 .25em .08em;border-radius:.3em;background:#2f7bf5;color:#fff">ChatGPT</span> PROMPT',540,400,38,{style:'letter-spacing:.04em;font-weight:800'});
  S.render=(t,τ)=>{wrap(S,{});cam(S.cam,{});
   const col=E.inExpo(prog(τ,b(16),b(16)+.5));   // collapse back into the hook card
   S.tiles.forEach((T,i)=>{const t0=.04+i*.06;const q=E.outExpo(prog(τ,t0,t0+.5));const x=lerp(T.x+900,T.x,q),y=T.y;
