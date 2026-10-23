@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>10 photo prompt keywords — keyframes v2 (reference style)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#eef0f6}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#14151b}
+#root{position:absolute;inset:0;overflow:hidden}
+.abs{position:absolute}
+.sq{display:flex;align-items:center;justify-content:center}
+.mono{font-family:'DejaVu Sans Mono',monospace}
+:root{--blue:#2f7bf5;--sky:#a9c1ee}
+/* glass but light, like the reference's white cards */
+.card{position:absolute;border-radius:40px;overflow:hidden;background:linear-gradient(160deg,rgba(255,255,255,.92),rgba(255,255,255,.74));
+  -webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);border:1.5px solid rgba(255,255,255,.95);
+  box-shadow:0 30px 60px -28px rgba(40,50,110,.30),0 6px 16px -8px rgba(40,50,110,.10),inset 0 2px 0 #fff}
+.pill{position:absolute;border-radius:999px;display:flex;align-items:center;justify-content:center;white-space:nowrap;background:rgba(255,255,255,.82);
+  border:1.5px solid #fff;box-shadow:0 10px 24px -12px rgba(40,50,110,.28)}
+.karaoke{position:absolute;left:60px;width:960px;top:190px;text-align:center;font-weight:600;font-size:52px;line-height:1.22;letter-spacing:-.015em}
+.karaoke .u{color:var(--sky)} .karaoke .k{color:var(--blue)}
+.gpt{display:inline-flex;align-items:center;gap:8px;padding:2px 16px;border-radius:999px;background:#fff;box-shadow:0 6px 16px -8px rgba(40,50,110,.3);font-size:36px;vertical-align:middle}
+.gpt::before{content:'';width:10px;height:10px;border-radius:50%;background:#c9cede}
+.kw{position:absolute;font-weight:600;letter-spacing:-.03em;color:var(--blue);white-space:nowrap}
+.tag{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:999px;background:#e9f0ff;color:var(--blue);font-weight:700;font-size:26px}
+.tag::before{content:'';width:9px;height:9px;border-radius:50%;background:#b9c3d8}
+.photo{position:absolute;border-radius:28px;overflow:hidden}
+.ph-tag{position:absolute;right:16px;bottom:14px;padding:5px 12px;border-radius:10px;background:rgba(0,0,0,.35);color:#fff;font:700 15px 'Inter Display';letter-spacing:.06em;z-index:5}
+.cursor{position:absolute;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
+.mb{filter:blur(6px)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+'use strict';
+const root=document.getElementById('root');
+const IC={send:'<path d="M12 19.5V5M5.6 11.2L12 4.8l6.4 6.4"/>',cam:'<rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.6"/><path d="M8.5 7l1.6-2.6h3.8L15.5 7"/>',
+  sun:'<circle cx="12" cy="12" r="4.4"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7L7 17M17 7l1.7-1.7"/>',
+  bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>',bookmark:'<path d="M6 3.5h12v17l-6-4.2-6 4.2z"/>',
+  search:'<circle cx="10.8" cy="10.8" r="6.8"/><path d="M16 16l4.6 4.6"/>'};
+const icon=(n,s,c,sw=2.2)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
+// ── placeholder sneaker (side view, toe right). Real generated photos replace every photo slot.
+let sid=0;
+function sneaker(w,o={}){const u=++sid;const dark=o.dark,warm=o.warm;
+  const up=dark?'#55575e':warm?'#fff3e2':'#ffffff',up2=dark?'#3a3c42':warm?'#f1dcc0':'#e7e8ec',sole=dark?'#6a6c72':warm?'#fbefe0':'#f4f4f6',edge=o.rim?'#ffffff':'none';
+  return `<svg width="${w}" height="${w*.5}" viewBox="0 0 600 300" style="display:block;overflow:visible${o.rim?';filter:drop-shadow(0 -2px 3px rgba(255,255,255,.9)) drop-shadow(0 -1px 10px rgba(255,255,255,.55))':''}">
+   <defs><linearGradient id="u${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${up}"/><stop offset="1" stop-color="${up2}"/></linearGradient>
+   <pattern id="m${u}" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="4.5" cy="4.5" r="1.6" fill="${dark?'#2c2d31':'#d9dbe0'}"/></pattern></defs>
+   <path d="M40 232 Q36 196 70 186 L150 168 Q196 90 268 74 Q330 62 372 96 L430 140 Q520 158 560 196 Q584 220 572 240 L560 250 L52 250 Z" fill="url(#u${u})" stroke="${edge}" stroke-width="${o.rim?3:0}"/>
+   <path d="M180 162 Q215 100 268 88 Q318 80 352 110 L404 150 Q330 160 250 176 Z" fill="url(#m${u})" opacity=".9"/>
+   ${[0,1,2,3,4].map(i=>`<path d="M${262+i*26} ${92+i*12} L${300+i*24} ${120+i*8}" stroke="${dark?'#8a8c93':'#c9cbd2'}" stroke-width="7" stroke-linecap="round"/>`).join('')}
+   <path d="M40 232 Q40 206 64 200 L66 248 Z" fill="#ff6a00"/><path d="M52 198 Q64 150 96 160 L104 190 Z" fill="#ff7a1a"/>
+   <path d="M30 246 L580 236 Q592 252 572 268 L60 276 Q30 274 30 246 Z" fill="${sole}" stroke="${dark?'#4a4c52':'#dcdde2'}" stroke-width="3"/>
+   <path d="M34 266 L572 260 Q560 280 540 282 L66 286 Q40 284 34 266 Z" fill="${dark?'#2a2b30':'#cfd1d8'}"/>
+   <path d="M440 232 Q500 226 548 216" stroke="${dark?'#7a7c83':'#d4d6dc'}" stroke-width="4" fill="none"/></svg>`}
+// photo slot: kind decides the placeholder look
+function photo(kind,x,y,w,h,label=true){
+  const S=(sw,o)=>sneaker(sw,o);let inner='',bgc='#ececec';
+  const shadowSoft=(cx,cy,rx)=>`<div class="abs" style="left:${cx-rx}px;top:${cy-rx*.09}px;width:${rx*2}px;height:${rx*.18}px;border-radius:50%;background:radial-gradient(rgba(0,0,0,.28),rgba(0,0,0,0) 70%)"></div>`;
+  const sw=w*.82,sx=(w-sw)/2,sy=h*.42;
+  if(kind==='boring'){bgc='linear-gradient(180deg,#dcdcdc,#cfcfcf)';inner=`<div class="abs" style="left:${w*.2}px;top:${h*.5}px;filter:brightness(.92) contrast(.9)">${S(w*.55)}</div><div class="abs" style="left:${w*.28}px;top:${h*.5+w*.26}px;width:${w*.5}px;height:${w*.05}px;background:rgba(0,0,0,.45);filter:blur(1px);border-radius:40%"></div>`}
+  if(kind==='messy'){bgc='linear-gradient(180deg,#cfc6ba 0%,#b8a58e 55%,#9c8668 56%,#8a7458 100%)';inner=`<div class="abs" style="left:${w*.06}px;top:${h*.32}px;width:${w*.22}px;height:${w*.26}px;border-radius:18px 18px 30px 30px;background:#e9e2d6;box-shadow:inset -10px 0 0 #d5ccbe"></div>
+     <div class="abs" style="left:${w*.66}px;top:${h*.38}px;width:${w*.3}px;height:${w*.06}px;background:#f5f2ea;transform:rotate(-8deg)"></div><div class="abs" style="left:${w*.7}px;top:${h*.2}px;width:${w*.22}px;height:${w*.3}px;background:#5d6b7a;border-radius:10px"></div>
+     <div class="abs" style="left:${sx}px;top:${sy+20}px">${S(sw)}</div>`}
+  if(kind==='product'){bgc='radial-gradient(120% 80% at 50% 30%,#ffffff,#eceef2 70%,#e2e4ea)';inner=shadowSoft(w/2,sy+sw*.47,sw*.46)+`<div class="abs" style="left:${sx}px;top:${sy}px">${S(sw)}</div>`}
+  if(kind==='soft'){bgc='radial-gradient(130% 90% at 30% 20%,#ffffff,#eef0f4 70%,#e6e8ee)';inner=`<div class="abs" style="left:${w*.05}px;top:${sy+sw*.4}px;width:${w*.9}px;height:${sw*.2}px;border-radius:50%;background:radial-gradient(rgba(0,0,0,.18),rgba(0,0,0,0) 72%);filter:blur(10px)"></div><div class="abs" style="left:${sx}px;top:${sy}px;filter:brightness(1.03)">${S(sw)}</div>`}
+  if(kind==='hard'){bgc='linear-gradient(180deg,#f7f7f7,#ededed)';inner=`<div class="abs" style="left:${sx+sw*.25}px;top:${sy+sw*.33}px;width:${sw*.9}px;height:${sw*.22}px;background:#2a2b30;opacity:.55;transform:skewX(-50deg);clip-path:polygon(0 0,80% 0,100% 100%,10% 100%)"></div><div class="abs" style="left:${sx}px;top:${sy}px;filter:contrast(1.25) brightness(1.05)">${S(sw)}</div>`}
+  if(kind==='rim'){bgc='radial-gradient(90% 70% at 50% 40%,#3d4048,#24262b 70%,#1c1d21)';inner=`<div class="abs" style="left:${w*.25}px;top:${sy-sw*.25}px;width:${w*.5}px;height:${w*.5}px;border-radius:50%;background:radial-gradient(rgba(255,255,255,.25),rgba(255,255,255,0) 70%)"></div><div class="abs" style="left:${sx}px;top:${sy}px">${S(sw,{dark:1,rim:1})}</div>`}
+  if(kind==='golden'){bgc='linear-gradient(180deg,#ffb36b 0%,#ffd39c 30%,#f6e2c4 55%,#e6cfae 56%,#d9bf98 100%)';inner=`<div class="abs" style="left:${w*.62}px;top:${h*.12}px;width:${w*.3}px;height:${w*.3}px;border-radius:50%;background:radial-gradient(#fff6d8,#ffd27a 40%,rgba(255,180,90,0) 70%)"></div>
+     <div class="abs" style="left:${sx-sw*.55}px;top:${sy+sw*.4}px;width:${sw*1.1}px;height:${sw*.14}px;background:rgba(120,60,10,.35);transform:skewX(60deg);filter:blur(3px);border-radius:40%"></div><div class="abs" style="left:${sx}px;top:${sy}px">${S(sw,{warm:1})}</div>`}
+  if(kind==='macro'){bgc=`radial-gradient(circle at 50% 50%,#ffffff,#eceef2)`;inner=`<div class="abs" style="inset:0;background:radial-gradient(circle,#c9ccd4 0 7px,transparent 8px) 0 0/34px 34px,radial-gradient(circle,#e3e5ea 0 7px,transparent 8px) 17px 17px/34px 34px,#f7f8fa;filter:blur(${0}px)"></div>
+     <div class="abs" style="left:0;top:${h*.58}px;width:${w}px;height:${h*.42}px;background:#ff6a00;box-shadow:inset 0 14px 30px rgba(0,0,0,.18)"></div>
+     <div class="abs" style="left:0;top:${h*.56}px;width:${w}px;height:16px;background:repeating-linear-gradient(90deg,#fff 0 30px,transparent 30px 50px)"></div>
+     <div class="abs" style="inset:0;background:radial-gradient(60% 50% at 50% 56%,rgba(255,255,255,0),rgba(255,255,255,0) 50%,rgba(240,240,244,.65));"></div>`}
+  if(kind==='low'){bgc='linear-gradient(180deg,#e9ecf2 0%,#f6f7f9 70%,#dfe1e6 71%,#d4d6dc 100%)';inner=`<div class="abs" style="left:${sx-w*.06}px;top:${sy-h*.04}px;transform:perspective(900px) rotateX(-18deg) scale(1.18);transform-origin:50% 100%">${S(sw)}</div>`}
+  if(kind==='clutter'){bgc='radial-gradient(120% 80% at 50% 30%,#ffffff,#eceef2 70%,#e2e4ea)';inner=`<div class="abs" style="left:${w*.06}px;top:${h*.28}px;width:${w*.34}px;height:${w*.24}px;background:#e6d3b8;border-radius:10px;box-shadow:inset 0 -18px 0 #d6bf9f"></div>
+     <div class="abs" style="left:${w*.62}px;top:${h*.22}px;width:${w*.2}px;height:${w*.2}px;border-radius:50%;background:#c7cbe0"></div><div class="abs" style="left:${w*.72}px;top:${h*.3}px;width:0;height:0;border-left:${w*.1}px solid transparent;border-right:${w*.1}px solid transparent;border-bottom:${w*.17}px solid #f2c9b8"></div>
+     <div class="abs" style="left:${w*.02}px;top:${h*.62}px;width:${w*.96}px;height:${h*.12}px;background:linear-gradient(170deg,#f0e6ff,#d9cdf0);border-radius:40% 60% 30% 50%"></div>`+shadowSoft(w/2,sy+sw*.47,sw*.46)+`<div class="abs" style="left:${sx}px;top:${sy}px">${S(sw)}</div>`}
+  if(kind==='minimal'){bgc='linear-gradient(180deg,#f3f3f1,#e9e9e6)';inner=shadowSoft(w/2,sy+sw*.42*.9+10,sw*.34)+`<div class="abs" style="left:${w*.18}px;top:${sy+20}px">${S(w*.64)}</div>`}
+  if(kind==='editorial'){bgc='linear-gradient(180deg,#e9d8c5 0%,#e2cdb6 60%,#d8c0a6 100%)';inner=`<div class="abs" style="left:${w*.08}px;top:${h*.58}px;width:${w*.62}px;height:${h*.42}px;background:linear-gradient(90deg,#f4ede4,#e7dccd);box-shadow:20px 0 0 #d9ccbb"></div>
+     <div class="abs" style="left:${w*.66}px;top:${h*.18}px;width:${w*.26}px;height:${h*.64}px;border-radius:${w*.13}px ${w*.13}px 0 0;background:linear-gradient(90deg,#c96b3c,#a9532a)"></div>
+     <div class="abs" style="left:${w*.06}px;top:${h*.58-w*.4}px;transform:scale(.95)">${S(w*.66)}</div>`}
+  if(kind==='blur'){bgc='#d8dbe2';inner=`<div class="abs" style="inset:0;background:repeating-linear-gradient(180deg,#c7ccd6 0 18px,#eef0f4 18px 40px,#b9bfcc 40px 52px,#e2e5eb 52px 80px);filter:blur(5px)"></div>
+     <div class="abs" style="inset:0;background:linear-gradient(90deg,rgba(255,255,255,.0),rgba(255,255,255,.35))"></div>${shadowSoft(w/2,sy+sw*.47,sw*.46)}<div class="abs" style="left:${sx}px;top:${sy}px">${S(sw)}</div>`}
+  return `<div class="photo" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${bgc}">${inner}${label?'<div class="ph-tag">PLACEHOLDER</div>':''}</div>`;
+}
+
+// ── reference-style pieces
+const progress=(n)=>`<div class="pill" style="left:390px;top:96px;height:62px;padding:0 26px;gap:18px;font-weight:700;font-size:26px"><span><b>${n}</b><span style="color:#9aa0b4">/10</span></span>
+  <span class="mono" style="letter-spacing:-.05em;font-size:30px;font-weight:700">${[...Array(10)].map((_,i)=>`<span style="color:${i<n?'#2f7bf5':'#c6cbdb'};font-style:italic">/</span>`).join('')}</span></div>`;
+// karaoke: words before `said` are black, the rest light; keys are blue when said
+function karaoke(text,said,keys=[],top=190){const w=text.split(' ');return `<div class="karaoke" style="top:${top}px">${w.map((x,i)=>x==='ChatGPT'?`<span class="gpt" style="opacity:${i<said?1:.45}">ChatGPT</span>`:`<span class="${i>=said?'u':(keys.includes(i)?'k':'')}">${x}</span>`).join(' ')}</div>`}
+const cursor=(x,y,press=0)=>`<svg class="cursor" style="left:${x}px;top:${y}px;transform:scale(${press?.9:1})" width="64" height="72" viewBox="0 0 32 36"><path d="M11 2.5c1.4 0 2.5 1.1 2.5 2.5v9.2l1.1-.2c1.2-.2 2.3.5 2.6 1.6l.1.4.6-.1c1.2-.2 2.3.5 2.6 1.7l.1.3.4-.1c1.3-.2 2.5.7 2.7 2l.9 6.2c.4 2.8-1.2 5.5-3.8 6.5l-2.2.8c-2.3.9-4.9.3-6.6-1.5l-5.8-6.1c-.9-1-.9-2.5.1-3.4.9-.8 2.3-.8 3.2 0l.9.9V5c0-1.4 1.1-2.5 2.5-2.5z" fill="#fff" stroke="#14151b" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+// the working card: tag + photo + prompt line (keyword lands inside the prompt)
+function workCard(tag,kind,prompt,{x=190,y=560,w=700,ph=820,caret=1,extra='',photoHTML}={}){
+  return `<div class="card" style="left:${x}px;top:${y}px;width:${w}px;height:${ph+190}px">
+    <div class="abs" style="left:28px;top:24px"><span class="tag">${tag}</span></div>
+    ${photoHTML||photo(kind,28,84,w-56,ph-30)}
+    <div class="abs" style="left:28px;top:${ph+74}px;width:${w-56}px;height:86px;border-radius:24px;background:#f2f4fa;display:flex;align-items:center;padding:0 100px 0 26px;font-weight:600;font-size:28px;color:#4a4d5c;white-space:nowrap;overflow:hidden">${prompt}${caret?'<span style="display:inline-block;width:3px;height:36px;background:#2f7bf5;margin-left:4px"></span>':''}</div>
+    <div class="sq" style="position:absolute;right:38px;top:${ph+84}px;width:66px;height:66px;border-radius:50%;background:#2f7bf5">${icon('send',34,'#fff',3)}</div>${extra}</div>`}
+const kwChip=(k)=>`<span style="color:#2f7bf5;font-weight:700">/${k}</span>`;
+const bigKw=(k,x,y,size=120,style='')=>`<div class="kw" style="left:${x}px;top:${y}px;font-size:${size}px;${style}">/${k}</div>`;
+const trail=(x1,y1,x2,y2)=>`<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><path d="M${x1} ${y1} Q ${(x1+x2)/2+120} ${(y1+y2)/2-80} ${x2} ${y2}" stroke="#2f7bf5" stroke-width="5" fill="none" stroke-dasharray="2 14" stroke-linecap="round" opacity=".55"/></svg>`;
+const wipeHTML=(a,b,pos,w,h)=>`<div class="abs" style="left:28px;top:84px;width:${w}px;height:${h}px;border-radius:28px;overflow:hidden">${photo(a,0,0,w,h,false)}<div class="abs" style="left:0;top:0;width:${pos*w}px;height:${h}px;overflow:hidden">${photo(b,0,0,w,h,false)}</div>
+  <div class="abs" style="left:${pos*w-3}px;top:0;width:6px;height:${h}px;background:#fff;box-shadow:0 0 20px rgba(0,0,0,.25)"></div><div class="pill" style="left:${pos*w-34}px;top:${h/2-34}px;width:68px;height:68px;font-weight:900;font-size:26px">‹›</div><div class="ph-tag">PLACEHOLDER</div></div>`;
+const BASEP='White sneaker, orange heel tab,&nbsp;';
+const F={};
+F['01']=()=>progress(0)+karaoke('Want better AI photos? Try these ten keywords in your next ChatGPT image prompt.',9,[5,6])+
+  workCard('prompt','boring','Make it <s style="text-decoration-color:#e5484d;text-decoration-thickness:4px;color:#b2b6c4">look better.</s>',{y:620})+
+  `<div class="kw mb" style="left:700px;top:600px;font-size:64px;transform:rotate(-8deg)">/softlight</div><div class="kw" style="left:60px;top:1040px;font-size:64px;transform:rotate(6deg)">/macro</div><div class="kw" style="left:690px;top:1350px;font-size:64px;transform:rotate(-4deg)">/editorial</div>`+
+  trail(820,680,700,1520)+cursor(800,1520);
+F['02']=()=>progress(1)+karaoke('Product shot: give your subject a clean, commercial presentation.',5,[0,1])+bigKw('productshot',140,420,110)+
+  `<div class="card" style="left:190px;top:620px;width:700px;height:1010px"><div class="abs" style="left:28px;top:24px"><span class="tag">/productshot</span></div>${wipeHTML('messy','product',.62,644,790)}
+   <div class="abs" style="left:28px;top:894px;width:644px;height:86px;border-radius:24px;background:#f2f4fa;display:flex;align-items:center;padding:0 26px;font-weight:600;font-size:28px;color:#4a4d5c">${BASEP}${kwChip('productshot')}</div></div>`+cursor(578,1080);
+F['03']=()=>progress(2)+karaoke('Soft light: ask for gentle shadows and smooth transitions.',6,[0,1])+
+  workCard('/softlight','soft',BASEP+kwChip('softlight'),{y:560})+
+  `<div class="card" style="left:110px;top:1600px;width:860px;height:150px;border-radius:40px">
+     <div class="abs" style="left:34px;top:30px;display:flex;align-items:center;gap:14px;font-weight:700;font-size:28px">${icon('bulb',40,'#2f7bf5')}Light softness</div>
+     <div class="abs" style="left:34px;top:96px;width:792px;height:12px;border-radius:6px;background:#e3e7f1"><div style="width:78%;height:100%;border-radius:6px;background:#2f7bf5"></div></div>
+     <div class="abs" style="left:${34+792*.78-22}px;top:80px;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.25)"></div></div>`+cursor(740,1690);
+F['04']=()=>progress(3)+karaoke('Hard light: create crisp shadows and a bolder look.',4,[0,1])+
+  workCard('/hardlight','hard',BASEP,{y:620})+bigKw('hardlight',560,1390,64,'transform:rotate(-12deg);filter:blur(1.5px)')+trail(520,450,700,1660)+
+  `<div class="kw" style="left:250px;top:400px;font-size:96px;opacity:.18;filter:blur(8px)">/hardlight</div>`;
+F['05']=()=>progress(4)+karaoke('Rim light: separate your subject with an illuminated edge.',7,[0,1])+
+  workCard('/rimlight','rim',BASEP+kwChip('rimlight'),{y:560,caret:0})+
+  `<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><circle cx="300" cy="960" r="18" fill="#fff" filter="drop-shadow(0 0 12px #fff)"/><path d="M300 960 Q 420 860 560 870 T 820 960" stroke="#fff" stroke-width="5" fill="none" stroke-dasharray="3 12" opacity=".8"/></svg>`;
+F['06']=()=>progress(5)+karaoke('Golden hour: bring in warm, low evening light.',5,[0,1])+
+  workCard('/goldenhour','golden',BASEP+kwChip('goldenhour'),{y:620,caret:0})+
+  `<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><path d="M120 1180 Q 540 300 960 1180" stroke="#ff9a3c" stroke-width="5" fill="none" stroke-dasharray="3 14"/></svg>
+   <div class="card sq" style="left:830px;top:740px;width:130px;height:130px;border-radius:50%">${icon('sun',70,'#ff8a1a')}</div>`;
+F['07']=()=>progress(6)+karaoke('Macro: move closer to reveal texture and tiny details.',6,[0])+
+  workCard('/macro','product',BASEP+kwChip('macro'),{y:620,caret:0})+
+  `<div class="abs" style="left:300px;top:700px;width:520px;height:520px;border-radius:50%;overflow:hidden;border:10px solid #fff;box-shadow:0 30px 60px -20px rgba(40,50,110,.45)">${photo('macro',0,0,520,520,false)}</div>
+   <div class="abs" style="left:700px;top:1150px;width:40px;height:150px;border-radius:20px;background:#fff;transform:rotate(-40deg);box-shadow:0 10px 20px rgba(0,0,0,.2)"></div>`;
+F['08']=()=>progress(7)+karaoke('Low angle: make the subject feel more imposing.',5,[0,1])+
+  workCard('/lowangle','low',BASEP+kwChip('lowangle'),{y:620,caret:0})+
+  `<div class="abs" style="left:950px;top:640px;width:6px;height:780px;border-radius:3px;background:repeating-linear-gradient(180deg,#9fb6e8 0 10px,transparent 10px 24px)"></div>
+   <div class="card sq" style="left:893px;top:1260px;width:120px;height:120px;border-radius:34px;flex-direction:column">${icon('cam',56,'#2f7bf5')}</div><div class="abs" style="left:938px;top:1390px;font-weight:900;font-size:40px;color:#2f7bf5">↓</div>`;
+F['09']=()=>progress(8)+karaoke('Minimal: remove distractions and give the subject room.',4,[0])+
+  `<div class="card" style="left:190px;top:620px;width:700px;height:1010px"><div class="abs" style="left:28px;top:24px"><span class="tag">/minimal</span></div>${photo('minimal',28,84,644,790)}
+   <div class="abs" style="left:28px;top:894px;width:644px;height:86px;border-radius:24px;background:#f2f4fa;display:flex;align-items:center;padding:0 26px;font-weight:600;font-size:28px;color:#4a4d5c">${BASEP}${kwChip('minimal')}</div></div>
+   <div class="abs mb" style="left:-40px;top:700px;width:240px;height:170px;background:#e6d3b8;border-radius:16px;transform:rotate(-14deg)"></div>
+   <div class="abs mb" style="left:900px;top:560px;width:150px;height:150px;border-radius:50%;background:#c7cbe0"></div>
+   <div class="abs mb" style="left:880px;top:1380px;width:0;height:0;border-left:80px solid transparent;border-right:80px solid transparent;border-bottom:140px solid #f2c9b8;transform:rotate(18deg)"></div>`;
+F['10']=()=>progress(9)+karaoke('Editorial: try a styled, magazine-inspired composition.',5,[0])+
+  workCard('/editorial','editorial',BASEP+kwChip('editorial'),{y:620,caret:0})+
+  `<div class="pill" style="left:80px;top:1060px;height:64px;padding:0 24px;font-weight:700;font-size:26px;gap:10px"><span style="width:14px;height:14px;border-radius:4px;background:#e9dccb"></span>pedestal</div>
+   <div class="pill" style="left:820px;top:860px;height:64px;padding:0 24px;font-weight:700;font-size:26px;gap:10px"><span style="width:14px;height:14px;border-radius:7px 7px 0 0;background:#b85d31"></span>prop</div>`;
+F['11']=()=>progress(10)+karaoke('Motion blur: suggest speed. Specify what should stay sharp.',8,[0,1])+
+  workCard('/motionblur','blur','Sneaker,&nbsp;'+kwChip('motionblur')+'.&nbsp;<b style="color:#14151b">Keep the shoe sharp.</b>',{y:620,caret:0})+
+  [...Array(6)].map((_,i)=>`<div class="abs" style="left:${-60+i*30}px;top:${760+i*120}px;width:${260-i*20}px;height:10px;border-radius:5px;background:linear-gradient(90deg,rgba(47,123,245,0),rgba(47,123,245,.5))"></div>`).join('');
+F['12']=()=>{const K=[['productshot','product'],['softlight','soft'],['hardlight','hard'],['rimlight','rim'],['goldenhour','golden'],['macro','macro'],['lowangle','low'],['minimal','minimal'],['editorial','editorial'],['motionblur','blur']];
+  return progress(10)+karaoke('Add these to a clear description of your scene. Save this before your next generation.',13,[])+
+  `<div class="pill" style="left:250px;top:470px;height:72px;padding:0 30px;font-weight:700;font-size:28px;gap:12px;letter-spacing:.06em">${icon('bookmark',30,'#2f7bf5')}SAVE FOR YOUR NEXT PROMPT</div>`+
+  K.map(([k,kind],i)=>{const c=i%2,r=Math.floor(i/2);const x=90+c*460,y=580+r*250;return `<div class="card" style="left:${x}px;top:${y}px;width:440px;height:232px;border-radius:30px">
+     ${photo(kind,10,10,170,212,false)}<div class="abs" style="left:198px;top:62px"><div style="font-weight:700;font-size:22px;color:#9aa0b4">${String(i+1).padStart(2,'0')}</div><div style="font-weight:700;font-size:34px;color:#2f7bf5;letter-spacing:-.02em">/${k}</div></div></div>`}).join('')};
+
+const id=(location.hash||'#01').slice(1);root.innerHTML=F[id]();
+document.fonts.ready.then(()=>window.ready=true);
+</script>
+</body>
+</html>
