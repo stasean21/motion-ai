@@ -55,6 +55,7 @@ function setOdo(O,v){const n=O.cols.length;v=Math.max(0,v);for(let k=0;k<n;k++){
   const pos=k===0?v%10:(lower>p-1?base+(lower-(p-1)):base);const col=O.cols[n-1-k];col.firstChild.style.transform=`translateY(${-pos}em)`;if(O.lead===false)col.style.display=(k>0&&v<p-1e-6)?'none':'inline-block'}}
 
 // ───────── sections: keyword, voice line, card size, ordinal
+const RIMV='A';   // rim-light variant: 'A' light goes behind the card, 'B' front/side/behind switch
 const S=[
  {key:null,        line:'Want better AI photos? Try these ten keywords in your next ChatGPT image prompt.',keys:[5,6],w:820,h:720},
  {key:'productshot',ord:'First.',  line:'Product shot gives your subject a clean, commercial presentation.',keys:[0,1],w:820,h:760},
@@ -78,8 +79,11 @@ const CX=540,CY=1080;                                                  // card c
 const root=$('root');
 root.innerHTML=`<div class="abs" style="inset:0;background:radial-gradient(110% 55% at 50% 0%,#f7f8fc 0%,#eef0f6 60%,#e8ebf3 100%)"></div>`;
 const FLOOD=mk(root,`<div class="abs" style="left:540px;top:1080px;width:10px;height:10px;border-radius:50%;background:#bfe0fb;transform:translate(-50%,-50%)"></div>`);
+const NIGHT=mk(root,'<div class="abs" style="inset:0;background:radial-gradient(90% 60% at 50% 50%,#22242c,#0f1014 75%)"></div>');
 const WORLD=mk(root,'<div class="layer"></div>');
 const CARD=mk(WORLD,`<div class="card" style="left:0;top:0"></div>`);
+const RIM=mk(WORLD,`<div class="abs" style="left:0;top:0;border-radius:52px"></div>`);WORLD.insertBefore(RIM,CARD);
+const LBEH=mk(WORLD,`<div class="abs sq" style="left:0;top:0;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,#fff,#cfe3ff 40%,rgba(140,190,255,0) 70%)"></div>`);WORLD.insertBefore(LBEH,RIM);
 const TAG=mk(CARD,`<div class="tag" style="z-index:5"><span id="tagt"></span></div>`);const TAGT=$('tagt');
 const CL=S.map((s,i)=>mk(CARD,`<div class="cl" style="visibility:hidden"></div>`));
 const FG=mk(WORLD,'<div class="layer" style="z-index:20"></div>');         // things that fly over the card
@@ -132,12 +136,22 @@ const row=(par,y,label,html,o={})=>mk(par,`<div class="row" style="top:${y}px;${
  c.x3=mk(L,`<div class="abs" style="left:630px;top:600px;font-weight:900;font-size:64px;color:#ff6a00;white-space:nowrap">×1</div>`);
  c.say=mk(L,`<div class="abs" style="left:44px;top:610px;font-weight:800;font-size:40px;color:#ff6a00;white-space:nowrap"></div>`);
 }
-// 4 rimlight: card goes dark, a glowing edge traces the word
+// 4 rimlight — A: the card itself is the subject, the light is dragged behind it · B: FRONT / SIDE / BEHIND switch
 {const L=CL[4];const c=C[4]={};
- c.dark=mk(L,'<div class="abs" style="inset:0;background:#15161c"></div>');
- c.svg=mk(L,`<svg class="abs" style="left:0;top:0" width="820" height="640"><text id="rim_t" x="410" y="330" text-anchor="middle" font-family="Inter Display" font-weight="900" font-size="190" letter-spacing="-6" fill="#1d1f27" stroke="#fff" stroke-width="5" stroke-dasharray="3000" stroke-dashoffset="3000" filter="url(#glow)">SUBJECT</text></svg>`);c.t=$('rim_t');
- c.sep=mk(L,`<div class="abs" style="left:44px;top:440px;color:#fff"><div class="lab" style="color:#8a90a6">SEPARATION</div><div id="rim_n" style="font-weight:900;font-size:96px;line-height:1.05"></div></div>`);c.sO=odo($('rim_n'),2,{suf:'<span style="font-size:48px;color:#2f7bf5">%</span>',lead:false});
- c.beh=mk(L,`<div class="abs" style="left:440px;top:480px;padding:16px 26px;border-radius:24px;background:#24262e;color:#fff;font-weight:800;font-size:28px;letter-spacing:.08em;white-space:nowrap">LIGHT: BEHIND</div>`);
+ c.A=mk(L,'<div class="cl"></div>');
+ c.Adark=mk(c.A,'<div class="abs" style="inset:0;background:#15161c"></div>');
+ c.Atxt=mk(c.A,`<div class="abs" style="left:410px;top:240px;transform:translate(-50%,-50%);font-weight:900;font-size:130px;letter-spacing:-.04em;white-space:nowrap">SUBJECT</div>`);
+ c.Asay=mk(c.A,`<div class="abs" style="left:44px;top:400px;font-weight:800;font-size:46px;white-space:nowrap"></div>`);
+ c.Asep=mk(c.A,`<div class="abs" style="left:44px;top:480px"><div class="lab" style="color:#8a90a6">SEPARATION</div><div id="rimA_n" style="font-weight:900;font-size:84px;line-height:1.05;color:#fff"></div></div>`);c.AO=odo($('rimA_n'),2,{suf:'<span style="font-size:44px;color:#7fb0ff">%</span>',lead:false});
+ c.light=mk(FG,`<div class="abs sq" style="left:0;top:0;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,#fff 0%,#e3eeff 30%,rgba(140,190,255,.55) 50%,rgba(140,190,255,0) 70%);font-weight:900;font-size:22px;color:#14151b;letter-spacing:.1em">LIGHT</div>`);
+ c.B=mk(L,'<div class="cl"></div>');
+ c.stage=mk(c.B,`<div class="abs" style="left:44px;top:96px;width:732px;height:300px;border-radius:30px;background:#17181e;overflow:hidden"></div>`);
+ const wd=st=>mk(c.stage,`<div class="abs" style="left:366px;top:150px;transform:translate(-50%,-50%);font-weight:900;font-size:150px;letter-spacing:-.04em;white-space:nowrap;${st}">SUBJECT</div>`);
+ c.Bw=[wd('color:#8f95a8'),wd('background:linear-gradient(90deg,#fff 0%,#c9cfdd 35%,#2a2c35 62%);-webkit-background-clip:text;background-clip:text;color:transparent'),wd('color:#1b1d24;-webkit-text-stroke:3px #fff;text-shadow:0 0 18px rgba(160,200,255,.95),0 0 46px rgba(47,123,245,.8)')];
+ c.seg=mk(c.B,`<div class="abs" style="left:44px;top:430px;width:732px;height:96px;border-radius:999px;background:#eef1f7"></div>`);
+ c.segh=mk(c.seg,`<div class="abs" style="left:6px;top:6px;width:240px;height:84px;border-radius:999px;background:#fff;box-shadow:0 6px 16px -6px rgba(0,0,0,.25)"></div>`);
+ c.segl=['FRONT','SIDE','BEHIND'].map((t,k)=>mk(c.seg,`<div class="abs sq" style="left:${6+k*240}px;top:6px;width:240px;height:84px;font-weight:800;font-size:32px;letter-spacing:.06em">${t}</div>`));
+ c.Bsay=mk(c.B,`<div class="abs" style="left:44px;top:560px;font-weight:800;font-size:46px;color:#2f7bf5;white-space:nowrap"></div>`);
 }
 // 5 goldenhour: clock rolls to evening, the card warms
 {const L=CL[5];const c=C[5]={};
@@ -224,12 +238,28 @@ R[3]=(τ,c)=>{
   const xq=prog(τ,t0+.5,t0+.9);c.x3.textContent='×'+(1+Math.floor(2.999*E.out(xq)));c.x3.style.transform=`scale(${1+.3*Math.sin(Math.PI*prog(τ,t0+.85,t0+1.1))})`;
   c.say.textContent=typed('crisp & bold',τ,wordT(3,6),.03);
   return []};
-R[4]=(τ,c)=>{
-  const dk=prog(τ,.3,.9);c.dark.style.opacity=dk;
-  const t0=wordT(4,3);const tr=E.io(prog(τ,t0,t0+1.3));c.t.setAttribute('stroke-dashoffset',3000*(1-tr));c.t.setAttribute('fill',tr>.95?'#262833':'#1d1f27');
-  const sq=prog(τ,wordT(4,6),wordT(4,6)+.35);tp(c.sep,{o:clamp(sq*3),y:(1-E.out(sq))*24});setOdo(c.sO,72*E.out(prog(τ,wordT(4,6),wordT(4,6)+.9)));
-  tp(c.beh,pop(τ,wordT(4,2)));
-  return []};
+let NIGHTV=0;
+R[4]=(τ,c)=>{const A=RIMV==='A';c.A.style.display=A?'block':'none';c.B.style.display=A?'none':'block';
+  if(A){const dk=E.io(prog(τ,.3,1.0));c.Adark.style.opacity=dk;NIGHTV=dk;
+    const g0=wordT(4,2)-.3,g1=g0+1.0,f=E.io(prog(τ,g0,g1));
+    const sx=CX+120,sy=CY-60,ex=CX+250,ey=CY-320-30;const lx=lerp(sx,ex,f),ly=lerp(sy,ey,f)-Math.sin(Math.PI*f)*60,ls=lerp(1.25,.8,f);
+    const shown=τ>=g0-.4;const behind=f>.62;
+    tp(c.light,{x:lx-75,y:ly-75,s:ls*E.back(prog(τ,g0-.4,g0-.1)),o:shown&&!behind?1:0});tp(LBEH,{x:lx-65,y:ly-65,s:ls,o:shown&&behind?1:0});
+    // the card edge lights up, traced from where the light slipped behind it
+    const tr=E.io(prog(τ,g1-.15,g1+.9));RIM.style.background=tr>0?`conic-gradient(from 20deg,rgba(220,235,255,1) 0deg,#9cc3ff ${tr*360}deg,rgba(0,0,0,0) ${tr*360+.1}deg)`:'none';
+    RIM.style.filter='blur(3px)';RIM.style.boxShadow=tr>.95?`0 0 60px 14px rgba(110,160,255,${.5*prog(tr,.95,1)})`:'none';vis(RIM,tr>0?1:0,3);
+    const lit=prog(τ,g1+.2,g1+.9);c.Atxt.style.color=`rgb(${Math.round(lerp(46,236,lit))},${Math.round(lerp(48,240,lit))},${Math.round(lerp(58,248,lit))})`;
+    c.Atxt.style.textShadow=lit>0?`0 0 ${30*lit}px rgba(140,190,255,${.6*lit})`:'none';
+    c.Asay.innerHTML=f<.5?'<span style="color:#5d6274">blends in</span>':`<span style="color:#9cc3ff">${typed('separated',τ,g1,.04)}</span>`;
+    tp(c.Asep,{o:prog(τ,wordT(4,6),wordT(4,6)+.3)});setOdo(c.AO,72*E.out(prog(τ,wordT(4,6),wordT(4,6)+.9)));
+    return [[1.4,1000,1900],[g0-.3,sx+20,sy+30],[g0,sx+20,sy+30,1],[g1,ex+20,ey+30,1],[g1+.15,ex+20,ey+30],[g1+.8,1000,1900]]}
+  // B: segmented light switch
+  const t1=wordT(4,2),t2=wordT(4,5);const pos=E.outQ(prog(τ,t1,t1+.3))+E.outQ(prog(τ,t2,t2+.3));
+  c.segh.style.left=6+pos*240+'px';c.segl.forEach((l,k)=>{l.style.color=Math.round(pos)===k?'#14151b':'#9aa0b4'});
+  c.Bw.forEach((w,k)=>{w.style.opacity=clamp(1-Math.abs(pos-k)*1.6)});
+  c.Bsay.textContent=pos<.5?'flat':pos<1.5?typed('half lit',τ,t1+.1,.04):typed('glowing edge',τ,t2+.1,.04);
+  const bx=k=>CX-410+44+6+k*240+120,by=CY-320+430+48;
+  return [[1.4,1000,1900],[t1-.3,bx(1),by],[t1-.05,bx(1),by,1],[t1+.1,bx(1),by],[t2-.3,bx(2),by],[t2-.05,bx(2),by,1],[t2+.1,bx(2),by],[t2+.8,1000,1900]]};
 R[5]=(τ,c)=>{
   const t0=wordT(5,3),m=E.io(prog(τ,t0,t0+1.4));c.warm.style.opacity=m;
   const mins=lerp(720,1122,m);setOdo(c.hO,Math.floor(mins/60));setOdo(c.mO,mins%60);
@@ -245,7 +275,7 @@ R[6]=(τ,c)=>{
 R[7]=(τ,c)=>{
   const t0=wordT(7,2),t1=t0+1.2;const p=E.io(prog(τ,t0,t1));tp(c.cam,{y:lerp(84,650,p)});
   c.ticks.forEach((tk,k)=>{tk.style.color=Math.round(p*3)===k?'#2f7bf5':'#a3a9bb'});
-  c.word.style.transform=`translate(-50%,-100%) scaleY(${lerp(.8,1.7,p)}) scaleX(${lerp(1,.9,p)})`;
+  const tl=E.io(prog(τ,t0+.9,t0+2.2))*(1-E.io(prog(τ,SEC-1.1,SEC-.35)));c.word.style.transform=`translate(-50%,-100%) scaleY(${lerp(.9,1.3,p)*lerp(1,1.55,tl)})`;
   return [[1.4,900,1900],[t0-.25,CX-330,CY-390+120],[t0-.1,CX-330,CY-390+120,1],[t1,CX-330,CY-390+680,1],[t1+.15,CX-330,CY-390+680],[t1+.7,1000,1900]]};
 R[8]=(τ,c)=>{
   const s0=wordT(8,1);
@@ -275,6 +305,8 @@ R[11]=(τ,c)=>{
   return []};
 
 // ───────── camera: always breathing; per-section pushes; the macro dive
+function tilt3d(i,τ){if(i!==7)return '';const t0=wordT(7,2)+.9;const p=E.io(prog(τ,t0,t0+1.3)),po=E.io(prog(τ,SEC-1.1,SEC-.35));const a=38*p*(1-po);
+  return `translateY(${-60*p*(1-po)}px) perspective(1300px) rotateX(${a}deg) scale(${1+.1*p*(1-po)})`}
 function camAt(t){const i=secAt(t),τ=t-S[i].t0;
   let z=1+.015*Math.sin(t*.7),r=1.1*Math.sin(t*.55),x=CX,y=CY,sy=CY;
   // every section: small push-in during its main action, out before the next morph
@@ -284,6 +316,7 @@ function camAt(t){const i=secAt(t),τ=t-S[i].t0;
   if(i===6){ // dive into the highlighted word, hold, then pull back out to the card
     const z0=wordT(6,3);const din=E.inExpo(prog(τ,z0-.2,z0+.45)),dout=E.outExpo(prog(τ,z0+.45,z0+1.3));
     const fx=CX-410+44+300,fy=CY-320+110+120;const k=din*(1-dout);z*=lerp(1,7,k);x=lerp(CX,fx,k);y=lerp(CY,fy,k)}
+  if(i===7){const t0=wordT(7,2)+.9;const p=E.io(prog(τ,t0,t0+1.3))*(1-E.io(prog(τ,SEC-1.1,SEC-.35)));y+=90*p;z*=1+.06*p}
   if(i===11){const pin=E.io(prog(τ,.2,1.4));z*=lerp(1,.94,pin)}
   return {z,r,x,y,sy}}
 
@@ -295,18 +328,20 @@ function renderAt(t){
   // card size morph + content crossfade (old shrinks & blurs out, new grows in)
   const mq=E.io(prog(τ,AN.m0,AN.m1));const w=lerp(prev.w,s.w,mq),h=lerp(prev.h,s.h,mq);
   const breathe=1+.012*Math.sin(t*1.3);
-  CARD.style.width=w+'px';CARD.style.height=h+'px';CARD.style.transform=`translate(${CX-w/2}px,${CY-h/2}px) rotate(${.8*Math.sin(t*.9)}deg) scale(${breathe})`;
+  CARD.style.width=w+'px';CARD.style.height=h+'px';CARD.style.transform=`translate(${CX-w/2}px,${CY-h/2}px) rotate(${.8*Math.sin(t*.9)}deg) scale(${breathe}) ${tilt3d(i,τ)}`;CARD.style.transformOrigin='50% 100%';
+  RIM.style.width=w+16+'px';RIM.style.height=h+16+'px';RIM.style.transform=`translate(${CX-w/2-8}px,${CY-h/2-8}px) rotate(${.8*Math.sin(t*.9)}deg) scale(${breathe})`;RIM.style.transformOrigin='50% 50%';NIGHTV=0;vis(RIM,0);vis(LBEH,0);
   const pi=(i+NS-1)%NS;
   CL.forEach((L,k)=>{if(k===i){const q=prog(τ,AN.m0+.25,AN.m1+.1);L.style.display='block';L.style.visibility='visible';L.style.opacity=clamp(q*1.5);L.style.transform=`scale(${lerp(1.08,1,E.out(q))})`;L.style.filter=q<1?`blur(${(1-q)*10}px)`:'none'}
     else if(k===pi&&τ<AN.m1){const q=prog(τ,AN.m0,AN.m0+.4);L.style.display=q<1?'block':'none';L.style.visibility='visible';L.style.opacity=1-q;L.style.transform=`scale(${lerp(1,.9,q)})`;L.style.filter=`blur(${q*10}px)`}
     else L.style.display='none'});
   // per-section action (also renders the previous one at its end state while it fades)
-  Object.values(C).forEach(c=>{if(c.fchip)vis(c.fchip,0);if(c.big)vis(c.big,0)});
+  Object.values(C).forEach(c=>{if(c.fchip)vis(c.fchip,0);if(c.big)vis(c.big,0);if(c.light)vis(c.light,0)});
   if(τ<AN.m1)R[pi](SEC+.01,C[pi]);
   const path=R[i](τ,C[i]);
+  vis(NIGHT,i===4?NIGHTV*(1-prog(τ,SEC-.45,SEC-.05)):0);
   // tag: shows previous key until the new one lands
   TAGT.textContent=i===0?'prompt':i===11?'saved prompt keywords':(τ<AN.land?(prev.key?'/'+prev.key:'prompt'):'/'+s.key);
-  TAG.style.color=i===4&&τ>.6?'#9cc3ff':'#2f7bf5';
+  TAG.style.color=i===4&&RIMV==='A'&&τ>.6?'#9cc3ff':'#2f7bf5';
   // announcement: counter pill → ordinal plaque, keyword types big, flies into the tag
   renderTop(t,i,τ);
   // karaoke
@@ -314,7 +349,7 @@ function renderAt(t){
     const out=E.in(prog(τ,SEC-.35,SEC-.05));K.el.style.opacity=1-out;K.el.style.filter=out>0?`blur(${out*14}px)`:'none';K.el.style.transform=`translateY(${-out*30}px)`;
     K.el.style.top=(i>0&&τ<AN.land+.2)?'2000px':'210px';
     K.sp.forEach((sp,w)=>{const T=K.T[w];const a=prog(τ,T-.12,T+.02),d=prog(τ,T+.02,T+.22);sp.style.opacity=a;sp.style.filter=a<1?`blur(${(1-a)*8}px)`:'none';sp.style.transform=`translateY(${(1-E.out(a))*16}px)`;
-      sp.style.color=K.keys.includes(w)?'#2f7bf5':(d>=1?'#14151b':`rgb(${Math.round(lerp(150,20,d))},${Math.round(lerp(176,21,d))},${Math.round(lerp(230,27,d))})`)})});
+      const nt=i===4&&NIGHTV>.5;sp.style.color=K.keys.includes(w)?(nt?'#7fb0ff':'#2f7bf5'):nt?(d>=1?'#f2f4fa':'#7d8396'):(d>=1?'#14151b':`rgb(${Math.round(lerp(150,20,d))},${Math.round(lerp(176,21,d))},${Math.round(lerp(230,27,d))})`)})});
   // cursor
   renderCursor(path,τ);
   // finale flood (blue circle) & reset for the loop
