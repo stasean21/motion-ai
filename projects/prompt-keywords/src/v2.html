@@ -77,9 +77,11 @@ const root=$('root');
 root.innerHTML=`<div class="abs" style="inset:0;background:radial-gradient(110% 55% at 50% 0%,#fbfbfd 0%,#f1f2f7 55%,#e9ebf2 100%)"></div>`;
 const BLOB1=mk(root,`<div class="abs" style="left:-260px;top:300px;width:900px;height:900px;border-radius:50%;background:radial-gradient(circle,rgba(160,190,255,.45),rgba(160,190,255,0) 65%)"></div>`);
 const BLOB2=mk(root,`<div class="abs" style="left:380px;top:1100px;width:1000px;height:1000px;border-radius:50%;background:radial-gradient(circle,rgba(255,190,150,.35),rgba(255,190,150,0) 65%)"></div>`);
+const WORLD=mk(root,'<div class="layer" style="transform-origin:0 0"></div>');let WC={fx:540,fy:960,z:1,sx:540,sy:960};
+function wcam(c){WC=c;WORLD.style.transform=`translate(${c.sx}px,${c.sy}px) scale(${c.z}) translate(${-c.fx}px,${-c.fy}px)`}
 const SCN=[];let fid=0;
 function scene(o={}){const f=fid++;$('defs').insertAdjacentHTML('beforeend',`<filter id="sf${f}" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="0 0"/></filter>`);
-  const el=mk(root,`<div class="scene" style="display:none"></div>`);const bg=o.dark?mk(el,`<div class="abs" style="inset:-200px;background:radial-gradient(90% 60% at 50% 40%,#2a2c35,#121318 70%)"></div>`):null;
+  const el=mk(WORLD,`<div class="scene" style="display:none"></div>`);const bg=o.dark?mk(el,`<div class="abs" style="inset:-200px;background:radial-gradient(90% 60% at 50% 40%,#2a2c35,#121318 70%)"></div>`):null;
   const S={el,bg,f,fe:$('defs').lastElementChild.firstElementChild,cam:mk(el,'<div class="layer"></div>'),type:mk(el,'<div class="layer tl"></div>'),...o};SCN.push(S);return S}
 function wrap(S,{x=0,y=0,s=1,ry=0,o=1,bx=0,by=0,ox='50% 50%'}={}){S.el.style.transformOrigin=ox;S.el.style.transform=`translate(${x}px,${y}px) ${ry?`perspective(1500px) rotateY(${ry}deg) `:''}scale(${s})`;
   S.el.style.opacity=o;if(bx>.3||by>.3){S.fe.setAttribute('stdDeviation',`${bx.toFixed(1)} ${by.toFixed(1)}`);S.el.style.filter=`url(#sf${S.f})`}else S.el.style.filter='none'}
@@ -98,7 +100,7 @@ function setOdo(O,v){const n=O.cols.length;v=Math.max(0,v);for(let k=0;k<n;k++){
   if(O.lead===false)col.style.display=(k>0&&v<p-1e-6)?'none':'inline-block'}}
 function callout(par,dx,dy,lx,ly,label,o={}){const c=o.c||'#2f7bf5';const L=Math.hypot(lx-dx,ly-dy);
   const g=mk(par,`<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><path d="M${dx} ${dy} L${lx} ${ly}" stroke="#fff" stroke-width="4" stroke-dasharray="${L}" stroke-dashoffset="${L}" style="filter:drop-shadow(0 1px 3px rgba(0,0,0,.35))"/><g transform="translate(${dx} ${dy})"><g><circle r="12" fill="#fff"/><circle r="26" fill="none" stroke="#fff" stroke-width="3" opacity=".7"/><circle r="6" fill="${c}"/></g></g></svg>`);
-  const lb=mk(par,`<div class="glass lbl ${o.dark?'gdark':''}" style="left:${lx}px;top:${ly}px;color:${c};transform-origin:${o.al==='r'?'100%':o.al==='c'?'50%':'0'} 50%">${label}</div>`);
+  const lb=mk(par,`<div class="glass lbl ${o.dark?'gdark':''}" style="left:${lx}px;top:${ly}px;color:${c};${o.m?'white-space:normal;width:150px;font-size:18px;line-height:1.2;padding:10px 14px;border-radius:18px;text-align:'+(o.al==='r'?'right':'left')+';':''}transform-origin:${o.al==='r'?'100%':o.al==='c'?'50%':'0'} 50%">${label}</div>`);
   const al=o.al==='r'?'-100%':o.al==='c'?'-50%':'0',dot=g.querySelector('g g'),path=g.querySelector('path');
   return {lb,set(q){vis(g,q>0?1:0);dot.setAttribute('transform',`scale(${E.back(prog(q,0,.35))})`);path.setAttribute('stroke-dashoffset',L*(1-E.out(prog(q,.15,.6))));
     const r=prog(q,.5,1);lb.style.transform=`translate(${al},-50%) scale(${lerp(.5,1,E.back(r))})`;vis(lb,clamp(r*3))}}}
@@ -112,7 +114,7 @@ const TOUT={whipL:p=>({x:-1150*E.inExpo(p),bx:40*E.in(p)}),up:p=>({y:-1950*E.inE
 function trans(S,τ,tin,tout,din=.4,dout=.34){let p={};if(tin&&τ<din)p=TIN[tin](prog(τ,0,din));if(tout&&τ>S.D-dout)p=TOUT[tout](prog(τ,S.D-dout,S.D));wrap(S,p)}
 
 // ───────── global UI: counter, prompt bar, flying chip, overlays
-const UI=mk(root,'<div class="layer" style="z-index:30"></div>');
+const UI=mk(WORLD,'<div class="layer" style="z-index:30"></div>');
 const CNTP=mk(UI,`<div class="glass sq" style="left:540px;top:96px;transform:translate(-50%,-50%);height:66px;padding:0 28px;border-radius:999px;gap:18px;font-weight:800;font-size:28px;white-space:nowrap"><span style="color:#8a90a6;font-weight:700;font-size:24px;letter-spacing:.01em;white-space:nowrap">ChatGPT keyword</span><span id="cntw"></span><span class="mono" id="sl" style="font-size:30px;letter-spacing:-.05em">${[...Array(10)].map(()=>`<span style="font-style:italic">/</span>`).join('')}</span></div>`);
 const CNT=odo($('cntw'),2,{suf:'<span style="color:#9aa0b4">/10</span>'});const SL=[...$('sl').children];
 const PBAR=mk(UI,`<div class="glass" style="left:60px;top:1712px;width:960px;height:124px;border-radius:62px;display:flex;align-items:center;padding:0 130px 0 22px;font-weight:600;font-size:36px;white-space:nowrap;overflow:hidden"><span id="gtag" style="display:inline-flex;align-items:center;gap:8px;padding:8px 18px;margin-right:18px;border-radius:999px;background:rgba(20,22,30,.07);font-weight:800;font-size:26px;color:#5a5e70"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/></svg>ChatGPT</span><span id="prT"></span><span id="prK" class="chip" style="position:relative;display:inline-block;margin-left:4px;padding:4px 18px;font-size:34px;box-shadow:none"></span><span id="prX" style="font-weight:700"></span><span id="prC" style="display:inline-block;width:4px;height:44px;background:#2f7bf5;margin-left:6px"></span></div>`);
@@ -146,9 +148,9 @@ function chipFly(t,word,fx,fy,tPop,tLand){const tFly=tLand-.3;
   // target = where the prompt keyword sits
   const prev=prK.style.visibility;PS.k=word;prK.textContent=word;prK.style.display='inline-block';prK.style.transform='none';
   const r=prK.getBoundingClientRect();prK.style.visibility=prev;
-  const w=FCHIP.offsetWidth,h=FCHIP.offsetHeight;const tx=r.left+r.width/2,ty=r.top+r.height/2;
+  const w=FCHIP.offsetWidth,h=FCHIP.offsetHeight;const tx=WC.fx+(r.left+r.width/2-WC.sx)/WC.z,ty=WC.fy+(r.top+r.height/2-WC.sy)/WC.z;
   const pq=prog(t,tPop,tPop+.3),f=E.io(prog(t,tFly,tLand));
-  const x=lerp(fx,tx,f),y=lerp(fy,ty,f)-Math.sin(Math.PI*f)*220,s=lerp(1.6*E.back(pq),r.width/w,f);
+  const x=lerp(fx,tx,f),y=lerp(fy,ty,f)-Math.sin(Math.PI*f)*220,s=lerp(1.6*E.back(pq),r.width/WC.z/w,f);
   FCHIP.style.transform=`translate(${x-w/2}px,${y-h/2}px) rotate(${-8*Math.sin(Math.PI*f)}deg) scale(${s})`;vis(FCHIP,clamp(pq*4),Math.sin(Math.PI*f)*6);
   PS.k='';return 0}
 function sendFX(t,ts){const q=prog(t,ts,ts+.14);SEND.style.transform=`scale(${1-.14*Math.sin(Math.PI*q)})`;
@@ -158,17 +160,16 @@ function sendFX(t,ts){const q=prog(t,ts,ts+.14);SEND.style.transform=`scale(${1-
 // ── 00 HOOK
 const S0=scene();S0.t0=0;S0.D=DH;
 const H={h1:.06,h2:.3,t1:b(4),t2:b(4.5),tOut:b(7),send:b(7.5),lb:b(9),strike:b(10),stop:b(11),gu:b(11.5),chips:b(12.5),desc:b(15),shot:b(15.5)};
-{const S=S0;S.F=frame(S.cam,150,640,780,975,['00a','00b']);
- S.scan=mk(S.F.fx,'<div class="abs" style="left:0;width:100%;height:220px;background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.75) 50%,rgba(255,255,255,0))"></div>');
- S.imp=mk(S.cam,`<div class="abs" style="left:180px;top:1100px;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.35)"><div class="tiny" style="color:#fff">IMPROVEMENT</div><div id="impn" style="font-weight:900;font-size:130px;letter-spacing:-.04em"></div></div>`);
- S.impO=odo($('impn'),1,{pre:'+',suf:'%'});
- S.lb=W(S.cam,'LOOK BETTER?<span class="abs" id="lbs" style="left:-10px;right:-10px;top:50%;height:14px;margin-top:-7px;background:#ff3b30;border-radius:7px;transform-origin:0 50%"></span>',540,1440,110,{style:'color:#b9bed0'});S.lbs=$('lbs');
+{const S=S0;S.F=frame(S.cam,220,520,640,800,['00a','00b']);
+ S.scan=mk(S.F.fx,'<div class="abs" style="left:0;width:100%;height:220px;background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.75) 50%,rgba(255,255,255,0))"></div>');S.FH=800;
+ S.imp=card(S.cam,310,1345,460,205,`<div class="tiny" style="position:absolute;left:30px;top:26px">IMPROVEMENT</div><div id="impn" style="position:absolute;left:30px;top:66px;font-weight:900;font-size:100px;line-height:1;color:#ff3b30"></div>`,{r:34});S.impO=odo($('impn'),1,{pre:'+',suf:'%'});
+ S.lb=W(S.cam,'LOOK BETTER?<span class="abs" id="lbs" style="left:-10px;right:-10px;top:50%;height:14px;margin-top:-7px;background:#ff3b30;border-radius:7px;transform-origin:0 50%"></span>',540,1600,80,{style:'color:#b9bed0'});S.lbs=$('lbs');
  S.cards=[['02b',300,1620,-1],['06b',560,1560,0],['09b',820,1610,1]].map(([k,x,y,d])=>({k,x,y,d,chip:mk(S.type,`<div class="chip" style="left:${x}px;top:${y}px;transform:translate(-50%,-50%)">/${{'02b':'softlight','06b':'macro','09b':'editorial'}[k]}</div>`),
    card:mk(S.type,`<div class="abs" style="left:${x-150}px;top:${y-188}px;width:300px;height:375px;border-radius:34px;overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.25)"><img src="${SRC(k)}" style="width:100%;height:100%;object-fit:cover"></div>`)}));
  S.h1=W(S.type,'MAKING PHOTOS',540,235,112);S.h2=W(S.type,'IN <span style="display:inline-block;padding:0 .2em .06em;border-radius:.24em;background:#2f7bf5;color:#fff">ChatGPT</span>?',540,400,150);
  S.t1=W(S.type,'THEN THIS',540,250,165);S.t2=W(S.type,'IS FOR <span class="B">YOU.</span>',540,420,165);
  S.stop=W(S.type,'STOP',540,420,330,{style:'text-shadow:0 30px 60px rgba(20,30,80,.18)'});
- S.gu=W(S.type,'GUESSING.',560,640,150,{cls:'B'});S.gg=[1,2,3].map(i=>W(S.type,'GUESSING.',560,640,150,{cls:'B'}));
+ S.gu=W(S.type,'GUESSING.',560,580,150,{cls:'B'});S.gg=[1,2,3].map(i=>W(S.type,'GUESSING.',560,580,150,{cls:'B'}));
  S.d1=W(S.type,'DESCRIBE',540,330,190);S.d2=W(S.type,'THE <span class="B">SHOT.</span>',540,520,190);
  S.render=(t,τ,loop)=>{
   wrap(S,τ>S.D-.34?TOUT.whipL(prog(τ,S.D-.34,S.D)):{});
@@ -178,8 +179,8 @@ const H={h1:.06,h2:.3,t1:b(4),t2:b(4.5),tOut:b(7),send:b(7.5),lb:b(9),strike:b(1
   tp(S.F.el,{s:lerp(.86,1,back)*(1-kick)*(1-.03*Math.sin(Math.PI*prog(τ,H.t1,H.t1+.3))),o:loop?clamp(prog(t,DUR-2.05,DUR-1.8)):1,blur:(1-back)*8});S.F.el.style.transformOrigin='50% 50%';
   cam(S.cam,{z:1+.03*prog(τ,0,S.D),dx:sh.dx+sh2.dx,dy:sh.dy+sh2.dy});
   const sd=H.send;S.F.I['00b'].style.opacity=E.out(prog(τ,sd+.3,sd+.55));
-  const sq=prog(τ,sd+.05,sd+.6);S.scan.style.top=lerp(-220,975,E.io(sq))+'px';vis(S.scan,sq>0&&sq<1?1:0);
-  const iq=prog(τ,sd+.45,sd+.75);tp(S.imp,{y:(1-E.back(iq))*30,o:clamp(iq*3)*(1-prog(τ,H.stop-.1,H.stop+.1))});setOdo(S.impO,2*E.out(prog(τ,sd+.5,sd+.95)));
+  const sq=prog(τ,sd+.05,sd+.6);S.scan.style.top=lerp(-220,S.FH,E.io(sq))+'px';vis(S.scan,sq>0&&sq<1?1:0);
+  const iq=prog(τ,sd+.45,sd+.75);tp(S.imp,{s:E.back(iq),o:clamp(iq*3)*(1-prog(τ,H.stop-.1,H.stop+.1))});setOdo(S.impO,2*E.out(prog(τ,sd+.5,sd+.95)));
   // "look better?" → struck → falls
   const fq=E.in(prog(τ,H.strike+.3,H.strike+.7));tf(S.lb,mix(A.drop(τ,H.lb),{y:fq*420,r:fq*9,o:1-prog(τ,H.strike+.5,H.strike+.7),blur:fq*10}));S.lbs.style.transform=`scaleX(${E.out(prog(τ,H.strike,H.strike+.16))})`;
   tf(S.h1,mix(A.drop(τ,H.h1),blast(τ,H.t1-.08)));tf(S.h2,mix(A.slam(τ,H.h2),blast(τ,H.t1-.06)));
@@ -207,253 +208,274 @@ const KB={type:.9,pop:b(5),land:b(6),send:b(6.5),m0:b(7)};
 function promptKW(S,τ,desc,word,fx=540,fy=430){PS.t=typed(desc,τ,KB.type);const landed=chipFly(τ,word,fx,fy,KB.pop,KB.land);
   if(landed){PS.k=word;PS.kq=prog(τ,KB.land,KB.land+.25)}PS.cur=1;sendFX(τ,KB.send);PS.gen=[S.t0+KB.send+.05,S.t0+KB.m0+.75*MS]}
 
+// ── shared layout: photo never covered — cards live in the row under it, labels in the side margins
+const P={x:220,y:520,w:640,h:800};const ROWY=1345,ROWH=205;
+const rowCard=(S,side,inner,o={})=>card(S.cam,side==='L'?60:550,ROWY,470,ROWH,inner,{r:34,...o});
+const numCard=(id,label,o={})=>`<div class="tiny" style="position:absolute;left:30px;top:26px;${o.lc||''}">${label}</div><div id="${id}" style="position:absolute;left:30px;top:66px;font-weight:900;font-size:${o.fs||100}px;line-height:1;${o.style||''}"></div>`;
+const popT=(el,τ,t0,out)=>{const q=prog(τ,t0,t0+.35);tp(el,{s:E.back(q),o:clamp(q*4)*(out!=null?1-prog(τ,out,out+.3):1)})};
+
 // ── 01 PRODUCT SHOT
 const S1=kwScene(1,{});
-{const S=S1;S.F=frame(S.cam,100,540,880,1100,['01a','01b']);const F=S.F;
+{const S=S1;S.F=frame(S.cam,P.x,P.y,P.w,P.h,['01a','01b']);const F=S.F;
  S.edge=mk(F.fx,'<div class="abs" style="left:-50%;top:-10%;width:200%;height:120%"></div>');
  S.boxes=[[0,.31,.1,.47],[.04,.02,.52,.29],[.64,.35,1,.44]].map(([a,c,e,d])=>{const x=F.px(a)+4,y=F.py(c),w=(e-a)*F.w-8,h=(d-c)*F.h;
-   const el=mk(S.cam,`<div class="abs" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;transform-origin:50% 50%"><div class="abs" style="inset:0;border:5px dashed #ff3b30;border-radius:18px;background:rgba(255,59,48,.08)"></div><div class="sq abs" style="left:${w-26}px;top:-26px;width:52px;height:52px;border-radius:50%;background:#ff3b30">${ic('x',30,'#fff',3.4)}</div></div>`);return {el,x0:a}});
- S.dc=card(S.cam,140,1080,300,124,`<div class="tiny" style="position:absolute;left:28px;top:22px">DISTRACTIONS</div><div id="dcn" style="position:absolute;left:28px;top:50px;font-weight:900;font-size:64px;color:#ff3b30"></div>`,{r:30});
- S.dcO=odo($('dcn'),1);S.dcn=$('dcn');
- S.c1=callout(S.cam,F.px(.62),F.py(.665),980,F.py(.83),'SOFT CONTACT SHADOW',{al:'r'});
- S.c2=callout(S.cam,F.px(.82),F.py(.18),980,F.py(.07),'SEAMLESS BACKDROP',{al:'r'});
- S.cap=mk(S.cam,`<div class="glass lbl" style="left:540px;top:1580px;color:#111218">CLEAN PRODUCT PHOTOGRAPHY</div>`);
+   const el=mk(S.cam,`<div class="abs" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;transform-origin:50% 50%"><div class="abs" style="inset:0;border:5px dashed #ff3b30;border-radius:16px"></div><div class="sq abs" style="left:${w-22}px;top:-22px;width:44px;height:44px;border-radius:50%;background:#ff3b30">${ic('x',26,'#fff',3.4)}</div></div>`);return {el,x0:a}});
+ S.dc=rowCard(S,'L',numCard('dcn','DISTRACTIONS',{style:'color:#ff3b30'}));S.dcO=odo($('dcn'),1);S.dcn=$('dcn');
+ S.c1=callout(S.cam,F.px(.62),F.py(.665),1020,F.py(.86),'SOFT CONTACT SHADOW',{al:'r',m:1});
+ S.c2=callout(S.cam,F.px(.82),F.py(.18),1020,F.py(.05),'SEAMLESS BACKDROP',{al:'r',m:1});
+ S.cap=rowCard(S,'R',`<div class="sq" style="height:100%;flex-direction:column;gap:10px;text-align:center"><div class="tiny">RESULT</div><div id="cap1" style="font-weight:900;font-size:40px;line-height:1.05;color:#111218">CLEAN PRODUCT<br>PHOTOGRAPHY</div></div>`);S.capT=$('cap1');
  S.h1=W(S.type,'<span class="B">/</span>PRODUCT',540,250,190);S.h2=letters(S.type,'SHOT',540,440,190);
  S.render=(t,τ)=>{trans(S,τ,'whipR',null);
-  const dive=E.inExpo(prog(τ,S.D-.45,S.D));const kick=.07*Math.sin(Math.PI*prog(τ,KB.m0,KB.m0+.5*MS))*(1-prog(τ,KB.m0+.25*MS,KB.m0+.5*MS)*.0);
-  cam(S.cam,{x:lerp(540,540,dive),y:lerp(960,700,dive),z:(1+.035*prog(τ,0,S.D)+kick)*lerp(1,4.5,dive)});
-  S.type.style.transform=`translate(540px,400px) scale(${1+dive*1.4}) translate(-540px,-400px)`;vis(S.type,1-dive,dive*20);
-  tf(S.h1,A.drop(τ,.12));S.h2.L.forEach((l,k)=>tp(l,{...(()=>{const d=A.drop(τ,.26+k*.07,.45);return {y:d.y,o:d.o,blur:d.blur}})()}));
-  // distraction boxes (before)
+  const dive=E.inExpo(prog(τ,S.D-.45,S.D));const kick=.05*Math.sin(Math.PI*prog(τ,KB.m0,KB.m0+.5*MS));
+  cam(S.cam,{y:lerp(960,F.py(.2),dive),z:(1+kick)*lerp(1,4.5,dive)});
+  S.type.style.transform=`translate(540px,300px) scale(${1+dive*1.4}) translate(-540px,-300px)`;vis(S.type,1-dive,dive*20);
+  tf(S.h1,A.drop(τ,.12));S.h2.L.forEach((l,k)=>{const d=A.drop(τ,.26+k*.07,.45);tp(l,{y:d.y,o:d.o,blur:d.blur})});
   const wp=E.io(prog(τ,KB.m0,KB.m0+.55*MS));
   S.boxes.forEach((bx,k)=>{const q=prog(τ,bb(1+k*.5),bb(1+k*.5)+.35);const gone=prog(wp,1-bx.x0-.25,1-bx.x0);tp(bx.el,{s:E.back(q)*(1-gone*.3),o:clamp(q*4)*(1-gone),blur:gone*8})});
-  const dq=prog(τ,bb(1),bb(1)+.35);tp(S.dc,{s:E.back(dq),o:clamp(dq*4)*(1-prog(τ,bb(7),bb(7)+.3))});
-  const cnt=τ<KB.m0?Math.min(3,[bb(1),bb(1.5),bb(2)].filter(x=>τ>=x+.1).length+(τ>=bb(1)?0:0)):3*(1-E.io(prog(τ,bb(4.5),bb(5.5))));
+  popT(S.dc,τ,bb(1));
+  const cnt=τ<KB.m0?[bb(1),bb(1.5),bb(2)].filter(x=>τ>=x+.1).length:3*(1-E.io(prog(τ,bb(4.5),bb(5.5))));
   setOdo(S.dcO,cnt);S.dcn.style.color=τ>bb(5.4)?'#34c759':'#ff3b30';
-  // diagonal wipe → studio shot
   const a=lerp(140,0,wp);F.I['01b'].style.clipPath=`polygon(${a}% 0,100% 0,100% 100%,${a-40}% 100%)`;
   S.edge.style.background=wp>0&&wp<1?`linear-gradient(112deg,transparent ${25+a/2-3}%,rgba(255,255,255,.95) ${25+a/2-.6}%,#fff ${25+a/2}%,rgba(255,255,255,0) ${25+a/2+2.5}%)`:'none';
   S.c1.set(prog(τ,bb(5.5),bb(5.5)+.7));S.c2.set(prog(τ,bb(6),bb(6)+.7));
-  const cq=E.out(prog(τ,bb(6.5),bb(6.5)+.6));S.cap.style.transform=`translate(-50%,-50%) scale(${lerp(.9,1,cq)})`;S.cap.style.letterSpacing=lerp(.7,.22,cq)+'em';vis(S.cap,cq,(1-cq)*10);
+  popT(S.cap,τ,bb(6.5));const cq=E.out(prog(τ,bb(6.5),bb(6.5)+.6));S.capT.style.letterSpacing=lerp(.4,0,cq)+'em';
   promptKW(S,τ,'Sneaker on a table, ','/productshot');PS.kO=1-dive;
  };}
 
 // ── 02 SOFT LIGHT
 const S2=kwScene(2,{});
-{const S=S2;S.F=frame(S.cam,100,540,880,1100,['02a','02b']);const F=S.F;
- S.band=mk(F.fx,`<div class="abs" style="top:-40px;width:300px;height:${F.h+80}px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.96) 45%,rgba(255,255,255,.96) 60%,rgba(255,255,255,0));filter:blur(10px)"></div>`);
- S.rays=mk(S.cam,`<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920">${[[420,900],[500,1010],[600,1120],[660,1240],[710,980]].map(([x,y])=>{const L=Math.hypot(x-800,y-612);return `<path d="M800 612 L${x} ${y}" stroke="#fff6c8" stroke-width="5" stroke-linecap="round" stroke-dasharray="${L}" stroke-dashoffset="${L}" data-l="${L}" style="filter:drop-shadow(0 0 6px #ffd76a)"/>`}).join('')}</svg>`);
- S.cone=mk(S.cam,`<svg class="abs" style="left:0;top:0" width="1080" height="1920"><defs><linearGradient id="cone2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="M620 612 L980 612 L1080 1350 L400 1350 Z" fill="url(#cone2)"/></svg>`);
- S.bulb=mk(S.cam,`<div class="glass sq" style="left:800px;top:612px;height:104px;gap:14px;font-weight:800;font-size:28px;color:#2f7bf5;letter-spacing:.08em;overflow:hidden">${ic('bulb',44,'#2f7bf5')}<span id="sbl" style="white-space:nowrap">SOFTBOX</span></div>`);S.sbl=$('sbl');
- S.gc=card(S.cam,120,1270,400,250,`<div class="tiny" style="position:absolute;left:28px;top:24px">SHADOW EDGE</div><svg class="abs" style="left:28px;top:70px" width="344" height="120"><path id="g2" d="" stroke="#2f7bf5" stroke-width="7" fill="none" stroke-linecap="round"/></svg><div id="g2v" style="position:absolute;left:28px;top:194px;font-weight:900;font-size:40px;color:#2f7bf5"></div>`,{r:32});
- S.gp=$('g2');S.gv=$('g2v');
- S.sw=mk(S.cam,`<div class="abs" style="left:700px;top:1340px;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.3)"><div class="tiny" style="color:#fff">SOFTNESS</div><div id="s2n" style="font-weight:900;font-size:120px;letter-spacing:-.04em"></div></div>`);S.swO=odo($('s2n'),2,{suf:'%',lead:false});
+{const S=S2;S.F=frame(S.cam,P.x,P.y,P.w,P.h,['02a','02b']);const F=S.F;
+ S.band=mk(F.fx,`<div class="abs" style="top:-40px;width:260px;height:${F.h+80}px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.96) 45%,rgba(255,255,255,.96) 60%,rgba(255,255,255,0));filter:blur(10px)"></div>`);
+ const LX=948,LY=640;S.LX=LX;S.LY=LY;
+ S.rays=mk(S.cam,`<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920">${[[F.px(.76),F.py(.2)],[F.px(.78),F.py(.33)],[F.px(.79),F.py(.46)],[F.px(.78),F.py(.59)],[F.px(.76),F.py(.72)]].map(([x,y])=>{const L=Math.hypot(x-LX,y-LY);return `<path d="M${LX} ${LY} L${x} ${y}" stroke="#ffcf4a" stroke-width="4" stroke-linecap="round" stroke-dasharray="${L}" stroke-dashoffset="${L}" data-l="${L}" style="filter:drop-shadow(0 0 5px #ffd76a)"/>`}).join('')}</svg>`);
+ S.bulb=mk(S.cam,`<div class="glass sq" style="left:${LX}px;top:${LY}px;width:110px;flex-direction:column;gap:12px;font-weight:800;font-size:19px;color:#2f7bf5;letter-spacing:.08em;overflow:hidden">${ic('bulb',44,'#2f7bf5')}<span id="sbl" style="white-space:nowrap">SOFT<br>BOX</span></div>`);S.sbl=$('sbl');
+ S.gc=rowCard(S,'L',`<div class="tiny" style="position:absolute;left:30px;top:24px">SHADOW EDGE</div><svg class="abs" style="left:30px;top:58px" width="300" height="100" viewBox="0 0 344 110"><path id="g2" d="" stroke="#2f7bf5" stroke-width="8" fill="none" stroke-linecap="round"/></svg><div id="g2v" style="position:absolute;right:30px;top:120px;font-weight:900;font-size:44px;color:#2f7bf5"></div>`);S.gp=$('g2');S.gv=$('g2v');
+ S.sw=rowCard(S,'R',numCard('s2n','SOFTNESS',{style:'color:#2f7bf5'}));S.swO=odo($('s2n'),2,{suf:'%',lead:false});
  S.h1=letters(S.type,'SOFT',540,250,190);S.h2=W(S.type,'LIGHT',540,440,190,{cls:'B'});
- S.render=(t,τ)=>{trans(S,τ,'zoomIn',null);cam(S.cam,{z:1+.035*prog(τ,0,S.D)});
+ S.render=(t,τ)=>{trans(S,τ,'zoomIn',null);cam(S.cam,{});
   S.h1.L.forEach((l,k)=>tp(l,A.soft(τ,.1+k*.09,.6)));const lq=E.out(prog(τ,.3,1.1));tf(S.h2,{o:lq,blur:(1-lq)*18});S.h2.style.letterSpacing=lerp(.35,-.045,lq)+'em';
   const m=prog(τ,KB.m0,KB.m0+.7*MS);const mq=E.io(m);
-  // hard bulb → softbox
-  const bq=prog(τ,bb(1),bb(1)+.35);const w=lerp(104,360,mq);S.bulb.style.width=w+'px';S.bulb.style.borderRadius=lerp(52,30,mq)+'px';
-  S.bulb.style.transform=`translate(-50%,-50%) scale(${E.back(bq)*(1+.25*Math.sin(Math.PI*m))})`;vis(S.bulb,clamp(bq*4));S.sbl.style.opacity=prog(w,250,330);S.sbl.style.width=prog(w,180,330)*170+'px';
+  // small hard bulb grows into a tall strip softbox — in the margin, beside the photo
+  const bq=prog(τ,bb(1),bb(1)+.35);const h=lerp(110,360,mq);S.bulb.style.height=h+'px';S.bulb.style.width=lerp(110,124,mq)+'px';S.bulb.style.borderRadius=lerp(55,30,mq)+'px';
+  S.bulb.style.transform=`translate(-50%,-50%) translateY(${(h-110)/2}px) scale(${E.back(bq)})`;vis(S.bulb,clamp(bq*4));S.sbl.style.opacity=prog(h,220,320);S.sbl.style.height=prog(h,150,320)*48+'px';
   [...S.rays.querySelectorAll('path')].forEach((p,k)=>{const L=+p.dataset.l;p.setAttribute('stroke-dashoffset',L*(1-E.out(prog(τ,bb(1.3)+k*.05,bb(1.3)+k*.05+.3))))});vis(S.rays,1-prog(τ,KB.m0,KB.m0+.25*MS));
-  vis(S.cone,prog(τ,KB.m0+.2*MS,KB.m0+.7*MS));
-  const dp=E.io(prog(τ,KB.m0+.15*MS,KB.m0+.95*MS));const bx=lerp(-.35,1.35,dp);S.band.style.left=bx*F.w-150+'px';vis(S.band,dp>0&&dp<1?1:0);F.I['02b'].style.clipPath=`inset(0 ${(1-clamp(bx+.05))*100}% 0 0)`;
-  const gq=prog(τ,bb(1.5),bb(1.5)+.35);tp(S.gc,{s:E.back(gq),o:clamp(gq*4)});
+  const dp=E.io(prog(τ,KB.m0+.15*MS,KB.m0+.95*MS));const bx=lerp(1.3,-.3,dp);S.band.style.left=bx*F.w-130+'px';vis(S.band,dp>0&&dp<1?1:0);F.I['02b'].style.clipPath=`inset(0 0 0 ${clamp(bx-.05)*100}%)`;
+  popT(S.gc,τ,bb(1.5));
   const c1=lerp(168,60,mq),c2=lerp(176,284,mq);S.gp.setAttribute('d',`M0 100 C${c1} 100 ${c2} 10 344 10`);S.gv.innerHTML=m<.5?'HARD':'SOFT';
-  const sq=prog(τ,bb(4.5),bb(4.5)+.3);tp(S.sw,{y:(1-E.back(sq))*30,o:clamp(sq*3)});setOdo(S.swO,86*E.out(prog(τ,bb(4.5),bb(6))));
+  popT(S.sw,τ,bb(4.5));setOdo(S.swO,86*E.out(prog(τ,bb(4.5),bb(6))));
   promptKW(S,τ,'Perfume bottle, ','/softlight');
  };}
 
 // ── 03 HARD LIGHT
 const S3=kwScene(3,{});
-{const S=S3;S.F=frame(S.cam,100,540,880,1100,['03a','03b']);const F=S.F;
- S.beam=mk(S.cam,'<svg class="abs" style="left:0;top:0" width="1080" height="1920"><path d="M180 640 L560 1080 L470 1160 Z" fill="#fff" opacity=".7"/></svg>');
- S.spot=card(S.cam,110,580,140,140,`<div class="sq" style="height:100%;flex-direction:column;gap:2px;color:#ff6a00;font-weight:800;font-size:20px;letter-spacing:.1em">${ic('bulb',54,'#ff6a00')}SPOT</div>`,{r:70});
- S.rg=mk(S.cam,'<div class="abs" style="left:180px;top:650px"></div>');S.r1=ring(S.rg,110,'#ff6a00',4);S.r2=ring(S.rg,170,'#ff6a00',3);
- S.gc=card(S.cam,620,1290,380,240,`<div class="tiny" style="position:absolute;left:28px;top:24px">SHADOW EDGE</div><svg class="abs" style="left:28px;top:70px" width="324" height="110"><path id="g3" d="M0 95 L150 95 L150 10 L324 10" stroke="#ff6a00" stroke-width="7" fill="none" stroke-linejoin="round" stroke-dasharray="500" stroke-dashoffset="500"/></svg><div style="position:absolute;left:28px;top:186px;font-weight:900;font-size:40px;color:#ff6a00">CRISP</div>`,{r:32});S.gp=$('g3');
- S.c1=callout(S.cam,F.px(.6),F.py(.55),F.px(.08),F.py(.86),'CONTRAST ×1',{c:'#ff6a00'});
- S.glow=mk(S.cam,'<div class="abs" style="inset:0;background:radial-gradient(circle at 17% 34%,rgba(255,255,255,.95),rgba(255,255,255,0) 35%)"></div>');
+{const S=S3;S.F=frame(S.cam,P.x,P.y,P.w,P.h,['03a','03b']);const F=S.F;
+ S.spot=card(S.cam,73,560,120,120,`<div class="sq" style="height:100%;flex-direction:column;gap:2px;color:#ff6a00;font-weight:800;font-size:18px;letter-spacing:.1em">${ic('bulb',48,'#ff6a00')}SPOT</div>`,{r:60});
+ S.rg=mk(S.cam,'<div class="abs" style="left:133px;top:620px"></div>');S.r1=ring(S.rg,80,'#ff6a00',4);S.r2=ring(S.rg,120,'#ff6a00',3);
+ S.gc=rowCard(S,'R',`<div class="tiny" style="position:absolute;left:30px;top:24px">SHADOW EDGE</div><svg class="abs" style="left:30px;top:60px" width="300" height="100" viewBox="0 0 324 110"><path id="g3" d="M0 95 L150 95 L150 10 L324 10" stroke="#ff6a00" stroke-width="8" fill="none" stroke-linejoin="round" stroke-dasharray="500" stroke-dashoffset="500"/></svg><div style="position:absolute;right:30px;top:120px;font-weight:900;font-size:44px;color:#ff6a00">CRISP</div>`);S.gp=$('g3');
+ S.ct=rowCard(S,'L',numCard('c3n','CONTRAST',{style:'color:#ff6a00'}));S.cO=odo($('c3n'),1,{pre:'×'});
+ S.flash=mk(S.el,'<div class="abs" style="inset:0;background:radial-gradient(circle at 12% 32%,rgba(255,255,255,1),rgba(255,255,255,.6) 30%,rgba(255,255,255,0) 60%)"></div>');
  S.h1=W(S.type,'HARD',540,300,300);
  S.cut=mk(S.type,'<div class="abs" style="left:-100px;top:150px;width:1400px;height:600px;background:#14151b;opacity:.55;clip-path:polygon(0 82%,100% 22%,100% 40%,0 100%)"></div>');
  S.h2=W(S.type,'LIGHT',540,470,150,{cls:'B'});
- S.render=(t,τ)=>{wrap(S,{});const sh=shake(τ,KB.m0,14,.3);cam(S.cam,{z:1+.035*prog(τ,0,S.D),...sh});
+ S.render=(t,τ)=>{wrap(S,{});const sh=shake(τ,KB.m0,14,.3);cam(S.cam,{...sh});
   tf(S.h1,A.slam(τ,.1));tf(S.h2,A.slam(τ,.32));
-  const on=τ>=KB.m0+.03*MS;F.I['03b'].style.opacity=on?1:0;
-  const cq=E.outExpo(prog(τ,KB.m0,KB.m0+.4*MS));tp(S.cut,{x:(1-cq)*-1500,y:(1-cq)*420,o:1});vis(S.beam,on?1:0);
-  const fl=on?Math.exp(-(τ-KB.m0)*5):0;vis(S.glow,on?.35+.65*fl:0);
-  const sq=prog(τ,bb(1),bb(1)+.35);tp(S.spot,{s:E.back(sq),o:clamp(sq*4)});
-  [[S.r1,0],[S.r2,.15]].forEach(([r,d])=>{const k=((τ-bb(1)-d)%1.125)/1.125;r.style.transform=`scale(${.6+k*.8})`;vis(r,τ>bb(1)+d?(1-k)*.6:0)});
-  const gq=prog(τ,bb(5),bb(5)+.35);tp(S.gc,{s:E.back(gq),o:clamp(gq*4)});S.gp.setAttribute('stroke-dashoffset',500*(1-E.io(prog(τ,bb(5)+.15,bb(5)+.6))));
-  S.c1.set(prog(τ,bb(5.5),bb(5.5)+.7));S.c1.lb.textContent='CONTRAST ×'+(1+Math.floor(2.999*E.out(prog(τ,bb(6),bb(6)+.5))));
+  const on=τ>=KB.m0+.03;F.I['03b'].style.opacity=on?1:0;
+  const cq=E.outExpo(prog(τ,KB.m0,KB.m0+.4*MS));tp(S.cut,{x:(1-cq)*-1500,y:(1-cq)*420,o:1});
+  vis(S.flash,on?Math.exp(-(τ-KB.m0)*7):0);
+  popT(S.spot,τ,bb(1));
+  [[S.r1,0],[S.r2,.15]].forEach(([r,d])=>{const k=((τ-bb(1)-d)%1.125)/1.125;r.style.transform=`scale(${.7+k*.7})`;vis(r,τ>bb(1)+d?(1-k)*.6:0)});
+  popT(S.gc,τ,bb(5));S.gp.setAttribute('stroke-dashoffset',500*(1-E.io(prog(τ,bb(5)+.15,bb(5)+.6))));
+  popT(S.ct,τ,bb(5.5));setOdo(S.cO,1+2*E.out(prog(τ,bb(5.5),bb(6.5))));
   promptKW(S,τ,'Sunglasses, ','/hardlight');
  };}
 
 // ── 04 RIM LIGHT (dark)
 const S4=kwScene(4,{dark:1});
-{const S=S4;S.F=frame(S.cam,100,540,880,1100,['04a','04b'],{wrap:'background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18)'});const F=S.F;
- S.arc=mk(S.cam,`<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><path id="arc4" d="M250 1200 C 250 560, 830 560, 830 1200" stroke="#fff" stroke-width="5" fill="none" style="filter:drop-shadow(0 0 10px #9cc3ff) drop-shadow(0 0 26px #2f7bf5)"/><circle id="spk4" r="16" fill="#fff" style="filter:drop-shadow(0 0 14px #fff) drop-shadow(0 0 40px #9cc3ff)"/></svg>`);
+{const S=S4;S.F=frame(S.cam,P.x,P.y,P.w,P.h,['04a','04b'],{wrap:'background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18)'});const F=S.F;
+ const x1=F.px(.17),x2=F.px(.83),y1=F.py(.6),yc=F.py(.6)-(F.py(.6)-F.py(.13))/.75;
+ S.arc=mk(S.cam,`<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><path id="arc4" d="M${x1} ${y1} C ${x1} ${yc}, ${x2} ${yc}, ${x2} ${y1}" stroke="#fff" stroke-width="4" fill="none" style="filter:drop-shadow(0 0 8px #9cc3ff) drop-shadow(0 0 20px #2f7bf5)"/><circle id="spk4" r="13" fill="#fff" style="filter:drop-shadow(0 0 12px #fff) drop-shadow(0 0 34px #9cc3ff)"/></svg>`);
  S.ap=$('arc4');S.spk=$('spk4');S.L=S.ap.getTotalLength();S.ap.setAttribute('stroke-dasharray',S.L);
- S.sep=card(S.cam,690,1300,320,200,`<div class="tiny" style="position:absolute;left:26px;top:24px;color:#9aa0b8">SEPARATION</div><div id="sepn" style="position:absolute;left:26px;top:58px;font-weight:900;font-size:96px;color:#fff"></div>`,{dark:1,r:32});
- S.sepO=odo($('sepn'),2,{suf:'<span style="font-size:48px;color:#2f7bf5">%</span>',lead:false});
- S.beh=card(S.cam,70,1340,190,150,`<div class="sq" style="height:100%;flex-direction:column;gap:6px;color:#fff;font-weight:800;font-size:20px;letter-spacing:.1em">${ic('bulb',48,'#9cc3ff')}BEHIND</div>`,{dark:1,r:32});
+ S.sep=rowCard(S,'R',numCard('sepn','SEPARATION',{lc:'color:#9aa0b8',style:'color:#fff'}),{dark:1});S.sepO=odo($('sepn'),2,{suf:'<span style="font-size:50px;color:#2f7bf5">%</span>',lead:false});
+ S.beh=rowCard(S,'L',`<div class="sq" style="height:100%;gap:22px;color:#fff;font-weight:900;font-size:40px">${ic('bulb',64,'#9cc3ff')}<div><div class="tiny" style="color:#9aa0b8">LIGHT</div>BEHIND</div></div>`,{dark:1});
  S.h1=letters(S.type,'RIM',540,260,250,{style:'color:transparent;-webkit-text-stroke:5px #fff'});
  S.h2=W(S.type,'LIGHT',540,450,150,{style:'color:#2f7bf5;text-shadow:0 0 40px rgba(47,123,245,.9)'});
- S.render=(t,τ)=>{wrap(S,{});cam(S.cam,{z:1+.035*prog(τ,0,S.D)});
+ S.render=(t,τ)=>{wrap(S,{});cam(S.cam,{});
   const gl=.5+.5*Math.sin(τ*6);S.h1.L.forEach((l,k)=>{const q=prog(τ,.15+k*.12,.45+k*.12);l.style.opacity=q;l.style.textShadow=`0 0 ${30*q*(.6+.4*gl)}px rgba(140,190,255,.9),0 0 ${80*q}px rgba(47,123,245,.7)`;l.style.transform=`scale(${lerp(1.3,1,E.out(q))})`});
   tf(S.h2,A.soft(τ,.5,.6));
   const dim=prog(τ,KB.m0,KB.m0+.3*MS);F.I['04a'].style.filter=`brightness(${1-.45*dim})`;
-  const tr=E.io(prog(τ,KB.m0+.25*MS,KB.m0+1.2*MS));S.ap.setAttribute('stroke-dashoffset',S.L*(1-tr));const P=S.ap.getPointAtLength(S.L*tr);
-  S.spk.setAttribute('cx',P.x);S.spk.setAttribute('cy',P.y);S.spk.style.opacity=tr>0&&tr<1?1:0;S.ap.style.opacity=tr>0?1-.5*prog(τ,KB.m0+1.3*MS,KB.m0+2*MS):0;
-  F.I['04b'].style.clipPath=`inset(0 ${(1-clamp((P.x-100)/880+.02))*100*(tr>0?1:0)+(tr>0?0:100)}% 0 0)`;
-  const sq=prog(τ,bb(5.5),bb(5.5)+.35);tp(S.sep,{s:E.back(sq),o:clamp(sq*4)});setOdo(S.sepO,72*E.out(prog(τ,bb(5.5),bb(7))));
-  const bq=prog(τ,bb(1.5),bb(1.5)+.35);tp(S.beh,{s:E.back(bq),o:clamp(bq*4)});
+  const tr=E.io(prog(τ,KB.m0+.25*MS,KB.m0+1.2*MS));S.ap.setAttribute('stroke-dashoffset',S.L*(1-tr));const Pt=S.ap.getPointAtLength(S.L*tr);
+  S.spk.setAttribute('cx',Pt.x);S.spk.setAttribute('cy',Pt.y);S.spk.style.opacity=tr>0&&tr<1?1:0;S.ap.style.opacity=tr>0?1-prog(τ,KB.m0+1.25*MS,KB.m0+1.7*MS):0;
+  F.I['04b'].style.clipPath=tr>0?`inset(0 ${(1-clamp((Pt.x-F.x)/F.w+.02))*100}% 0 0)`:'inset(0 100% 0 0)';
+  popT(S.sep,τ,bb(5.5));setOdo(S.sepO,72*E.out(prog(τ,bb(5.5),bb(7))));popT(S.beh,τ,bb(1.5));
   promptKW(S,τ,'Headphones, ','/rimlight');
  };}
 
 // ── 05 GOLDEN HOUR
 const S5=kwScene(5,{});
 {const S=S5;S.warm=mk(S.el,'<div class="abs" style="inset:0;background:linear-gradient(180deg,rgba(255,170,80,0) 20%,rgba(255,160,70,.3))"></div>');S.el.insertBefore(S.warm,S.cam);
- S.F=frame(S.cam,100,540,880,1100,['05a','05b']);const F=S.F;
- S.arc=mk(S.cam,'<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><path id="arc5" d="M60 1120 Q 540 200 1020 1120" stroke="#ff9a3c" stroke-width="5" fill="none" stroke-dasharray="3 16" stroke-linecap="round"/></svg>');S.ap=$('arc5');S.L=S.ap.getTotalLength();
- S.sun=mk(S.cam,'<div class="abs" style="left:-75px;top:-75px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,#fff3c4,#ffb347 60%,#ff8a1a);box-shadow:0 0 80px 30px rgba(255,160,60,.55)"></div>');
- S.tc=card(S.cam,110,1300,300,200,`<div class="tiny" style="position:absolute;left:26px;top:24px">TIME</div><div style="position:absolute;left:26px;top:62px;font-weight:900;font-size:86px;display:flex"><span id="th"></span>:<span id="tm"></span></div>`,{r:32});
- S.hO=odo($('th'),2);S.mO=odo($('tm'),2);
- S.kc=card(S.cam,680,1300,300,200,`<div class="tiny" style="position:absolute;left:26px;top:24px">COLOR TEMP</div><div id="kn" style="position:absolute;left:26px;top:62px;font-weight:900;font-size:86px;color:#ff6a00"></div><div style="position:absolute;left:26px;top:162px;height:12px;width:248px;border-radius:6px;background:linear-gradient(90deg,#ff7a1a,#ffd9a0,#cfe0ff)"><div id="knob" style="position:absolute;left:0;top:-6px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div></div>`,{r:32});
- S.kO=odo($('kn'),4,{suf:'<span style="font-size:42px">K</span>'});S.knob=$('knob');
+ S.F=frame(S.cam,P.x,P.y,P.w,P.h,['05a','05b']);const F=S.F;
+ // the sun sets down the right margin — never over the photo
+ S.arc=mk(S.cam,'<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><path id="arc5" d="M920 520 Q 1030 900 950 1300" stroke="#ff9a3c" stroke-width="5" fill="none" stroke-dasharray="3 16" stroke-linecap="round"/></svg>');S.ap=$('arc5');S.L=S.ap.getTotalLength();
+ S.sun=mk(S.cam,'<div class="abs" style="left:-50px;top:-50px;width:100px;height:100px;border-radius:50%;background:radial-gradient(circle,#fff3c4,#ffb347 60%,#ff8a1a);box-shadow:0 0 60px 22px rgba(255,160,60,.55)"></div>');
+ S.tc=rowCard(S,'L',`<div class="tiny" style="position:absolute;left:30px;top:26px">TIME</div><div style="position:absolute;left:30px;top:66px;font-weight:900;font-size:96px;line-height:1;display:flex"><span id="th"></span>:<span id="tm"></span></div>`);S.hO=odo($('th'),2);S.mO=odo($('tm'),2);
+ S.kc=rowCard(S,'R',`<div class="tiny" style="position:absolute;left:30px;top:26px">COLOR TEMP</div><div id="kn" style="position:absolute;left:30px;top:62px;font-weight:900;font-size:88px;line-height:1;color:#ff6a00"></div><div style="position:absolute;left:30px;top:166px;height:12px;width:410px;border-radius:6px;background:linear-gradient(90deg,#ff7a1a,#ffd9a0,#cfe0ff)"><div id="knob" style="position:absolute;left:0;top:-6px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div></div>`);
+ S.kO=odo($('kn'),4,{suf:'<span style="font-size:44px">K</span>'});S.knob=$('knob');
  S.h1=W(S.type,'GOLDEN',540,250,200,{cls:'O'});S.h2=W(S.type,'HOUR',540,440,200);
  S.render=(t,τ)=>{wrap(S,{});const dive=E.inExpo(prog(τ,S.D-.45,S.D));
-  cam(S.cam,{x:540,y:lerp(960,1200,dive),z:(1+.035*prog(τ,0,S.D))*lerp(1,4.5,dive)});
-  S.type.style.transform=`translate(540px,350px) scale(${1+dive*1.4}) translate(-540px,-350px)`;vis(S.type,1-dive,dive*20);
+  cam(S.cam,{y:lerp(960,F.py(.6),dive),z:lerp(1,4.5,dive)});
+  S.type.style.transform=`translate(540px,300px) scale(${1+dive*1.4}) translate(-540px,-300px)`;vis(S.type,1-dive,dive*20);
   tf(S.h1,A.drop(τ,.1));tf(S.h2,A.drop(τ,.25));
   const m=E.io(prog(τ,KB.m0,KB.m0+1.1*MS));vis(S.arc,prog(τ,bb(1),bb(1)+.4));
-  const P=S.ap.getPointAtLength(S.L*lerp(.5,.86,m));const sq=prog(τ,bb(1),bb(1)+.4);S.sun.style.transform=`translate(${P.x}px,${P.y}px) scale(${E.back(sq)})`;vis(S.sun,clamp(sq*4));
+  const Pt=S.ap.getPointAtLength(S.L*lerp(.05,.95,m));const sq=prog(τ,bb(1),bb(1)+.4);S.sun.style.transform=`translate(${Pt.x}px,${Pt.y}px) scale(${E.back(sq)})`;vis(S.sun,clamp(sq*4));
+  S.sun.style.filter=`saturate(${1+m*.6})`;
   const a=lerp(140,0,m);F.I['05b'].style.clipPath=`polygon(${a}% 0,100% 0,100% 100%,${a-40}% 100%)`;vis(S.warm,m);
-  const tq=prog(τ,bb(1.5),bb(1.5)+.35);tp(S.tc,{s:E.back(tq),o:clamp(tq*4)});const mins=lerp(720,1122,m);setOdo(S.hO,Math.floor(mins/60));setOdo(S.mO,mins%60);
-  const kq=prog(τ,bb(2),bb(2)+.35);tp(S.kc,{s:E.back(kq),o:clamp(kq*4)});setOdo(S.kO,lerp(5600,3200,m));S.knob.style.left=lerp(200,24,m)+'px';
+  popT(S.tc,τ,bb(1.5));const mins=lerp(720,1122,m);setOdo(S.hO,Math.floor(mins/60));setOdo(S.mO,mins%60);
+  popT(S.kc,τ,bb(2));setOdo(S.kO,lerp(5600,3200,m));S.knob.style.left=lerp(380,10,m)+'px';
   promptKW(S,τ,'Honey jar, ','/goldenhour');PS.kO=1-dive;
  };}
 
 // ── 06 MACRO
 const S6=kwScene(6,{});
-{const S=S6;S.F=frame(S.cam,60,520,960,1200,['06a','06b']);const F=S.F;F.I['06a'].style.transformOrigin='62% 47%';
- S.vig=mk(F.fx,'<div class="abs" style="inset:0;box-shadow:inset 0 0 120px rgba(0,0,0,.25)"></div>');
+{const S=S6;S.F=frame(S.cam,P.x,P.y,P.w,P.h,['06a','06b']);const F=S.F;F.I['06a'].style.transformOrigin='62% 47%';
  const cx=F.px(.62),cy=F.py(.47);S.cx=cx;S.cy=cy;
- S.bk=[['right','bottom',-1,-1],['left','bottom',1,-1],['right','top',-1,1],['left','top',1,1]].map(([p,q,sx,sy])=>({sx,sy,el:mk(S.cam,`<div class="bk" style="border-${p}:none;border-${q}:none"></div>`)}));
- S.dot=mk(S.cam,`<div class="abs" style="left:${cx-20}px;top:${cy-20}px;width:40px;height:40px;border-radius:50%;border:4px solid #ffd60a"></div>`);
- S.zx=mk(S.cam,'<div class="W" style="left:540px;top:560px;font-size:260px;color:#fff;text-shadow:0 10px 40px rgba(0,0,0,.35);display:flex">×<span id="zxn"></span></div>');S.zO=odo($('zxn'),2,{lead:false});
- S.mm=card(S.cam,700,1380,280,320,`<img src="${SRC('06a')}" style="position:absolute;left:12px;top:12px;width:256px;height:296px;object-fit:cover;border-radius:24px"><div class="abs" style="left:150px;top:140px;width:46px;height:56px;border:4px solid #ffd60a;border-radius:6px"></div>`,{r:34});
- S.fl=mk(S.cam,'<div class="glass lbl" style="left:80px;top:1600px;color:#111218">FOCUS: <span class="B">TEXTURE</span></div>');
+ S.bk=[['right','bottom',-1,-1],['left','bottom',1,-1],['right','top',-1,1],['left','top',1,1]].map(([p,q,sx,sy])=>({sx,sy,el:mk(S.cam,`<div class="bk" style="width:60px;height:60px;border-width:6px;border-${p}:none;border-${q}:none"></div>`)}));
+ S.zc=rowCard(S,'L',`<div class="tiny" style="position:absolute;left:30px;top:26px">ZOOM</div><div style="position:absolute;left:30px;top:56px;font-weight:900;font-size:120px;line-height:1;display:flex;color:#2f7bf5">×<span id="zxn"></span></div>`);S.zO=odo($('zxn'),2,{lead:false});
+ S.mm=rowCard(S,'R',`<img src="${SRC('06a')}" style="position:absolute;left:12px;top:12px;width:145px;height:181px;object-fit:cover;border-radius:24px"><div class="abs" style="left:${12+145*.62-14}px;top:${12+181*.47-17}px;width:28px;height:34px;border:3px solid #ffd60a;border-radius:5px"></div><div class="abs" style="left:185px;top:58px"><div class="tiny">FOCUS</div><div style="font-weight:900;font-size:44px;color:#2f7bf5">TEXTURE</div></div>`);
  S.h1=W(S.type,'MACRO',540,250,220);
- S.render=(t,τ)=>{trans(S,τ,'zoomIn','up');cam(S.cam,{z:1+.03*prog(τ,0,S.D)});tf(S.h1,A.slam(τ,.1));
+ S.render=(t,τ)=>{trans(S,τ,'zoomIn','up');cam(S.cam,{});tf(S.h1,A.slam(τ,.1));
   const zin=E.inExpo(prog(τ,KB.m0,KB.m0+.55*MS));const sw=τ>=KB.m0+.55*MS;
   F.I['06a'].style.transform=`scale(${1+zin*3})`;F.I['06a'].style.filter=`blur(${zin*6}px)`;F.I['06b'].style.opacity=sw?1:0;
   const rq=E.outExpo(prog(τ,KB.m0+.55*MS,KB.m0+1*MS));F.I['06b'].style.transform=`scale(${lerp(1.35,1,rq)})`;F.I['06b'].style.filter=sw&&rq<1?`blur(${(1-rq)*10}px)`:'none';
-  const bq=prog(τ,bb(1),bb(1)+.4);let d=lerp(330,170,E.io(prog(τ,bb(1.2),bb(2.4))));d=lerp(d,110,zin);if(sw)d=lerp(110,230,rq);
-  S.bk.forEach(k=>{tp(k.el,{x:S.cx+k.sx*d-40,y:S.cy+k.sy*d-40,o:clamp(bq*3)})});vis(S.dot,clamp(bq*3)*(1-prog(τ,KB.m0+.3*MS,KB.m0+.55*MS)));
-  const zq=prog(τ,KB.m0,KB.m0+.15*MS);tf(S.zx,{s:E.back(zq),o:clamp(zq*4)});setOdo(S.zO,1+9*E.out(prog(τ,KB.m0,KB.m0+.9*MS)));
-  const mq=prog(τ,bb(5.5),bb(5.5)+.35);tp(S.mm,{s:E.back(mq),o:clamp(mq*4)});const fq=prog(τ,bb(6),bb(6)+.35);tp(S.fl,{x:(1-E.out(fq))*-200,o:clamp(fq*3)});
+  // focus brackets lock on, then step aside to the frame corners after the zoom so the detail stays clean
+  const bq=prog(τ,bb(1),bb(1)+.4);let d=lerp(260,120,E.io(prog(τ,bb(1.2),bb(2.4))));d=lerp(d,80,zin);
+  const after=E.io(prog(τ,KB.m0+.6*MS,KB.m0+1.1*MS));
+  S.bk.forEach(k=>{const x=lerp(S.cx+k.sx*d,k.sx<0?F.x+30:F.x+F.w-30,after),y=lerp(S.cy+k.sy*d,k.sy<0?F.y+30:F.y+F.h-30,after);tp(k.el,{x:x-30,y:y-30,o:clamp(bq*3)})});
+  popT(S.zc,τ,KB.m0);setOdo(S.zO,1+9*E.out(prog(τ,KB.m0,KB.m0+.9*MS)));
+  popT(S.mm,τ,bb(5.5));
   promptKW(S,τ,'Wristwatch, ','/macro');
  };}
 
 // ── 07 LOW ANGLE
 const S7=kwScene(7,{});
-{const S=S7;S.F=frame(S.cam,180,560,720,900,['07a','07b']);const F=S.F;
- S.rul=mk(S.cam,'<div class="abs" style="left:70px;top:560px;width:6px;height:1060px;background:repeating-linear-gradient(180deg,#9fb6e8 0 4px,transparent 4px 40px);transform-origin:50% 0"></div>');
- S.rl=['1.6 m','1.0 m','0.5 m','0.1 m'].map((s,i)=>mk(S.cam,`<div class="abs tiny" style="left:90px;top:${560+i*340}px">${s}</div>`));
- S.gh=[1,2,3].map(i=>mk(S.cam,`<div class="abs" style="left:28px;top:0;width:120px;height:120px;border-radius:34px;background:rgba(47,123,245,.18)"></div>`));
- S.camt=card(S.cam,28,0,120,120,`<div class="sq" style="height:100%;flex-direction:column">${ic('cam',54,'#2f7bf5')}<b style="color:#2f7bf5;font-size:28px;line-height:1">↓</b></div>`,{r:34});
- S.vl=mk(S.cam,'<svg class="abs" style="left:0;top:0" width="1080" height="1920"><path d="M150 1420 L900 700 M150 1420 L900 1440" stroke="#2f7bf5" stroke-width="3" stroke-dasharray="10 10" opacity=".6"/></svg>');
- S.lab=mk(S.cam,'<div class="glass lbl" style="left:900px;top:520px;color:#111218;transform-origin:100% 50%">EYE LEVEL<span id="gr7"> → <span class="B">GROUND</span></span></div>');S.gr=$('gr7');
- S.h1=W(S.type,'LOW',560,250,230);S.h2=W(S.type,'ANGLE',560,1560,190,{cls:'B'});
- S.render=(t,τ)=>{trans(S,τ,'fromBelow','whipL');const land=prog(τ,KB.m0+.5*MS,KB.m0+.62*MS);const sh=shake(τ,KB.m0+.55*MS,12,.3);cam(S.cam,{z:1+.03*prog(τ,0,S.D),...sh});
-  tf(S.h1,A.drop(τ,.15));const r=A.rise(τ,.3);tf(S.h2,{...r,sy:1.15*(r.s||1)});
+{const S=S7;S.F=frame(S.cam,P.x,P.y,P.w,P.h,['07a','07b']);const F=S.F;
+ S.rul=mk(S.cam,`<div class="abs" style="left:94px;top:${P.y}px;width:6px;height:${P.h}px;background:repeating-linear-gradient(180deg,#9fb6e8 0 4px,transparent 4px 40px);transform-origin:50% 0"></div>`);
+ S.rl=['1.6 m','1.0 m','0.5 m','0.1 m'].map((s,i)=>mk(S.cam,`<div class="abs tiny" style="left:112px;top:${P.y-10+i*(P.h-20)/3}px">${s}</div>`));
+ S.gh=[1,2,3].map(i=>mk(S.cam,`<div class="abs" style="left:40px;top:0;width:110px;height:110px;border-radius:32px;background:rgba(47,123,245,.18)"></div>`));
+ S.camt=card(S.cam,40,0,110,110,`<div class="sq" style="height:100%;flex-direction:column">${ic('cam',50,'#2f7bf5')}<b style="color:#2f7bf5;font-size:26px;line-height:1">↓</b></div>`,{r:32});
+ S.hc=rowCard(S,'R',`<div class="tiny" style="position:absolute;left:30px;top:26px">CAMERA HEIGHT</div><div style="position:absolute;left:30px;top:66px;font-weight:900;font-size:96px;line-height:1;color:#2f7bf5;display:flex"><span id="hgt"></span><span style="font-size:48px;align-self:flex-end;margin:0 0 10px 8px">cm</span></div>`);S.hO=odo($('hgt'),3,{lead:false});
+ S.lab=rowCard(S,'L',`<div class="sq" style="height:100%;flex-direction:column;gap:6px"><div class="tiny">VIEW</div><div style="font-weight:900;font-size:44px"><span id="ey7">EYE LEVEL</span><span id="gr7" class="B">GROUND</span></div></div>`);S.ey=$('ey7');S.gr=$('gr7');
+ S.h1=W(S.type,'LOW',560,250,230);S.h2=W(S.type,'ANGLE',560,1625,140,{cls:'B'});
+ S.render=(t,τ)=>{trans(S,τ,'fromBelow','whipL');const sh=shake(τ,KB.m0+.55*MS,12,.3);cam(S.cam,{...sh});
+  tf(S.h1,A.drop(τ,.15));const r=A.rise(τ,.3);tf(S.h2,{...r,o:r.o*(1-prog(τ,KB.send-.4,KB.send-.1)),sy:1.15*(r.s||1)});
   const rq=E.out(prog(τ,.2,.8));S.rul.style.transform=`scaleY(${rq})`;S.rl.forEach((l,i)=>{l.style.opacity=prog(rq,i/4,i/4+.25);l.style.color=i===3&&τ>KB.m0+.5*MS?'#2f7bf5':'#a0a6ba'});
-  const dq=E.in(prog(τ,KB.m0,KB.m0+.55*MS));const cy=lerp(560,1360,dq)+(τ>KB.m0+.55*MS?-20*Math.sin(Math.PI*prog(τ,KB.m0+.55*MS,KB.m0+.8*MS)):0);
-  const cq=prog(τ,bb(1),bb(1)+.35);tp(S.camt,{y:cy,s:E.back(cq),o:clamp(cq*4)});
-  S.gh.forEach((g,i)=>{const lag=E.in(prog(τ-.04*(i+1),KB.m0,KB.m0+.55*MS));tp(g,{y:lerp(560,1360,lag),o:dq>0&&dq<1?.5-.13*i:0,blur:4+i*4})});
+  const dq=E.in(prog(τ,KB.m0,KB.m0+.55*MS));const cy=lerp(P.y,P.y+P.h-110,dq)+(τ>KB.m0+.55*MS?-20*Math.sin(Math.PI*prog(τ,KB.m0+.55*MS,KB.m0+.8*MS)):0);
+  popT(S.camt,τ,bb(1));S.camt.style.top=cy+'px';
+  S.gh.forEach((g,i)=>{const lag=E.in(prog(τ-.04*(i+1),KB.m0,KB.m0+.55*MS));tp(g,{y:lerp(P.y,P.y+P.h-110,lag),o:dq>0&&dq<1?.5-.13*i:0,blur:4+i*4})});
   const sp=E.io(prog(τ,KB.m0+.3*MS,KB.m0+.75*MS));F.I['07a'].style.transform=`translateY(${-sp*F.h}px)`;F.I['07b'].style.transform=`translateY(${(1-E.back(prog(τ,KB.m0+.3*MS,KB.m0+.85*MS)))*F.h}px)`;
-  vis(S.vl,prog(τ,bb(5.5),bb(5.5)+.3));
-  const lq=prog(τ,bb(1.5),bb(1.5)+.35);S.lab.style.transform=`translate(-100%,-50%) scale(${E.back(lq)})`;vis(S.lab,clamp(lq*4));S.gr.style.opacity=prog(τ,KB.m0+.55*MS,KB.m0+.8*MS);
+  popT(S.lab,τ,bb(1.5));const g=prog(τ,KB.m0+.5*MS,KB.m0+.7*MS);S.ey.style.display=g<.5?'inline':'none';S.gr.style.display=g<.5?'none':'inline';
+  popT(S.hc,τ,bb(5));setOdo(S.hO,lerp(160,10,E.out(prog(τ,bb(5),bb(6)))));
   promptKW(S,τ,'Skateboard, ','/lowangle');
  };}
 
 // ── 08 MINIMAL
 const S8=kwScene(8,{});
-{const S=S8;S.F=frame(S.cam,240,700,600,750,['08b']);const F=S.F;
+{const S=S8;S.F=frame(S.cam,300,580,480,600,['08b']);const F=S.F;
  const R=['44px 0 0 0','0 44px 0 0','0 0 0 44px','0 0 44px 0'];
- S.sh=[[-60,520,-14],[790,480,12],[-40,1300,10],[810,1320,-12]].map(([mx,my,r],i)=>{const x=240+(i%2)*300,y=700+Math.floor(i/2)*375;
-   return {x,y,mx,my,r,el:mk(S.cam,`<div class="abs" style="left:0;top:0;width:300px;height:375px;overflow:hidden;border-radius:${R[i]};transform-origin:50% 50%;box-shadow:0 30px 60px rgba(0,0,0,.0)"><img src="${SRC('08a')}" style="position:absolute;left:${-(i%2)*300}px;top:${-Math.floor(i/2)*375}px;width:600px;height:750px;object-fit:cover"></div>`)}});
- S.cc=card(S.cam,390,1520,300,110,`<div class="sq" style="height:100%;gap:16px"><span class="tiny">CLUTTER</span><span id="ccn" style="font-size:62px;font-weight:900;color:#2f7bf5"></span></div>`,{r:55});S.cO=odo($('ccn'),1);
- S.line=mk(S.cam,'<div class="abs" style="left:240px;top:470px;width:600px;height:2px;background:#c9cede;transform-origin:50% 50%"></div>');S.mr=mk(S.cam,'<div class="abs tiny" style="left:540px;top:490px;transform:translateX(-50%)">MORE ROOM</div>');
+ S.sh=[[-60,520,-14],[790,480,12],[-40,1300,10],[810,1320,-12]].map(([mx,my,r],i)=>{const x=P.x+(i%2)*320,y=P.y+Math.floor(i/2)*400;
+   return {x,y,mx,my,r,el:mk(S.cam,`<div class="abs" style="left:0;top:0;width:320px;height:400px;overflow:hidden;border-radius:${R[i]};transform-origin:50% 50%"><img src="${SRC('08a')}" style="position:absolute;left:${-(i%2)*320}px;top:${-Math.floor(i/2)*400}px;width:640px;height:800px;object-fit:cover"></div>`)}});
+ S.cc=rowCard(S,'L',numCard('ccn','CLUTTER',{style:'color:#2f7bf5'}));S.cO=odo($('ccn'),1);
+ S.sc=rowCard(S,'R',`<div class="tiny" style="position:absolute;left:30px;top:26px">EMPTY SPACE</div><div style="position:absolute;left:30px;top:66px;font-weight:900;font-size:96px;line-height:1;color:#2f7bf5;display:flex"><span id="spn"></span>%</div>`);S.sO=odo($('spn'),2,{lead:false});
  S.h1=W(S.type,'MINIMAL',540,300,140);
- S.render=(t,τ)=>{trans(S,τ,'whipR','pageOut');cam(S.cam,{z:1+.03*prog(τ,0,S.D)});
+ S.render=(t,τ)=>{trans(S,τ,'whipR','pageOut');cam(S.cam,{});
   const hq=E.out(prog(τ,.1,4.2));S.h1.style.letterSpacing=lerp(-.04,.2,hq)+'em';S.h1.style.paddingLeft=lerp(0,.2,hq)+'em';const hi=prog(τ,.1,.4);tf(S.h1,{o:hi,blur:(1-hi)*14,s:lerp(1.2,1,E.out(hi))});
   const m=prog(τ,KB.m0,KB.m0+1.2*MS);const mq=E.outQ(m);
-  S.sh.forEach(s=>{const tx=s.x+(s.mx-s.x)*2.2,ty=s.y+(s.my-s.y)*2.2;tp(s.el,{x:lerp(s.x,tx,mq),y:lerp(s.y,ty,mq),r:s.r*mq*1.6,s:lerp(1,.85,mq),o:1-prog(m,.55,1),blur:mq*12});
+  S.sh.forEach(s=>{const tx=s.x+(s.mx-s.x)*2.4,ty=s.y+(s.my-s.y)*2.4;tp(s.el,{x:lerp(s.x,tx,mq),y:lerp(s.y,ty,mq),r:s.r*mq*1.6,s:lerp(1,.85,mq),o:1-prog(m,.4,.8),blur:mq*12});
     s.el.style.boxShadow=`0 30px 60px rgba(0,0,0,${.25*clamp(m*5)})`});
-  vis(F.el,τ>=KB.m0?1:0);
-  const cq=prog(τ,bb(1.5),bb(1.5)+.35);tp(S.cc,{s:E.back(cq),o:clamp(cq*4)});setOdo(S.cO,7*(1-E.io(prog(τ,KB.m0+.1*MS,KB.m0+1.1*MS))));
-  const lq=E.out(prog(τ,bb(5.5),bb(5.5)+.6));S.line.style.transform=`scaleX(${lq})`;vis(S.mr,lq);
+  const fq=E.back(prog(τ,KB.m0+.2*MS,KB.m0+.6*MS));tp(F.el,{s:lerp(.85,1,fq),o:τ>=KB.m0+.1?1:0});F.el.style.transformOrigin='50% 50%';
+  popT(S.cc,τ,bb(1.5));setOdo(S.cO,7*(1-E.io(prog(τ,KB.m0+.1*MS,KB.m0+1.1*MS))));
+  popT(S.sc,τ,bb(5.5));setOdo(S.sO,lerp(10,78,E.out(prog(τ,bb(5.5),bb(6.5)))));
   promptKW(S,τ,'Ceramic vase, ','/minimal');
  };}
 
 // ── 09 EDITORIAL
 const S9=kwScene(9,{});
 {const S=S9;S.gd=[...Array(7)].map((_,i)=>mk(S.cam,`<div class="abs" style="left:${60+i*160}px;top:0;width:1px;height:1920px;background:rgba(47,123,245,.2);transform-origin:50% 0"></div>`));
- S.F=frame(S.cam,300,430,720,900,['09b']);const F=S.F;
- S.page=mk(S.cam,`<div class="abs" style="left:300px;top:430px;width:720px;height:900px;border-radius:44px;overflow:hidden;transform-origin:0 50%;box-shadow:-30px 30px 60px rgba(0,0,0,.2)"><img src="${SRC('09a')}" style="width:100%;height:100%;object-fit:cover"></div>`);
- S.col=mk(S.cam,`<div class="abs" style="left:60px;top:430px;width:220px;height:900px;display:flex;flex-direction:column;justify-content:space-between"><div class="tiny" style="color:#111218">ISSUE 09</div><div style="font-weight:900;font-size:120px;line-height:.85;letter-spacing:-.05em">09</div><div class="tiny">STILL LIFE<br>— SS26</div></div>`);
- S.c1=callout(S.cam,880,1190,300,1430,'SCULPTURAL PROP',{al:'l'});
- S.body=mk(S.cam,'<div class="abs" style="left:300px;top:1500px;width:720px;font-weight:600;font-size:34px;line-height:1.3;color:#5a5e70">Styled, magazine-inspired composition. Directional light. <span class="B" style="font-weight:800">Balance.</span></div>');
+ const EX=300,EY=470,EW=680,EH=850;
+ S.F=frame(S.cam,EX,EY,EW,EH,['09b']);const F=S.F;
+ S.page=mk(S.cam,`<div class="abs" style="left:${EX}px;top:${EY}px;width:${EW}px;height:${EH}px;border-radius:44px;overflow:hidden;transform-origin:0 50%;box-shadow:-30px 30px 60px rgba(0,0,0,.2)"><img src="${SRC('09a')}" style="width:100%;height:100%;object-fit:cover"></div>`);
+ S.col=mk(S.cam,`<div class="abs" style="left:60px;top:${EY}px;width:210px;height:${EH}px;display:flex;flex-direction:column;justify-content:space-between"><div class="tiny" style="color:#111218">ISSUE 09</div><div style="font-weight:900;font-size:120px;line-height:.85;letter-spacing:-.05em">09</div><div class="tiny">STILL LIFE<br>— SS26</div></div>`);
+ S.c1=callout(S.cam,F.px(.83),F.py(.86),EX,1400,'SCULPTURAL PROP',{al:'l'});
+ S.body=mk(S.cam,`<div class="abs" style="left:${EX}px;top:1450px;width:${EW}px;font-weight:600;font-size:34px;line-height:1.3;color:#5a5e70">Styled, magazine-inspired composition. Directional light. <span class="B" style="font-weight:800">Balance.</span></div>`);
  S.h1=W(S.type,'EDITORIAL',540,250,170);
- S.render=(t,τ)=>{trans(S,τ,'pageIn','whipL');cam(S.cam,{z:1+.03*prog(τ,0,S.D)});
+ S.render=(t,τ)=>{trans(S,τ,'pageIn','whipL');cam(S.cam,{});
   const d=A.drop(τ,.2);tf(S.h1,{...d,sx:.92*d.s,sy:d.s});
   S.gd.forEach((g,i)=>{g.style.transform=`scaleY(${E.out(prog(τ,.2+i*.05,.8+i*.05))})`});
   const cq=prog(τ,bb(1),bb(1)+.5);tp(S.col,{x:(1-E.outExpo(cq))*-260,o:cq});
-  const pq=E.inExpo(prog(τ,KB.m0,KB.m0+.6*MS))*.0+E.io(prog(τ,KB.m0,KB.m0+.7*MS));
+  const pq=E.io(prog(τ,KB.m0,KB.m0+.7*MS));
   S.page.style.transform=`perspective(1400px) rotateY(${pq*-100}deg)`;S.page.style.opacity=1-prog(pq,.75,1);S.page.style.visibility=pq>=1?'hidden':'visible';
-  S.c1.set(prog(τ,bb(5.5),bb(5.5)+.7));const bq=prog(τ,bb(6.5),bb(6.5)+.5);tp(S.body,{y:(1-E.out(bq))*30,o:bq});
+  S.c1.set(prog(τ,bb(5.5),bb(5.5)+.7));const bq=prog(τ,bb(6.5),bb(6.5)+.5);tp(S.body,{y:(1-E.out(bq))*30,o:bq*(1-prog(τ,KB.pop-.3,KB.pop))+(τ>KB.m0?bq:0)*0});
   promptKW(S,τ,'Leather handbag, ','/editorial');
  };}
 
 // ── 10 MOTION BLUR
 const S10=kwScene(10,{});
-{const S=S10;S.F=frame(S.cam,60,600,960,1000,['10a','10b']);const F=S.F;
- S.st=[...Array(26)].map((_,i)=>mk(S.cam,`<div class="abs" style="left:0;top:${560+i*42}px;width:${200+hash(i+3)*500}px;height:${4+hash(i+7)*8}px;border-radius:8px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.9))"></div>`));
- S.box=mk(S.cam,'<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><rect x="300" y="900" width="480" height="560" rx="30" fill="none" stroke="#34c759" stroke-width="6" stroke-dasharray="2080" stroke-dashoffset="2080"/></svg>');S.bxr=S.box.querySelector('rect');
- S.sl=mk(S.cam,'<div class="lbl" style="left:300px;top:850px;background:#34c759;color:#fff;transform-origin:0 100%">SHARP ✓</div>');
- S.sc=card(S.cam,80,1400,300,170,`<div class="tiny" style="position:absolute;left:26px;top:22px">SHUTTER</div><div style="position:absolute;left:26px;top:56px;font-weight:900;font-size:88px;display:flex">1/<span id="shn"></span><span style="font-size:40px;align-self:flex-end;margin:0 0 8px 8px">s</span></div>`,{r:32});S.shO=odo($('shn'),2,{lead:false});
+{const S=S10;
+ // speed streaks run behind the photo frame (margins + background), the bike itself stays clean
+ S.st=[...Array(30)].map((_,i)=>mk(S.cam,`<div class="abs" style="left:0;top:${470+i*30}px;width:${200+hash(i+3)*500}px;height:${4+hash(i+7)*8}px;border-radius:8px;background:linear-gradient(90deg,rgba(47,123,245,0),rgba(47,123,245,.55))"></div>`));
+ S.F=frame(S.cam,P.x,P.y,P.w,P.h,['10a','10b']);const F=S.F;
+ const bx=F.px(.24),by=F.py(.2),bw=F.px(.86)-bx,bh=F.py(.98)-by;
+ S.box=mk(S.cam,`<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="26" fill="none" stroke="#34c759" stroke-width="5" stroke-dasharray="${2*(bw+bh)}" stroke-dashoffset="${2*(bw+bh)}"/></svg>`);S.bxr=S.box.querySelector('rect');S.bxl=2*(bw+bh);
+ S.sl=mk(S.cam,`<div class="lbl" style="left:${bx}px;top:${by-60}px;background:#34c759;color:#fff;transform-origin:0 100%">SHARP ✓</div>`);
+ S.sc=rowCard(S,'L',`<div class="tiny" style="position:absolute;left:30px;top:26px">SHUTTER</div><div style="position:absolute;left:30px;top:66px;font-weight:900;font-size:96px;line-height:1;display:flex">1/<span id="shn"></span><span style="font-size:44px;align-self:flex-end;margin:0 0 10px 8px">s</span></div>`);S.shO=odo($('shn'),2,{lead:false});
+ S.bg=rowCard(S,'R',`<div class="sq" style="height:100%;flex-direction:column;gap:8px"><div class="tiny">BACKGROUND</div><div style="font-weight:900;font-size:56px;color:#2f7bf5;filter:url(#mbx)">BLURRED</div></div>`);
  S.gm=W(S.type,'MOTION',540,300,220,{style:'color:#c9cde0;filter:url(#mbx)'});
  S.h1=W(S.type,'MOTION',540,300,220);S.h2=W(S.type,'BLUR',600,470,190,{cls:'B'});S.h2g=[1,2,3,4].map(i=>W(S.type,'BLUR',600,470,190,{cls:'B'}));
- S.render=(t,τ)=>{trans(S,τ,'whipR','whipL');cam(S.cam,{z:1+.03*prog(τ,0,S.D)});
+ S.render=(t,τ)=>{trans(S,τ,'whipR','whipL');cam(S.cam,{});
   tf(S.h1,A.drop(τ,.1));const gm=prog(τ,.3,.7);S.gm.style.opacity=gm*.9;S.gm.style.transform=`translate(-50%,-50%) translateX(${(1-E.out(gm))*300}px)`;
   const w=A.whipR(τ,.35);tf(S.h2,{...w,sx:(w.sx||1)*1.2});S.h2g.forEach((g,i)=>{tf(g,{x:(w.x||0)-60*(i+1)*clamp(prog(τ,.35,.6)),sx:1.2,o:.1*(4-i)*(w.o||0),blur:4+i*3})});
   const m0=bb(5);const wp=E.io(prog(τ,m0,m0+.8));F.I['10b'].style.clipPath=`inset(0 ${(1-wp)*100}% 0 0)`;
   S.st.forEach((s,i)=>{const sp=1800+hash(i)*1400;const L=1500;const x=((τ*sp+hash(i+2)*L)%L)-300;const on=τ>m0?Math.min(1,(τ-m0)*4):0;tp(s,{x:x,o:on*(.5+.5*hash(i+5))})});
-  S.bxr.setAttribute('stroke-dashoffset',2080*(1-E.io(prog(τ,bb(6.5),bb(6.5)+.5))));const sq=prog(τ,bb(7),bb(7)+.3);tp(S.sl,{s:E.back(sq),o:clamp(sq*4)});
-  const cq=prog(τ,bb(7),bb(7)+.35);tp(S.sc,{s:E.back(cq),o:clamp(cq*4)});setOdo(S.shO,1+29*E.out(prog(τ,bb(7),bb(8))));
-  // prompt: keyword first, then the sharpness rule
+  S.bxr.setAttribute('stroke-dashoffset',S.bxl*(1-E.io(prog(τ,bb(6.5),bb(6.5)+.5))));const sq=prog(τ,bb(7),bb(7)+.3);tp(S.sl,{s:E.back(sq),o:clamp(sq*4)});
+  popT(S.sc,τ,bb(7));setOdo(S.shO,1+29*E.out(prog(τ,bb(7),bb(8))));popT(S.bg,τ,bb(7.5));
   const landed=chipFly(τ,'/motionblur',540,430,KB.pop,KB.land);PS.t='';if(landed){PS.k='/motionblur';PS.kq=prog(τ,KB.land,KB.land+.25)}
   PS.x=landed?typed('. Keep the bike sharp.',τ,KB.land+.12,.03):'';PS.cur=1;sendFX(τ,bb(4.5));PS.gen=[S.t0+bb(4.5)+.05,S.t0+bb(5)+1.1];
  };}
 
-// ── SAVE (55.69 → 63) + loop back into the hook
-const SS=scene();SS.t0=TS;SS.D=63-TS;
-{const S=SS;const K=[['01b','productshot'],['02b','softlight'],['03b','hardlight'],['04b','rimlight'],['05b','goldenhour'],['06b','macro'],['07b','lowangle'],['08b','minimal'],['09b','editorial'],['10b','motionblur']];
- S.tiles=K.map(([k,n],i)=>{const c=i%2,r=Math.floor(i/2);return {x:70+c*480,y:520+r*212,el:mk(S.cam,`<div class="glass" style="left:0;top:0;width:460px;height:192px;border-radius:30px;transform-origin:50% 50%"><img src="${SRC(k)}" style="position:absolute;left:10px;top:10px;width:138px;height:172px;object-fit:cover;border-radius:22px"><div class="abs" style="left:170px;top:44px"><div class="tiny">${String(i+1).padStart(2,'0')}</div><div style="font-weight:800;font-size:38px;color:#2f7bf5;letter-spacing:-.02em">/${n}</div></div></div>`)}});
- S.bm=card(S.cam,840,180,150,150,`<div class="sq" style="height:100%"><svg width="76" height="76" viewBox="0 0 24 24"><defs><clipPath id="bmc"><rect id="bmr" x="0" y="24" width="24" height="24"/></clipPath></defs><path d="M6 3.5h12v17l-6-4.2-6 4.2z" fill="none" stroke="#2f7bf5" stroke-width="2" stroke-linejoin="round"/><path d="M6 3.5h12v17l-6-4.2-6 4.2z" fill="#2f7bf5" clip-path="url(#bmc)"/></svg></div>`,{r:44});S.bmr=$('bmr');
- S.bring=mk(S.cam,'<div class="abs" style="left:915px;top:255px"></div>');S.br=ring(S.bring,90,'#2f7bf5',4);
+// ── SAVE: kinetic keyword list (no photos) → rows fly into the ChatGPT prompt → loop
+const SS=scene();SS.t0=TS;SS.D=DUR-TS;
+const LS={rows:b(2),step:b(.5),sweep:b(7),sstep:.14,bm:b(12.5),type:b(13),land:b(14.5),col:b(16)};
+{const S=SS;const K=[['productshot','clean, commercial look'],['softlight','gentle shadows'],['hardlight','crisp, bold shadows'],['rimlight','glowing edges'],['goldenhour','warm evening light'],['macro','texture & tiny details'],['lowangle','a stronger perspective'],['minimal','less clutter'],['editorial','magazine-style'],['motionblur','a sense of speed']];
+ const RY=490,RH=110;S.RY=RY;S.RH=RH;
+ S.bar=mk(S.cam,`<div class="abs" style="left:48px;top:0;width:984px;height:${RH-12}px;border-radius:28px;background:#2f7bf5;box-shadow:0 20px 40px -14px rgba(47,123,245,.6)"></div>`);
+ S.rows=K.map(([n,d],i)=>{const y=RY+i*RH;const el=mk(S.cam,`<div class="abs" style="left:0;top:${y}px;width:1080px;height:${RH}px">
+   <div class="abs" data-r="line" style="left:60px;right:60px;bottom:4px;height:2px;background:#d4d8e4;transform-origin:0 50%"></div>
+   <div class="abs mono" data-r="num" style="left:76px;top:36px;font-size:30px;font-weight:700;color:#9aa0b4">${String(i+1).padStart(2,'0')}</div>
+   <div class="abs" data-r="kw" style="left:150px;top:18px;font-weight:900;font-size:62px;letter-spacing:-.035em;color:#111218;white-space:nowrap"><span style="display:inline-block;color:#2f7bf5">/</span>${[...n].map(c=>`<span style="display:inline-block">${c}</span>`).join('')}</div>
+   <div class="abs" data-r="ds" style="right:76px;top:40px;font-weight:600;font-size:28px;color:#8a90a6;white-space:nowrap">${d}</div></div>`);
+   const q=s=>el.querySelector(`[data-r="${s}"]`);return {el,y,line:q('line'),num:q('num'),kw:q('kw'),L:[...q('kw').children],ds:q('ds')}});
+ S.bm=card(S.cam,880,190,130,130,`<div class="sq" style="height:100%"><svg width="66" height="66" viewBox="0 0 24 24"><defs><clipPath id="bmc"><rect id="bmr" x="0" y="24" width="24" height="24"/></clipPath></defs><path d="M6 3.5h12v17l-6-4.2-6 4.2z" fill="none" stroke="#2f7bf5" stroke-width="2" stroke-linejoin="round"/><path d="M6 3.5h12v17l-6-4.2-6 4.2z" fill="#2f7bf5" clip-path="url(#bmc)"/></svg></div>`,{r:40});S.bmr=$('bmr');
+ S.bring=mk(S.cam,'<div class="abs" style="left:945px;top:255px"></div>');S.br=ring(S.bring,80,'#2f7bf5',4);
  S.h1=W(S.type,'SAVE',540,230,250);S.h2=W(S.type,'THIS<span class="B">.</span>',540,395,140);S.h3=W(S.type,'FOR YOUR NEXT <span style="display:inline-block;padding:0 .25em .08em;border-radius:.3em;background:#2f7bf5;color:#fff">ChatGPT</span> PROMPT',540,400,38,{style:'letter-spacing:.04em;font-weight:800'});
  S.render=(t,τ)=>{wrap(S,{});cam(S.cam,{});
-  const col=E.inExpo(prog(τ,b(16),b(16)+.5));   // collapse back into the hook card
-  S.tiles.forEach((T,i)=>{const t0=.04+i*.06;const q=E.outExpo(prog(τ,t0,t0+.5));const x=lerp(T.x+900,T.x,q),y=T.y;
-    const cx=540-230,cy=1128-96;tp(T.el,{x:lerp(x,cx,col),y:lerp(y,cy,col),s:lerp(1,.6,col),o:clamp(prog(τ,t0,t0+.1))*(1-prog(τ,b(16)+.35,b(16)+.55)),blur:(1-q)*14+col*6})});
-  tf(S.h1,mix(A.slam(τ,b(1)),upOut(τ,b(16)-.05)));tf(S.h2,mix(A.slam(τ,b(1.5)),upOut(τ,b(16))));tf(S.h3,mix(A.drop(τ,b(2.5)),upOut(τ,b(16)+.04)));
-  const bq=prog(τ,b(4),b(4)+.35);tp(S.bm,{s:E.back(bq)*(1-col),o:clamp(bq*4)*(1-col)});S.bmr.setAttribute('y',lerp(24,0,E.io(prog(τ,b(4.5),b(5.2)))));
-  const rk=prog(τ,b(5.2),b(5.2)+.6);S.br.style.transform=`scale(${1+rk*.8})`;vis(S.br,rk>0&&rk<1?(1-rk)*.7:0);
-  // prompt
-  if(τ<b(16)){PS.t=typed('Describe the scene + ',τ,.25);PS.k=τ>=b(3)?'/keyword':'';PS.kq=prog(τ,b(3),b(3)+.25)}
-  else if(τ<b(16)+.25){PS.t=`<span style="opacity:${1-prog(τ,b(16),b(16)+.25)}">Describe the scene + </span>`;PS.k='/keyword';PS.kO=1-prog(τ,b(16),b(16)+.25)}
+  const col=LS.col;
+  // rows: divider draws, number pops, keyword letters rise one after another, description slides in
+  S.rows.forEach((R,i)=>{const t0=LS.rows+i*LS.step;
+    R.line.style.transform=`scaleX(${E.io(prog(τ,t0,t0+.4))})`;
+    const nq=prog(τ,t0,t0+.25);R.num.style.opacity=nq;R.num.style.transform=`translateY(${(1-E.back(nq))*20}px)`;
+    R.L.forEach((l,k)=>{const q=prog(τ,t0+.04+k*.018,t0+.04+k*.018+.3);l.style.opacity=clamp(q*3);l.style.transform=`translateY(${(1-E.back(q))*46}px)`;l.style.filter=q<1?`blur(${(1-E.out(q))*8}px)`:'none'});
+    const dq=E.out(prog(τ,t0+.2,t0+.6));R.ds.style.opacity=dq;R.ds.style.transform=`translateX(${(1-dq)*60}px)`;
+    // highlight sweep turns the row white on blue
+    const sv=(τ-LS.sweep)/LS.sstep,sf=Math.floor(sv);const on=τ>=LS.sweep&&sv<10&&sf===i&&(sv-sf>.2||i===0);R.kw.style.color=on?'#fff':'#111218';R.L[0]||0;R.kw.firstChild.style.color=on?'#fff':'#2f7bf5';R.num.style.color=on?'#cfe0ff':'#9aa0b4';R.ds.style.color=on?'#e3ecff':'#8a90a6';
+    // collapse: every row shrinks and flies into the prompt bar
+    const cq=E.inExpo(prog(τ,col+i*.03,col+i*.03+.45));R.el.style.transform=`translate(${cq*(-200+i*10)}px,${cq*(1774-R.y-55)}px) scale(${1-cq*.75})`;R.el.style.transformOrigin='50% 50%';R.el.style.opacity=1-prog(cq,.7,1);
+  });
+  const si=(τ-LS.sweep)/LS.sstep;const bi=clamp(si,0,9.999);const fl=Math.floor(bi),fr=bi-fl;const pos=fl===0?0:fl-1+E.outQ(clamp(fr*3.5));
+  S.bar.style.transform=`translateY(${S.RY+6+pos*S.RH}px)`;vis(S.bar,si>=0&&si<10.5?clamp(prog(si,0,.4))*(1-prog(si,9.6,10.5)):0);
+  tf(S.h1,mix(A.slam(τ,b(.5)),upOut(τ,col-.05)));tf(S.h2,mix(A.slam(τ,b(1)),upOut(τ,col)));tf(S.h3,mix(A.drop(τ,b(1.5)),upOut(τ,col+.04)));
+  const bq=prog(τ,LS.bm,LS.bm+.35);const cl=prog(τ,col,col+.3);tp(S.bm,{s:E.back(bq)*(1-cl),o:clamp(bq*4)*(1-cl)});S.bmr.setAttribute('y',lerp(24,0,E.io(prog(τ,LS.bm+.3,LS.bm+.9))));
+  const rk=prog(τ,LS.bm+.9,LS.bm+1.5);S.br.style.transform=`scale(${1+rk*.8})`;vis(S.br,rk>0&&rk<1?(1-rk)*.7:0);
+  if(τ<col){PS.t=typed('Describe the scene + ',τ,LS.type);PS.k=τ>=LS.land?'/keyword':'';PS.kq=prog(τ,LS.land,LS.land+.25)}
+  else if(τ<col+.25){PS.t=`<span style="opacity:${1-prog(τ,col,col+.25)}">Describe the scene + </span>`;PS.k='/keyword';PS.kO=1-prog(τ,col,col+.25)}
   PS.cur=1;
  };}
 
@@ -467,10 +489,28 @@ function overlays(t){
   const sk=prog(t,T0(10)-.4,T0(10)+.4);vis(STRK,sk>0&&sk<1?Math.sin(Math.PI*sk):0);STR.forEach((s,i)=>{const sp=2600+hash(i)*1800;s.style.transform=`translateX(${1200-((sk*sp+hash(i+1)*1600)%2000)}px)`});
 }
 
+// ───────── world camera: pushes into the ChatGPT chat when a keyword lands, or into the photo during the reveal
+const REST={fx:540,fy:960,z:1,sx:540,sy:960};
+const mixC=(a,c,p)=>({fx:lerp(a.fx,c.fx,p),fy:lerp(a.fy,c.fy,p),z:lerp(a.z,c.z,p),sx:lerp(a.sx,c.sx,p),sy:lerp(a.sy,c.sy,p)});
+const CHAT={fx:430,fy:1774,z:1.35,sx:540,sy:1480},CHATS={fx:760,fy:1774,z:1.35,sx:540,sy:1480},PHOTO={fx:540,fy:900,z:1.1,sx:540,sy:900};
+function chatMove(τ,a,land,send,out){ // in → glide to the send button → pull back
+  if(τ<a||τ>out+.6)return REST;
+  if(τ<land)return mixC(REST,CHAT,E.io(prog(τ,a,land)));
+  if(τ<send)return mixC(CHAT,CHATS,E.io(prog(τ,land,send)));
+  return mixC(CHATS,REST,E.io(prog(τ,send+.08,out+.6)))}
+function worldCam(t){
+  if(t>=TS){const τ=t-TS;return chatMove(τ,LS.type-.2,LS.land,LS.land+.5,LS.land+.7)}
+  let si=0;while(si<10&&t>=T0(si+1))si++;const τ=t-T0(si);
+  if(si===0)return chatMove(τ,H.send-.85,H.send-.3,H.send,H.send+.1);
+  if(si%2===1&&si!==10)return chatMove(τ,KB.pop-.2,KB.land,KB.send,KB.send+.15);
+  if(si===10)return chatMove(τ,KB.pop-.2,KB.land+.9,bb(4.5),bb(4.5)+.15);
+  // even sections: slow push into the photo through the reveal, ease back before the exit
+  const pin=E.io(prog(τ,KB.m0-.2,KB.m0+1.4*MS)),pout=E.io(prog(τ,D-1.1,D-.4));return mixC(REST,PHOTO,pin*(1-pout))}
+
 // ───────── per frame
 const SECT=[S0,S1,S2,S3,S4,S5,S6,S7,S8,S9,S10];
 function renderAt(t){
-  prReset();
+  prReset();wcam(worldCam(t));
   SCN.forEach(S=>S.el.style.display='none');
   const loop=t>=DUR-2.1;
   SECT.forEach((S,i)=>{const τ=t-S.t0;if(τ>=0&&τ<S.D){S.el.style.display='block';S.render(t,τ)}});
@@ -519,8 +559,12 @@ sec.forEach((s,k)=>{const i=k+1,a=T0(i);
 });
 sx(T0(4)+bb(5.5)+.2,'tick',.3);
 for(let k=0;k<10;k++)sx(TS+.04+k*.06+.1,'tick',.3,(k%2?.3:-.3),{hi:1});sx(TS-.3,'whip',.55,0,{d:.55});
-sx(TS+b(1),'thud',.85);sx(TS+b(1.5),'thud',.7);sx(TS+b(1.5),'accent',.45,0,{n:1});sx(TS+b(2.5),'swish',.35,0,{d:.35});sx(TS+b(3),'tick',.45);sx(TS+b(4),'pop',.45);sx(TS+b(4.5),'shimmer',.4);keys(TS+.25,'Describe the scene + ',.032,500);
-sx(TS+b(16),'fold',.6,0,{d:.6});sx(DUR-1.95,'swish',.4,0,{d:.4});keys(DUR-1.5,'Make it look better.',.034,700);
+sx(TS+b(.5),'thud',.85);sx(TS+b(1),'thud',.7);sx(TS+b(1),'accent',.45,0,{n:1});sx(TS+b(1.5),'swish',.35,0,{d:.35});
+for(let k=0;k<10;k++){const t0=TS+LS.rows+k*LS.step;sx(t0,'tick',.35,(k%2?.3:-.3),{hi:1});sx(t0+.05,'swish',.22,(k%2?.3:-.3),{d:.25});sx(TS+LS.sweep+k*LS.sstep,'tick',.3,(k-4.5)/6,{hi:k%2})}
+sx(TS+LS.bm,'pop',.45);sx(TS+LS.bm+.4,'shimmer',.4);keys(TS+LS.type,'Describe the scene + ',.032,500);sx(TS+LS.land,'tick',.5,.3);sx(TS+LS.land+.5,'click',.6,.4);
+sx(TS+LS.col,'fold',.6,0,{d:.6});for(let k=0;k<10;k+=2)sx(TS+LS.col+.3+k*.03,'tick',.25,0);sx(DUR-1.95,'swish',.4,0,{d:.4});keys(DUR-1.5,'Make it look better.',.034,700);
+// camera pushes into the chat and back
+[[H.send-.85,H.send+.1],...[1,3,5,7,9].map(i=>[T0(i)+KB.pop-.2,T0(i)+KB.send+.15]),[T0(10)+KB.pop-.2,T0(10)+bb(4.5)+.15],[TS+LS.type-.2,TS+LS.land+.7]].forEach(([a,o])=>{sx(a,'air',.35,0,{d:.7});sx(o+.08,'lowswish',.35,0,{d:.6})});
 window.SFX=SFX;window.renderAt=renderAt;window.DUR=DUR;window.SCN=SECT.map(S=>({t0:S.t0}));
 Promise.all([document.fonts.ready,...[...document.images].map(i=>i.complete?1:new Promise(r=>i.onload=i.onerror=r))]).then(()=>{renderAt(0);window.ready=true});
 </script>

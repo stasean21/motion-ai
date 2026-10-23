@@ -3,8 +3,8 @@
 import json, sys, wave
 import numpy as np
 
-SR = 48000; DUR = 63.0; N = int(SR * DUR)
-BEAT = DUR / 112; BAR = BEAT * 4              # 112 beats → ≈106.7 BPM, loop closes exactly at 63 s
+SR = 48000; DUR = 101.25; N = int(SR * DUR)
+BEAT = DUR / 180; BAR = BEAT * 4              # 112 beats → ≈106.7 BPM, loop closes exactly at 63 s
 meta = json.load(open(sys.argv[1])); out = sys.argv[2]
 rng = np.random.default_rng(11)
 t_all = np.arange(N) / SR
@@ -45,7 +45,7 @@ def saw(f, n, harm):
     return x
 
 pulse = np.zeros(N); bass = np.zeros(N); pluck = np.zeros(N); pad = np.zeros(N); kick = np.zeros(N); hat = np.zeros(N); rim = np.zeros(N)
-for b in range(28):
+for b in range(45):
     ch = chord_at(b)
     for e in range(8):                  # eighth-note pulse
         t0 = b * BAR + e * BEAT / 2
@@ -93,16 +93,16 @@ add_plucks(10.0, 30.0, .18, 3); add_plucks(35.0, 55.0, .2, 4)
 def norm_rms(x, db): return x / (np.sqrt(np.mean(x ** 2)) + 1e-12) * 10 ** (db / 20)
 pulse = norm(pulse); bass = norm(bass); pluck = norm(pluck); pad = norm(pad); kick = norm(kick); hat = norm(hat); rim = norm(rim)
 A = lambda pts: np.interp(t_all, *zip(*pts))
-music = (pulse * A([(0, .30), (63, .30)])
+music = (pulse * A([(0, .30), (DUR, .30)])
          + bass * .6
-         + pluck * A([(0, .14), (4.8, .14), (5.3, .22), (30.2, .22), (30.6, .12), (35.2, .12), (35.6, .24), (55.4, .24), (55.9, .14), (63, .14)])
-         + pad * A([(0, 0), (63, 0)])
-         + kick * A([(0, .40), (30.2, .40), (30.6, .24), (35.2, .24), (35.6, .44), (55.4, .46), (55.9, .40), (63, .40)])
-         + hat * A([(0, .10), (4.8, .10), (5.3, .18), (30.2, .18), (30.6, .05), (35.2, .05), (35.6, .2), (55.4, .22), (55.9, .10), (63, .10)])
-         + rim * A([(0, .06), (4.8, .06), (5.3, .14), (30.2, .14), (30.6, 0), (35.2, 0), (35.6, .15), (55.4, .16), (55.9, .06), (63, .06)]))
+         + pluck * A([(0, .14), (8.8, .14), (9.3, .22), (50.425, .22), (50.825, .12), (58.3, .12), (58.7, .24), (89.7, .24), (90.2, .14), (DUR, .14)])
+         + pad * A([(0, 0), (DUR, 0)])
+         + kick * A([(0, .40), (50.425, .40), (50.825, .24), (58.3, .24), (58.7, .44), (89.7, .46), (90.2, .40), (DUR, .40)])
+         + hat * A([(0, .10), (8.8, .10), (9.3, .18), (50.425, .18), (50.825, .05), (58.3, .05), (58.7, .2), (89.7, .22), (90.2, .10), (DUR, .10)])
+         + rim * A([(0, .06), (8.8, .06), (9.3, .14), (50.425, .14), (50.825, 0), (58.3, 0), (58.7, .15), (89.7, .16), (90.2, .06), (DUR, .06)]))
 # gentle "underwater" darkening of the whole bed 27–37 s (single low-pass blend)
 lp = np.fft.irfft(np.fft.rfft(music) * (1 / (1 + (np.fft.rfftfreq(N, 1 / SR) / 900) ** 2)), N)
-w = A([(0, 0), (30.2, 0), (30.5, .35), (35.0, .35), (35.5, 0), (63, 0)])
+w = A([(0, 0), (50.625, 0), (50.925, .35), (58.1, .35), (58.6, 0), (DUR, 0)])
 music = music * (1 - w) + lp * w
 
 # ───────────────────────── SFX
