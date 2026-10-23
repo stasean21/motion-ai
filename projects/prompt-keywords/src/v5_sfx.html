@@ -37,6 +37,7 @@ img{display:block}
 'use strict';
 // ═══════════ 10 photo prompt keywords — v5: one living card, reference-style micro-actions, text-only ═══════════
 const FPS=60,B=63/112,SEC=12*B,NS=12,DUR=NS*SEC;      // 12 sections × 12 beats = 81 s, seamless loop
+const WB=2*Math.PI/(12*12*63/112);   // base angular frequency: every breathing motion repeats exactly over the loop
 const clamp=(v,a=0,c=1)=>Math.min(c,Math.max(a,v));
 const lerp=(a,c,p)=>a+(c-a)*p;
 const prog=(t,a,c)=>clamp((t-a)/(c-a));
@@ -208,7 +209,7 @@ R[0]=(τ,c)=>{ // hook: send → +2% → strike → three named looks pop out
   const sq=prog(τ,1.3,1.45);c.send.style.transform=`scale(${1-.15*Math.sin(Math.PI*sq)})`;
   const rq=prog(τ,1.6,2.2);setOdo(c.rO,2*E.out(rq));c.bf.style.width=E.out(rq)*2.2+'%';tp(c.res,{o:clamp(prog(τ,1.5,1.8)),y:(1-E.out(prog(τ,1.5,1.9)))*30});
   c.chips.forEach((ch,k)=>{const t0=wordT(0,6)+k*.18;const q=prog(τ,t0,t0+.4);tp(ch,{s:E.back(q),o:clamp(q*4),y:(1-E.out(q))*60})});
-  return [[0,900,1900],[.8,900,1900],[1.2,826,935],[1.3,826,935,1],[1.45,826,935],[2.1,1000,1900]]};
+  return [[.3,900,1900],[.8,900,1900],[1.2,826,935],[1.3,826,935,1],[1.45,826,935],[2.1,1000,1900]]};
 R[1]=(τ,c)=>{
   // chip comes from the landed keyword tag… actually dragged by the cursor into the prompt field
   const pick=1.7,drop=2.35;const f=E.io(prog(τ,pick,drop));
@@ -308,7 +309,7 @@ R[11]=(τ,c)=>{
 function tilt3d(i,τ){return '';if(i!==7)return '';const t0=wordT(7,2)+.9;const p=E.io(prog(τ,t0,t0+1.3)),po=E.io(prog(τ,SEC-1.1,SEC-.35));const a=38*p*(1-po);
   return `translateY(${-60*p*(1-po)}px) perspective(1300px) rotateX(${a}deg) scale(${1+.1*p*(1-po)})`}
 function camAt(t){const i=secAt(t),τ=t-S[i].t0;
-  let z=1+.015*Math.sin(t*.7),r=1.1*Math.sin(t*.55),x=CX,y=CY,sy=CY;
+  let z=1+.015*Math.sin(t*WB*9),r=1.1*Math.sin(t*WB*7),x=CX,y=CY,sy=CY;
   // every section: small push-in during its main action, out before the next morph
   const act=[0,1.3,wordT(1,5)-.3,wordT(2,3)-.3,wordT(3,3)-.2,wordT(4,3)-.3,wordT(5,3)-.3,0,wordT(7,2)-.3,wordT(8,1)-.3,wordT(9,2)-.3,wordT(10,2)-.3,0][i];
   if(act){const pin=E.io(prog(τ,act,act+.9)),pout=E.io(prog(τ,SEC-1.2,SEC-.3));z*=1+.09*pin*(1-pout)}
@@ -318,7 +319,7 @@ function camAt(t){const i=secAt(t),τ=t-S[i].t0;
     const fx=CX-410+44+300,fy=CY-320+110+120;const k=din*(1-dout);z*=lerp(1,7,k);x=lerp(CX,fx,k);y=lerp(CY,fy,k)}
   let rx=0;if(i===7){const t0=wordT(7,1);const p=E.io(prog(τ,t0,t0+2.2)),po=E.io(prog(τ,SEC-1.0,SEC-.3));const k=p*(1-po);
     rx=lerp(-12*E.out(prog(τ,AN.land,t0)),30,k);if(po>0)rx=30*(1-po);sy=CY-lerp(0,170,k)+60*E.out(prog(τ,AN.land,t0))*(1-p);z*=1+.08*k}
-  if(i===11){const pin=E.io(prog(τ,.2,1.4));z*=lerp(1,.94,pin)}
+  if(i===11){const pin=E.io(prog(τ,.2,1.4))*(1-E.io(prog(τ,SEC-1.3,SEC-.35)));z*=lerp(1,.94,pin)}
   return {z,r,x,y,sy,rx}}
 
 // ───────── per frame
@@ -328,9 +329,9 @@ function renderAt(t){
   const cm=camAt(t);WORLD.style.transform=`translate(540px,${cm.sy}px) perspective(1500px) rotateX(${cm.rx||0}deg) rotate(${cm.r}deg) scale(${cm.z}) translate(${-cm.x}px,${-cm.y}px)`;
   // card size morph + content crossfade (old shrinks & blurs out, new grows in)
   const mq=E.io(prog(τ,AN.m0,AN.m1));const w=lerp(prev.w,s.w,mq),h=lerp(prev.h,s.h,mq);
-  const breathe=1+.012*Math.sin(t*1.3);
-  CARD.style.width=w+'px';CARD.style.height=h+'px';CARD.style.transform=`translate(${CX-w/2}px,${CY-h/2}px) rotate(${.8*Math.sin(t*.9)}deg) scale(${breathe}) ${tilt3d(i,τ)}`;CARD.style.transformOrigin='50% 100%';
-  RIM.style.width=w+16+'px';RIM.style.height=h+16+'px';RIM.style.transform=`translate(${CX-w/2-8}px,${CY-h/2-8}px) rotate(${.8*Math.sin(t*.9)}deg) scale(${breathe})`;RIM.style.transformOrigin='50% 50%';NIGHTV=0;vis(RIM,0);vis(LBEH,0);
+  const breathe=1+.012*Math.sin(t*WB*17);
+  CARD.style.width=w+'px';CARD.style.height=h+'px';CARD.style.transform=`translate(${CX-w/2}px,${CY-h/2}px) rotate(${.8*Math.sin(t*WB*12)}deg) scale(${breathe}) ${tilt3d(i,τ)}`;CARD.style.transformOrigin='50% 100%';
+  RIM.style.width=w+16+'px';RIM.style.height=h+16+'px';RIM.style.transform=`translate(${CX-w/2-8}px,${CY-h/2-8}px) rotate(${.8*Math.sin(t*WB*12)}deg) scale(${breathe})`;RIM.style.transformOrigin='50% 50%';NIGHTV=0;vis(RIM,0);vis(LBEH,0);
   const pi=(i+NS-1)%NS;
   CL.forEach((L,k)=>{if(k===i){const q=prog(τ,AN.m0+.25,AN.m1+.1);L.style.display='block';L.style.visibility='visible';L.style.opacity=clamp(q*1.5);L.style.transform=`scale(${lerp(1.08,1,E.out(q))})`;L.style.filter=q<1?`blur(${(1-q)*10}px)`:'none'}
     else if(k===pi&&τ<AN.m1){const q=prog(τ,AN.m0,AN.m0+.4);L.style.display=q<1?'block':'none';L.style.visibility='visible';L.style.opacity=1-q;L.style.transform=`scale(${lerp(1,.9,q)})`;L.style.filter=`blur(${q*10}px)`}
@@ -341,7 +342,7 @@ function renderAt(t){
   const path=R[i](τ,C[i]);
   vis(NIGHT,i===4?NIGHTV*(1-prog(τ,SEC-.45,SEC-.05)):0);
   // tag: shows previous key until the new one lands
-  TAGT.textContent=i===0?'prompt':i===11?'saved prompt keywords':(τ<AN.land?(prev.key?'/'+prev.key:'prompt'):'/'+s.key);
+  TAGT.textContent=i===0?(τ<AN.m0+.35?'saved prompt keywords':'prompt'):i===11?'saved prompt keywords':(τ<AN.land?(prev.key?'/'+prev.key:'prompt'):'/'+s.key);
   TAG.style.color=i===4&&RIMV==='A'&&τ>.6?'#9cc3ff':'#2f7bf5';
   // announcement: counter pill → ordinal plaque, keyword types big, flies into the tag
   renderTop(t,i,τ);
