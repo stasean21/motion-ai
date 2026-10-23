@@ -200,9 +200,9 @@ const HERO=mk(S2.cam,`<div class="blk" style="width:500px;height:500px;border-ra
 const PILL2=mk(S2.cam,`<div class="pill" style="left:0;top:0;height:90px;padding:0 38px;font-weight:900;font-size:40px;color:#0d0d12;gap:14px"><span class="mono" style="color:#0fa3a0">01</span> / DATA</div>`);
 function renderS2(t){
   if(t<5||t>15.2){show(S2,0);return}
-  show(S2,1,t>13.5?E.in(prog(t,13.5,15))*10:0);
+  show(S2,1,t>13.7?E.in(prog(t,13.7,14.9))*10:0);
   setPal(S2,palMix(PAL.s2,PAL.s2,0),t);
-  const exitY=-E.in(prog(t,13.4,15.0))*1500;
+  const exitY=-E.in(prog(t,13.7,14.9))*1500;
   cam(S2.cam,{x:540,y:960-exitY*0,z:1,sx:540,sy:960+exitY});
   // photo card → thin frame → file icon
   const a=E.io(prog(t,5.0,5.6)),b=E.io(prog(t,5.6,6.6));
@@ -251,20 +251,20 @@ function renderS3(t){
   if(t<14.1||t>27.3){show(S3,0);return}
   const ex=prog(t,26.0,27.2);show(S3,(1-E.in(ex))*clamp(prog(t,14.1,14.6)));
   setPal(S3,palMix(PAL.s3,PAL.s4,E.io(ex)),t);
-  const enter=(1-E.out(prog(t,14.2,15.5)))*1300;
+  const enter=(1-E.out(prog(t,14.1,15.1)))*1300;
   const u=U3(t),hp=pathPt(s3route,u);
   const follow=prog(t,18.4,19.2)*(1-prog(t,23.4,24.4));
   let c={x:540,y:960+lerp(0,(hp.y-960)*.32,E.io(follow)),z:1+.08*E.io(follow),sx:540,sy:960+enter};
   if(ex>0){c.z*=lerp(1,.42,E.io(ex))}
   cam(S3.cam,c);
-  T(P3,{dy:(1-E.out(prog(t,14.6,15.6)))*200});
+  T(P3,{dy:(1-E.out(prog(t,14.3,15.1)))*200});
   // connection choice
-  const wq=prog(t,15.8,16.3),tq=prog(t,16.0,16.5);
+  const wq=prog(t,15.25,15.75),tq=prog(t,15.45,15.95);
   const choose=E.io(prog(t,17.8,18.4));
   WIFI.style.transform=`scale(${wq>0?E.back(wq):0})`;vis(WIFI,clamp(wq*3),0);
   vis(WRING,choose,0);WRING.style.transform=`scale(${1+.1*Math.sin(Math.PI*prog(t,17.8,18.3))})`;
   TOWER.style.transform=`scale(${(tq>0?E.back(tq):0)*lerp(1,.9,choose)})`;vis(TOWER,clamp(tq*3)*lerp(1,.55,choose),choose*2.5);
-  s3alt.style.opacity=E.out(prog(t,16.2,16.8))*lerp(1,.6,choose);s3altW.style.opacity=E.out(prog(t,16.2,16.8))*(1-prog(t,18.3,18.8));
+  s3alt.style.opacity=E.out(prog(t,15.6,16.2))*lerp(1,.6,choose);s3altW.style.opacity=E.out(prog(t,15.6,16.2))*(1-prog(t,18.3,18.8));
   // route draws ahead of the lead packet
   const fr=fr3();
   s3route.setAttribute('stroke-dashoffset',1-clamp(Math.max(E.io(prog(t,18.0,18.6))*fr[0],t>18.35?u+.06:0)));
@@ -281,8 +281,8 @@ function renderS3(t){
     if(t<18.3+p.lag*5.3||ui>=1){
       // before departure they wait at the phone; after arrival they are absorbed
       if(ui>=1){const k=prog(t,23.65+p.lag*5.3,24.0+p.lag*5.3);C(p.el,{x:830,y:585,s:p.s*(1-k),o:1-k});return}
-      if(t<15.4){vis(p.el,0,0);return}
-      const w=prog(t,15.4+i*.1,15.9+i*.1);C(p.el,{x:300+i*6,y:1600-i*4,s:p.s*.7*E.out(w),o:w});return}
+      if(t<14.9){vis(p.el,0,0);return}
+      const w=prog(t,14.9+i*.1,15.4+i*.1);C(p.el,{x:300+i*6,y:1600-i*4,s:p.s*.7*E.out(w),o:w});return}
     const q=pathPt(s3route,ui);C(p.el,{x:q.x,y:q.y,s:p.s,o:1})});
 }
 
