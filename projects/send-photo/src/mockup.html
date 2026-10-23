@@ -27,6 +27,21 @@ body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antia
   box-shadow:0 26px 50px -16px rgba(13,148,136,.6),inset 0 3px 0 rgba(255,255,255,.55),inset 0 -6px 14px rgba(0,80,80,.25);color:#fff}
 .blk .n{position:absolute;left:20px;top:16px;font-weight:900;font-size:46px;letter-spacing:-.03em}
 .blk .bits{position:absolute;left:20px;bottom:18px;font-size:15px;opacity:.85;line-height:1.25}
+/* ── Liquid Glass ── */
+body.lg .card{background:linear-gradient(160deg,rgba(255,255,255,.66) 0%,rgba(255,255,255,.30) 100%);
+  -webkit-backdrop-filter:blur(24px) saturate(1.9);backdrop-filter:blur(24px) saturate(1.9);border:1.5px solid rgba(255,255,255,.8);
+  box-shadow:0 34px 70px -26px rgba(30,30,70,.28),0 8px 20px -8px rgba(30,30,70,.10),inset 0 2px 0 rgba(255,255,255,.95),inset 0 -1.5px 0 rgba(255,255,255,.55),
+    inset 14px 18px 34px -16px rgba(255,255,255,.85),inset -14px -18px 36px -16px rgba(110,130,190,.28)}
+body.lg .card::before,body.lg .blk::before,body.lg .pill::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.65) 0%,rgba(255,255,255,0) 34%,rgba(255,255,255,0) 68%,rgba(255,255,255,.28) 100%)}
+body.lg .blk{background:linear-gradient(150deg,rgba(150,245,230,.62) 0%,rgba(45,212,191,.42) 50%,rgba(13,160,155,.55) 100%);color:#065f5b;
+  -webkit-backdrop-filter:blur(16px) saturate(1.9);backdrop-filter:blur(16px) saturate(1.9);border:1.5px solid rgba(255,255,255,.75);
+  box-shadow:0 26px 50px -18px rgba(13,148,136,.45),inset 0 2px 0 rgba(255,255,255,.9),inset 10px 12px 26px -12px rgba(255,255,255,.8),inset -10px -14px 26px -12px rgba(0,90,90,.25)}
+body.lg .pill{position:absolute}
+body.lg .pill:not(#sendBtn){background:rgba(255,255,255,.42)!important;-webkit-backdrop-filter:blur(18px) saturate(1.8);backdrop-filter:blur(18px) saturate(1.8);
+  border:1.5px solid rgba(255,255,255,.85);box-shadow:0 16px 34px -14px rgba(20,40,80,.3),inset 0 2px 0 rgba(255,255,255,.95),inset 8px 10px 20px -10px rgba(255,255,255,.8)!important}
+body.lg #sendBtn{background:linear-gradient(160deg,rgba(255,170,80,.92),rgba(255,106,0,.82))!important;border:1.5px solid rgba(255,255,255,.65);
+  box-shadow:0 14px 30px -10px rgba(255,110,0,.55),inset 0 2px 0 rgba(255,255,255,.7),inset 8px 10px 18px -10px rgba(255,255,255,.6)!important}
 </style>
 </head>
 <body>
@@ -46,13 +61,14 @@ const IC={
 };
 const ell2=0;const icon=(n,s,c,sw=2)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" color="${c}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
 
-const [FID,BGV]=(location.hash||'#1a').slice(1).split('~');
+const [FID,BGV0]=(location.hash||'#1a').slice(1).split('~');const BGV=BGV0||'G';
 const BGS={
  A:`background:radial-gradient(120% 60% at 50% 0%,#ffffff 0%,#f5f5f7 55%,#ececf0 100%)`,
  B:`background:radial-gradient(90% 55% at 50% 38%,#1f2738 0%,#0d1018 58%,#050608 100%)`,
  C:`background:radial-gradient(70% 45% at 50% 45%,rgba(45,212,191,.16),rgba(45,212,191,0) 70%),linear-gradient(rgba(40,70,140,.07) 2px,transparent 2px) 0 0/60px 60px,linear-gradient(90deg,rgba(40,70,140,.07) 2px,transparent 2px) 0 0/60px 60px,#f4f6fb`,
  D:`background:linear-gradient(180deg,#e3f6f3 0%,#eef2fb 50%,#f6f1ff 100%)`};
-function bg(base,c){if(BGV)return `<div class="abs" style="inset:0;${BGS[BGV]}"></div>`;return `<div class="abs" style="inset:0;background:${base}">${[[150,300],[920,760],[180,1500],[900,1680]].map((p,i)=>`<div class="blob" style="left:${p[0]-700}px;top:${p[1]-700}px;background:radial-gradient(circle,${c[i]} 0%,${c[i]}00 68%)"></div>`).join('')}</div>`}
+BGS.G=BGS.A;
+function bg(base,c){if(BGV==='G')return `<div class="abs" style="inset:0;${BGS.A}">${[[150,300],[920,760],[180,1500],[900,1680]].map((p,i)=>`<div class="blob" style="opacity:.42;left:${p[0]-700}px;top:${p[1]-700}px;background:radial-gradient(circle,${c[i]} 0%,${c[i]}00 64%)"></div>`).join('')}</div>`;if(BGV)return `<div class="abs" style="inset:0;${BGS[BGV]}"></div>`;return `<div class="abs" style="inset:0;background:${base}">${[[150,300],[920,760],[180,1500],[900,1680]].map((p,i)=>`<div class="blob" style="left:${p[0]-700}px;top:${p[1]-700}px;background:radial-gradient(circle,${c[i]} 0%,${c[i]}00 68%)"></div>`).join('')}</div>`}
 function dust(n=30){if(BGV&&BGV!=='B')return '';let s='';for(let i=0;i<n;i++){const h=k=>{const x=Math.sin((i+k)*127.1+311.7)*43758.5453;return x-Math.floor(x)};const r=3+h(1)*6;s+=`<div class="abs" style="left:${h(2)*1080}px;top:${h(3)*1920}px;width:${r}px;height:${r}px;border-radius:50%;background:#fff;opacity:${.3+h(4)*.5};box-shadow:0 0 ${r*2}px #fff"></div>`}return s}
 // subtitle: words, number revealed, key word index → colour
 function sub(){return '';}
@@ -199,7 +215,7 @@ F['6']=()=>{
   `<div class="sq" style="position:absolute;left:330px;top:1640px;width:96px;height:96px;border-radius:50%;background:linear-gradient(160deg,#ffae4a,#ff6a00);box-shadow:0 0 0 16px rgba(255,122,26,.18),0 14px 28px -8px rgba(255,110,0,.6)">${icon('tap',54,'#fff',2.4)}</div>
    <div class="abs" style="left:446px;top:1666px;font-weight:800;font-size:30px;color:#ff6a00">one tiny action</div>`;};
 
-const id=FID;if(BGV==='B')document.body.style.color='#fff';root.innerHTML=F[id]();
+const id=FID;if(BGV==='G')document.body.classList.add('lg');if(BGV==='B')document.body.style.color='#fff';root.innerHTML=F[id]();
 function post(){
   document.querySelectorAll('.sub span[data-k]').forEach(sp=>{const r=sp.getBoundingClientRect(),W=r.width+64,H=r.height+30;
     root.insertAdjacentHTML('beforeend',ell(r.left+r.width/2-W/2,r.top+r.height/2-H/2+4,W,H,sp.dataset.k));});
