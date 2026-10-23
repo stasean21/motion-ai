@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>prompt keywords — graphic version mockups</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#eef0f6}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#14151b}
+.abs{position:absolute}
+.sq{display:flex;align-items:center;justify-content:center}
+.mono{font-family:'DejaVu Sans Mono',monospace}
+.pill{position:absolute;border-radius:999px;display:flex;align-items:center;justify-content:center;white-space:nowrap;background:rgba(255,255,255,.85);border:1.5px solid #fff;box-shadow:0 10px 24px -12px rgba(40,50,110,.28)}
+.kar{position:absolute;left:60px;width:960px;top:200px;text-align:center;font-weight:600;font-size:54px;line-height:1.24;letter-spacing:-.015em}
+.kar .u{color:#a9c1ee}.kar .k{color:#2f7bf5}
+.gpt{display:inline-flex;align-items:center;gap:8px;padding:2px 18px;border-radius:999px;background:#fff;box-shadow:0 6px 16px -8px rgba(40,50,110,.3);font-size:38px;vertical-align:middle}
+.gpt::before{content:'';width:10px;height:10px;border-radius:50%;background:#c9cede}
+.card{position:absolute;border-radius:44px;background:#fff;box-shadow:0 40px 80px -36px rgba(40,50,110,.35),0 8px 20px -10px rgba(40,50,110,.12)}
+.tag{position:absolute;left:34px;top:30px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:26px;color:#2f7bf5}
+.tag::before{content:'';width:9px;height:9px;border-radius:50%;background:#c3c9d8}
+.big{position:absolute;left:540px;transform:translate(-50%,-50%);font-weight:500;font-size:120px;letter-spacing:-.03em;color:#2f7bf5;white-space:nowrap}
+.chip{position:absolute;padding:8px 18px;border-radius:999px;font-weight:700;font-size:24px;white-space:nowrap;box-shadow:0 10px 20px -10px rgba(0,0,0,.35)}
+.lab{font-weight:700;font-size:22px;letter-spacing:.06em;color:#8a90a6}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+ <filter id="mbx" x="-50%" y="-10%" width="200%" height="120%"><feGaussianBlur stdDeviation="16 0"/></filter>
+ <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="18"/></filter>
+ <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs></svg>
+<div id="root"></div>
+<script>
+'use strict';
+const root=document.getElementById('root');let H='';const add=s=>H+=s;
+function bg(){add(`<div class="abs" style="inset:0;background:radial-gradient(110% 55% at 50% 0%,#f7f8fc 0%,#eef0f6 60%,#e8ebf3 100%)"></div>`)}
+function counter(n){add(`<div class="pill" style="left:540px;top:120px;transform:translate(-50%,-50%);height:62px;padding:0 26px;gap:18px;font-weight:700;font-size:26px"><span>${n}<span style="color:#9aa0b4">/10</span></span><span class="mono" style="letter-spacing:-.05em;font-size:30px;font-weight:700">${[...Array(10)].map((_,i)=>`<span style="color:${i<n?'#2f7bf5':'#c6cbdb'};font-style:italic">/</span>`).join('')}</span></div>`)}
+// karaoke: words before index `at` dark, rest light; keys = indices painted blue
+function kar(text,at,keys=[],top=200){const w=text.split(' ');add(`<div class="kar" style="top:${top}px">${w.map((x,i)=>x==='ChatGPT'?`<span class="gpt">ChatGPT</span>`:`<span class="${i>=at?'u':keys.includes(i)?'k':''}">${x}</span>`).join(' ')}</div>`)}
+function card(x,y,w,h,tag,inner,o={}){add(`<div class="card" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;overflow:hidden;${o.style||''}">${tag?`<div class="tag" style="${o.tagStyle||''}">${tag}</div>`:''}${inner}</div>`)}
+const svg=(w,h,inner,x=0,y=0)=>`<svg class="abs" style="left:${x}px;top:${y}px;overflow:visible" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${inner}</svg>`;
+// a product silhouette (perfume-bottle-like) reused across scenes
+const bottle=(cx,by,s=1,fill='#d9e4fb',stroke='#14151b')=>`<g transform="translate(${cx} ${by}) scale(${s})"><rect x="-26" y="-250" width="52" height="40" rx="10" fill="${stroke}"/><rect x="-14" y="-212" width="28" height="22" fill="${stroke}"/><rect x="-80" y="-192" width="160" height="192" rx="34" fill="${fill}" stroke="${stroke}" stroke-width="6"/><rect x="-56" y="-160" width="16" height="110" rx="8" fill="#fff" opacity=".7"/></g>`;
+const CX=380,CW=320; // card centre helpers
+
+// text-only explanation card: rows "aspect: before → after" + how to use it
+function explain(n,key,line,at,keys,rows,use,o={}){bg();counter(n);kar(line,at,keys);
+  const act=o.act??rows.length; // rows fully switched; the next one is mid-switch
+  card(110,560,860,1000,'/'+key,`
+   <div class="abs lab" style="left:52px;top:100px">WHAT IT CHANGES</div>
+   ${rows.map(([a,b_,c],i)=>{const done=i<act,mid=i===act;return `<div class="abs" style="left:52px;top:${160+i*172}px;width:756px;height:150px;border-radius:30px;background:${done?'#f2f6ff':'#f6f7fa'}">
+     <div class="abs lab" style="left:32px;top:24px">${a.toUpperCase()}</div>
+     <div class="abs" style="left:32px;top:62px;display:flex;align-items:baseline;gap:22px;white-space:nowrap">
+      <span style="font-weight:700;font-size:44px;color:#a3a9bb;${done||mid?'text-decoration:line-through;text-decoration-color:#ff5a4f;text-decoration-thickness:4px;':''}${mid?'opacity:.55;transform:translateX(-30px);display:inline-block;filter:blur(1.5px)':''}">${b_}</span>
+      <span style="font-weight:800;font-size:40px;color:${done?'#2f7bf5':'#d0d5e2'}">→</span>
+      <span style="font-weight:900;font-size:50px;letter-spacing:-.02em;color:#2f7bf5;${done?'':mid?'opacity:.6;display:inline-block;transform:scale(1.25) translateY(-6px);filter:blur(4px)':'opacity:0'}">${c}</span></div></div>`}).join('')}
+   <div class="abs" style="left:52px;top:${170+rows.length*172}px;width:756px">
+    <div class="lab">IN YOUR PROMPT</div>
+    <div style="margin-top:14px;padding:22px 30px;border-radius:28px;background:#f2f4fa;font-weight:600;font-size:34px;color:#4a4d5c;white-space:nowrap">${use[0]} <span style="display:inline-block;padding:2px 16px;border-radius:999px;background:#2f7bf5;color:#fff;font-weight:800">/${key}</span>${use[1]||''}</div></div>`);}
+const F={
+hook(){bg();counter(0);kar('Want better AI photos? Try these ten keywords in your next ChatGPT image prompt.',9,[5,6]);
+  card(110,620,860,760,'prompt',`
+   <div class="abs lab" style="left:52px;top:100px">YOU WRITE</div>
+   <div class="abs" style="left:52px;top:150px;font-weight:900;font-size:76px;letter-spacing:-.03em;color:#a3a9bb;white-space:nowrap">“Make it <s style="text-decoration-color:#ff5a4f;text-decoration-thickness:6px">look better</s>”</div>
+   <div class="abs lab" style="left:52px;top:300px">CHATGPT GUESSES</div>
+   <div class="abs" style="left:52px;top:350px;font-weight:900;font-size:76px;letter-spacing:-.03em;color:#14151b">+2% better<span style="color:#ff5a4f">.</span></div>
+   <div class="abs lab" style="left:52px;top:500px">INSTEAD — NAME THE LOOK</div>
+   <div class="abs" style="left:52px;top:550px;display:flex;gap:16px">${['/softlight','/macro','/editorial'].map((t,i)=>`<span style="padding:10px 26px;border-radius:999px;background:#2f7bf5;color:#fff;font-weight:800;font-size:40px;${i===2?'opacity:.5;filter:blur(3px);transform:translateY(20px)':''}">${t}</span>`).join('')}</div>`);},
+announce(){explain(1,'productshot','',0,[],[['background','cluttered','seamless'],['light','random','even studio'],['shadow','none','soft contact']],['Sneaker on a table,']);
+  H=H.replace('<div class="card"','<div class="card" data-b="1"').replace('data-b="1" style="','style="filter:blur(5px);opacity:.55;');
+  H=H.replace(/<div class="pill"[\s\S]*?<\/span><\/span><\/div>/,'');
+  add(`<div class="pill" style="left:540px;top:120px;transform:translate(-50%,-50%);height:70px;padding:0 44px;font-weight:700;font-size:32px">Second.</div>`);
+  add(`<div class="big" style="top:330px">/softli<span style="display:inline-block;width:6px;height:100px;background:#2f7bf5;vertical-align:-12px;margin-left:4px"></span></div>`);},
+productshot(){explain(1,'productshot','Product shot: give your subject a clean, commercial presentation.',5,[0,1],[['background','cluttered','seamless'],['light','random','even studio'],['shadow','none','soft contact']],['Sneaker on a table,'],{act:2});},
+softlight(){explain(2,'softlight','Soft light: ask for gentle shadows and smooth transitions.',5,[0,1],[['shadows','harsh','gentle'],['transitions','abrupt','smooth'],['mood','dramatic','calm']],['Perfume bottle,']);},
+hardlight(){explain(3,'hardlight','Hard light: create crisp shadows and a bolder look.',5,[0,1],[['shadows','soft','crisp'],['contrast','low','high'],['look','flat','bold']],['Sunglasses,'],{act:1});},
+rimlight(){explain(4,'rimlight','Rim light: separate your subject with an illuminated edge.',5,[0,1],[['edges','lost','glowing'],['background','merges','separated'],['light','in front','behind']],['Headphones,']);},
+goldenhour(){explain(5,'goldenhour','Golden hour: bring in warm, low evening light.',5,[0,1],[['sun','midday','low evening'],['colors','cool','warm'],['shadows','short','long']],['Honey jar,']);},
+macro(){explain(6,'macro','Macro: move closer to reveal texture and tiny details.',3,[0],[['distance','far','very close'],['details','hidden','texture'],['focus','everything','one spot']],['Wristwatch,'],{act:2});},
+lowangle(){explain(7,'lowangle','Low angle: make the subject feel more imposing.',3,[0,1],[['camera','eye level','near ground'],['subject','ordinary','imposing'],['perspective','flat','dramatic']],['Skateboard,']);},
+minimal(){explain(8,'minimal','Minimal: remove distractions and give the subject room.',3,[0],[['objects','many','just one'],['space','crowded','empty'],['attention','scattered','on subject']],['Ceramic vase,']);},
+editorial(){explain(9,'editorial','Editorial: try a styled, magazine-inspired composition.',3,[0],[['style','catalog','magazine'],['layout','centered','styled'],['props','none','one bold']],['Leather handbag,'],{act:1});},
+motionblur(){explain(10,'motionblur','Motion blur: suggest speed. Specify what should stay sharp.',5,[0,1],[['background','still','streaking'],['feeling','static','speed'],['subject','blurred','sharp']],['','. Keep the bike sharp.']);},
+// 11 SAVE — keyword list, highlight sweep, bookmark
+save(){bg();counter(10);kar('Add these to a clear description of your scene. Save this before your next generation.',13,[]);
+  const K=[['productshot','clean, commercial look'],['softlight','gentle shadows'],['hardlight','crisp, bold shadows'],['rimlight','glowing edges'],['goldenhour','warm evening light'],['macro','texture & tiny details'],['lowangle','a stronger perspective'],['minimal','less clutter'],['editorial','magazine-style'],['motionblur','a sense of speed']];
+  card(100,560,880,1120,'saved prompt keywords',`${K.map(([n,d],i)=>`<div class="abs" style="left:24px;top:${100+i*100}px;width:832px;height:90px;border-radius:24px;${i===4?'background:#2f7bf5;':''}display:flex;align-items:center;padding:0 28px;gap:24px">
+    <span class="mono" style="font-size:26px;font-weight:700;color:${i===4?'#cfe0ff':'#9aa0b4'}">${String(i+1).padStart(2,'0')}</span><span style="font-weight:800;font-size:46px;letter-spacing:-.02em;color:${i===4?'#fff':'#14151b'}"><span style="color:${i===4?'#fff':'#2f7bf5'}">/</span>${n}</span><span style="margin-left:auto;font-weight:600;font-size:24px;color:${i===4?'#e3ecff':'#8a90a6'}">${d}</span></div>`).join('')}`);},
+
+};
+F[location.hash.slice(1)||'hook']();root.innerHTML=H;
+document.fonts.ready.then(()=>window.ready=true);
+</script>
+</body>
+</html>
