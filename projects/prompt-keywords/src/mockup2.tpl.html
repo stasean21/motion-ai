@@ -104,7 +104,7 @@ F['10']=()=>progress(9)+karaoke('Editorial: try a styled, magazine-inspired comp
   `<div class="pill" style="left:80px;top:1060px;height:64px;padding:0 24px;font-weight:700;font-size:26px;gap:10px"><span style="width:14px;height:14px;border-radius:4px;background:#e9dccb"></span>pedestal</div>
    <div class="pill" style="left:820px;top:860px;height:64px;padding:0 24px;font-weight:700;font-size:26px;gap:10px"><span style="width:14px;height:14px;border-radius:7px 7px 0 0;background:#b85d31"></span>prop</div>`;
 F['11']=()=>progress(10)+karaoke('Motion blur: suggest speed. Specify what should stay sharp.',8,[0,1])+
-  workCard('/motionblur','blur','Sneaker,&nbsp;'+kwChip('motionblur')+'.&nbsp;<b style="color:#14151b">Keep the shoe sharp.</b>',{y:620,caret:0})+
+  workCard('/motionblur','blur',kwChip('motionblur')+'.&nbsp;<b style="color:#14151b">Keep the shoe sharp.</b>',{y:620,caret:0})+
   [...Array(6)].map((_,i)=>`<div class="abs" style="left:${-60+i*30}px;top:${760+i*120}px;width:${260-i*20}px;height:10px;border-radius:5px;background:linear-gradient(90deg,rgba(47,123,245,0),rgba(47,123,245,.5))"></div>`).join('');
 F['12']=()=>{const K=[['productshot','product'],['softlight','soft'],['hardlight','hard'],['rimlight','rim'],['goldenhour','golden'],['macro','macro'],['lowangle','low'],['minimal','minimal'],['editorial','editorial'],['motionblur','blur']];
   return progress(10)+karaoke('Add these to a clear description of your scene. Save this before your next generation.',13,[])+
