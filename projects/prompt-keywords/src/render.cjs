@@ -2,7 +2,7 @@
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
 const path = require('path'), fs = require('fs');
-const FPS = 60, URL = 'file://' + path.resolve(__dirname, 'index.html');
+const FPS = 60, URL = 'file://' + path.resolve(__dirname, process.env.PAGE || 'index.html');
 async function page(browser) {
   const p = await browser.newPage({ viewport: { width: 1080, height: 1920 }, deviceScaleFactor: 1 });
   p.on('pageerror', e => console.error('PAGEERR', e.message));
