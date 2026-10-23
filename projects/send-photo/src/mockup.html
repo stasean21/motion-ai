@@ -312,6 +312,14 @@ F['6']=()=>bg('#f3effb',['#c9b2ff','#9ff0e2','#a9c8ff','#ffd2e6'])+
   `<div class="sq" style="position:absolute;left:440px;top:1700px;width:110px;height:110px;border-radius:50%;background:linear-gradient(160deg,#ffae4a,#ff6a00);box-shadow:0 0 0 18px rgba(255,122,26,.18),0 14px 28px -8px rgba(255,110,0,.6)">${icon('tap',60,'#fff',2.4)}</div>
    <div class="abs" style="left:576px;top:1730px;font-weight:800;font-size:38px;color:#ff6a00">one tiny action</div>`;
 
+F['cover']=()=>bg('#f6eef8',['#9ff0e2','#c9b2ff','#ffc9a0','#a9c8ff'])+
+  `<div class="cap" style="left:0;width:1080px;top:150px;font-size:124px;line-height:.93">WHAT HAPPENS<br>WHEN YOU<br>SEND A<br><span style="color:#14b8a6">PHOTO?</span></div>`+
+  `<svg class="abs" style="left:0;top:0" width="1080" height="1920"><path d="M600 1180 C 700 1120, 760 1010, 840 930 S 960 760, 1010 690" stroke="#2dd4bf" stroke-width="7" fill="none" stroke-dasharray="3 18" stroke-linecap="round"/>
+   <path d="M600 1300 C 700 1330, 760 1380, 850 1400" stroke="#2dd4bf" stroke-width="7" fill="none" stroke-dasharray="3 18" stroke-linecap="round" opacity=".6"/></svg>`+
+  phone(chatHeader('Alex','linear-gradient(160deg,#7aa2ff,#4f6bff)')+sentBubble+`<div class="abs" style="right:34px;top:962px;font-weight:700;font-size:22px;color:#16c060">✓ Delivered</div>`+composer(false),370,1330,.8)+
+  blk(720,1090,'01',.78)+blk(850,930,'02',.64)+blk(950,790,'03',.52)+blk(1015,680,'04',.42,0,.85,1.5)+
+  `<div class="card sq" style="left:820px;top:1330px;width:180px;height:180px;border-radius:50px;flex-direction:column;gap:6px">${icon('wifi',86,'#0fa3a0',2.2)}<div style="font-weight:800;font-size:24px">Wi-Fi</div></div>`+
+  node(960,1060,1,40)+node(1030,1230,0,24)+node(700,820,0,26);
 const id=FID;if(BGV==='G')document.body.classList.add('lg');if(BGV==='B')document.body.style.color='#fff';root.innerHTML=F[id]();
 function post(){
   document.querySelectorAll('.sub span[data-k]').forEach(sp=>{const r=sp.getBoundingClientRect(),W=r.width+64,H=r.height+30;
