@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>prompt keywords v5 — one card</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#eef0f6}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#14151b}
+#root{position:absolute;inset:0;overflow:hidden}
+.abs{position:absolute}
+.sq{display:flex;align-items:center;justify-content:center}
+.mono{font-family:'DejaVu Sans Mono',monospace}
+.pill{position:absolute;border-radius:999px;display:flex;align-items:center;justify-content:center;white-space:nowrap;background:rgba(255,255,255,.92);border:1.5px solid #fff;box-shadow:0 12px 26px -14px rgba(40,50,110,.3)}
+.kar{position:absolute;left:70px;width:940px;text-align:center;font-weight:600;font-size:56px;line-height:1.24;letter-spacing:-.015em}
+.kar>span{display:inline-block;white-space:pre}
+.gpt{display:inline-flex!important;align-items:center;gap:8px;padding:2px 18px;border-radius:999px;background:#fff;box-shadow:0 6px 16px -8px rgba(40,50,110,.3);font-size:40px;vertical-align:middle}
+.gpt::before{content:'';width:10px;height:10px;border-radius:50%;background:#c9cede}
+.card{position:absolute;border-radius:46px;background:#fff;box-shadow:0 46px 90px -40px rgba(40,50,110,.4),0 10px 24px -12px rgba(40,50,110,.14);overflow:hidden}
+.tag{position:absolute;left:36px;top:30px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:28px;color:#2f7bf5;white-space:nowrap}
+.tag::before{content:'';width:10px;height:10px;border-radius:50%;background:#c3c9d8}
+.lab{font-weight:700;font-size:24px;letter-spacing:.07em;color:#8a90a6}
+.layer{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:0 0}
+.cl{position:absolute;inset:0}
+.chip{position:absolute;padding:10px 24px;border-radius:999px;font-weight:800;font-size:34px;white-space:nowrap;background:#2f7bf5;color:#fff;box-shadow:0 14px 26px -12px rgba(47,123,245,.6)}
+.row{position:absolute;left:44px;right:44px;height:120px;border-radius:30px;background:#f5f7fb}
+img{display:block}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs id="defs">
+ <filter id="mbx" x="-50%" y="-20%" width="200%" height="140%"><feGaussianBlur id="mbxs" stdDeviation="14 0"/></filter>
+ <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs></svg>
+<div id="root"></div>
+<script>
+'use strict';
+// ═══════════ 10 photo prompt keywords — v5: one living card, reference-style micro-actions, text-only ═══════════
+const FPS=60,B=63/112,SEC=12*B,NS=12,DUR=NS*SEC;      // 12 sections × 12 beats = 81 s, seamless loop
+const clamp=(v,a=0,c=1)=>Math.min(c,Math.max(a,v));
+const lerp=(a,c,p)=>a+(c-a)*p;
+const prog=(t,a,c)=>clamp((t-a)/(c-a));
+const E={lin:p=>p,out:p=>1-Math.pow(1-p,3),in:p=>p*p*p,io:p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2,outQ:p=>1-Math.pow(1-p,5),
+  outExpo:p=>p>=1?1:1-Math.pow(2,-10*p),inExpo:p=>p<=0?0:Math.pow(2,10*p-10),back:p=>{const c1=1.7,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)},sine:p=>.5-.5*Math.cos(Math.PI*p)};
+const hash=n=>{const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x)};
+const $=id=>document.getElementById(id);
+function mk(parent,html){const d=document.createElement('div');d.innerHTML=html.trim();const el=d.firstElementChild;parent.appendChild(el);return el}
+function vis(el,o,blur=0){el.style.opacity=o;el.style.visibility=o<=.004?'hidden':'visible';el.style.filter=blur>.15?`blur(${blur.toFixed(1)}px)`:'none'}
+function tp(el,{x=0,y=0,s=1,sx,sy,r=0,o=1,blur=0}={}){el.style.transform=`translate(${x}px,${y}px) rotate(${r}deg) scale(${sx??s},${sy??s})`;vis(el,o,blur)}
+function tc(el,{x=0,y=0,s=1,sx,sy,r=0,o=1,blur=0}={}){el.style.transform=`translate(-50%,-50%) translate(${x}px,${y}px) rotate(${r}deg) scale(${sx??s},${sy??s})`;vis(el,o,blur)}
+const pop=(τ,t0,d=.35)=>{const q=prog(τ,t0,t0+d);return {s:E.back(q),o:clamp(q*4)}};
+const typed=(s,τ,t0,cps=.035)=>s.slice(0,Math.floor(clamp((τ-t0)/cps,0,s.length)));
+function odo(par,n,o={}){const el=mk(par,`<span style="display:inline-flex;line-height:1;${o.style||''}">${o.pre||''}${[...Array(n)].map(()=>`<i style="display:inline-block;height:1em;overflow:hidden;font-style:normal"><b style="display:block;font-weight:inherit">${[0,1,2,3,4,5,6,7,8,9,0].map(d=>`<u style="display:block;height:1em;text-decoration:none">${d}</u>`).join('')}</b></i>`).join('')}${o.suf||''}</span>`);return {el,cols:[...el.querySelectorAll('i')],lead:o.lead}}
+function setOdo(O,v){const n=O.cols.length;v=Math.max(0,v);for(let k=0;k<n;k++){const p=Math.pow(10,k);const base=Math.floor(v/p+1e-9)%10;const lower=v-Math.floor(v/p+1e-9)*p;
+  const pos=k===0?v%10:(lower>p-1?base+(lower-(p-1)):base);const col=O.cols[n-1-k];col.firstChild.style.transform=`translateY(${-pos}em)`;if(O.lead===false)col.style.display=(k>0&&v<p-1e-6)?'none':'inline-block'}}
+
+// ───────── sections: keyword, voice line, card size, ordinal
+const S=[
+ {key:null,        line:'Want better AI photos? Try these ten keywords in your next ChatGPT image prompt.',keys:[5,6],w:820,h:720},
+ {key:'productshot',ord:'First.',  line:'Product shot gives your subject a clean, commercial presentation.',keys:[0,1],w:820,h:760},
+ {key:'softlight', ord:'Second.', line:'Soft light asks for gentle shadows and smooth transitions.',keys:[0,1],w:820,h:700},
+ {key:'hardlight', ord:'Third.',  line:'Hard light creates crisp shadows and a bolder look.',keys:[0,1],w:820,h:700},
+ {key:'rimlight',  ord:'Fourth.', line:'Rim light separates your subject with an illuminated edge.',keys:[0,1],w:820,h:640},
+ {key:'goldenhour',ord:'Fifth.',  line:'Golden hour brings in warm, low evening light.',keys:[0,1],w:820,h:640},
+ {key:'macro',     ord:'Sixth.',  line:'Macro moves closer to reveal texture and tiny details.',keys:[0],w:820,h:640},
+ {key:'lowangle',  ord:'Seventh.',line:'Low angle makes the subject feel more imposing.',keys:[0,1],w:820,h:780},
+ {key:'minimal',   ord:'Eighth.', line:'Minimal removes distractions and gives the subject room.',keys:[0],w:820,h:720},
+ {key:'editorial', ord:'Ninth.',  line:'Editorial tries a styled, magazine-inspired composition.',keys:[0],w:900,h:760},
+ {key:'motionblur',ord:'And tenth.',line:'Motion blur suggests speed. Say what should stay sharp.',keys:[0,1],w:820,h:700},
+ {key:null,        line:'Add these to a clear description of your scene. Save this for your next prompt.',keys:[],w:840,h:1120},
+];
+S.forEach((s,i)=>{s.t0=i*SEC});
+const secAt=t=>clamp(Math.floor(t/SEC),0,NS-1);
+const AN={plq:.05,type:.4,roll:1.0,fly:1.1,land:1.45,m0:.25,m1:.95};   // announcement / morph timing inside a section
+const CX=540,CY=1080;                                                  // card centre (world)
+
+// ───────── static layout
+const root=$('root');
+root.innerHTML=`<div class="abs" style="inset:0;background:radial-gradient(110% 55% at 50% 0%,#f7f8fc 0%,#eef0f6 60%,#e8ebf3 100%)"></div>`;
+const FLOOD=mk(root,`<div class="abs" style="left:540px;top:1080px;width:10px;height:10px;border-radius:50%;background:#bfe0fb;transform:translate(-50%,-50%)"></div>`);
+const WORLD=mk(root,'<div class="layer"></div>');
+const CARD=mk(WORLD,`<div class="card" style="left:0;top:0"></div>`);
+const TAG=mk(CARD,`<div class="tag" style="z-index:5"><span id="tagt"></span></div>`);const TAGT=$('tagt');
+const CL=S.map((s,i)=>mk(CARD,`<div class="cl" style="visibility:hidden"></div>`));
+const FG=mk(WORLD,'<div class="layer" style="z-index:20"></div>');         // things that fly over the card
+const UI=mk(root,'<div class="layer" style="z-index:30"></div>');          // screen-space: counter, karaoke, big keyword
+const CNT=mk(UI,`<div class="pill" style="left:540px;top:120px;height:66px;font-weight:700;font-size:28px;overflow:hidden"><div id="cnta" class="sq" style="gap:18px;padding:0 28px"><span id="cntn"></span><span class="mono" id="sl" style="letter-spacing:-.05em;font-size:31px;font-weight:700">${[...Array(10)].map(()=>`<span style="font-style:italic">/</span>`).join('')}</span></div><div id="cntb" class="abs sq" style="inset:0;font-weight:800;font-size:32px"></div></div>`);
+const CNTA=$('cnta'),CNTB=$('cntb'),SL=[...$('sl').children];const CO=odo($('cntn'),2,{suf:'<span style="color:#9aa0b4">/10</span>',lead:false});
+const BIG=mk(UI,`<div class="abs" style="left:540px;top:330px;font-weight:500;font-size:124px;letter-spacing:-.03em;color:#2f7bf5;white-space:nowrap;transform-origin:50% 50%"></div>`);
+const CUR=mk(FG,`<svg style="position:absolute;left:0;top:0;z-index:40;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25));transform-origin:22px 6px" width="64" height="72" viewBox="0 0 32 36"><path d="M11 2.5c1.4 0 2.5 1.1 2.5 2.5v9.2l1.1-.2c1.2-.2 2.3.5 2.6 1.6l.1.4.6-.1c1.2-.2 2.3.5 2.6 1.7l.1.3.4-.1c1.3-.2 2.5.7 2.7 2l.9 6.2c.4 2.8-1.2 5.5-3.8 6.5l-2.2.8c-2.3.9-4.9.3-6.6-1.5l-5.8-6.1c-.9-1-.9-2.5.1-3.4.9-.8 2.3-.8 3.2 0l.9.9V5c0-1.4 1.1-2.5 2.5-2.5z" fill="#fff" stroke="#14151b" stroke-width="1.8" stroke-linejoin="round"/></svg>`);
+// karaoke lines: one per section, words timed across the voice window
+const KAR=S.map((s,i)=>{const words=s.line.split(' ');const el=mk(UI,`<div class="kar" style="top:210px">${words.map(w=>w==='ChatGPT'?`<span class="gpt">ChatGPT</span>`:`<span>${w}</span>`).join(' ')}</div>`);
+  const V=/[aeiouyAEIOUY]/g;const wt=words.map((w,k)=>({d:Math.max(1,(w.match(V)||[]).length)+.5,p:(k<words.length-1&&/[.,:?!]$/.test(w))?1.2:0}));
+  const a=i===0?.35:1.55,c=SEC-.55;const tot=wt.reduce((x,y)=>x+y.d+y.p,0),k=(c-a)/tot;let cur=a;const T=[];wt.forEach(x=>{T.push(cur);cur+=(x.d+x.p)*k});
+  return {el,sp:[...el.children],T,keys:s.keys}});
+const wordT=(i,k)=>KAR[i].T[Math.min(k,KAR[i].T.length-1)];   // when word k of section i is spoken (local time)
+
+// ───────── card content builders (text + UI only)
+const C={};
+const row=(par,y,label,html,o={})=>mk(par,`<div class="row" style="top:${y}px;${o.style||''}"><div class="abs lab" style="left:30px;top:22px">${label}</div><div class="abs" style="left:30px;top:54px;display:flex;align-items:baseline;gap:20px;white-space:nowrap;font-weight:800;font-size:44px">${html}</div></div>`);
+// hook: prompt card
+{const L=CL[0];C[0]={};const c=C[0];
+ c.lab=mk(L,'<div class="abs lab" style="left:44px;top:96px">YOUR PROMPT</div>');
+ c.field=mk(L,`<div class="abs" style="left:44px;top:140px;width:732px;height:140px;border-radius:32px;background:#f2f4fa;display:flex;align-items:center;padding:0 130px 0 34px;font-weight:700;font-size:48px;color:#3a3d4c;white-space:nowrap"><span id="h_t"></span></div>`);c.t=$('h_t');
+ c.send=mk(L,`<div class="sq abs" style="left:646px;top:166px;width:88px;height:88px;border-radius:50%;background:#2f7bf5"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19.5V5M5.6 11.2L12 4.8l6.4 6.4"/></svg></div>`);
+ c.res=mk(L,'<div class="abs" style="left:44px;top:320px;width:732px"><div class="lab">CHATGPT GUESSES</div><div style="display:flex;align-items:baseline;gap:18px;margin-top:10px"><span id="h_r" style="font-weight:900;font-size:96px;letter-spacing:-.03em"></span><span style="font-weight:800;font-size:44px;color:#a3a9bb">better</span></div><div class="abs" id="h_bar" style="left:0;top:180px;width:732px;height:16px;border-radius:8px;background:#e6e9f1"><div id="h_bf" style="width:0;height:100%;border-radius:8px;background:#ff5a4f"></div></div></div>');
+ c.rO=odo($('h_r'),1,{pre:'+',suf:'%'});c.bf=$('h_bf');
+ c.chips=['/softlight','/macro','/editorial'].map((w,k)=>mk(L,`<div class="chip" style="left:${[60,330,520][k]}px;top:${560}px">${w}</div>`));
+}
+// 1 productshot: three settings flip
+{const L=CL[1];const c=C[1]={};
+ c.rows=[['BACKGROUND','cluttered','seamless'],['LIGHT','random','even studio'],['SHADOW','none','soft contact']].map(([l,a,b_],k)=>{const r=row(L,96+k*140,l,`<span class="o" style="color:#a3a9bb;position:relative">${a}<span class="st abs" style="left:-4px;right:-4px;top:54%;height:5px;border-radius:3px;background:#ff5a4f;transform-origin:0 50%"></span></span><span class="ar" style="color:#2f7bf5">→</span><span class="n" style="color:#2f7bf5"></span>`);
+   return {r,o:r.querySelector('.o'),st:r.querySelector('.st'),ar:r.querySelector('.ar'),n:r.querySelector('.n'),b:b_,ck:mk(r,`<div class="abs sq" style="right:28px;top:36px;width:48px;height:48px;border-radius:50%;background:#34c759;color:#fff;font-weight:900;font-size:28px">✓</div>`)}});
+ c.drop=mk(L,`<div class="abs" style="left:44px;top:536px;width:732px;height:100px;border-radius:28px;border:3px dashed #c9d3e6;display:flex;align-items:center;padding-left:30px;font-weight:700;font-size:36px;color:#9aa0b4;white-space:nowrap">Sneaker on a table,&nbsp;<span id="ps_k"></span></div>`);c.dk=$('ps_k');
+ c.badge=mk(L,`<div class="abs" style="left:410px;top:670px;padding:12px 26px;border-radius:999px;background:#34c759;color:#fff;font-weight:800;font-size:30px;transform:translateX(-50%);white-space:nowrap">✓ Clean commercial look</div>`);
+ c.fchip=mk(FG,`<div class="chip" style="left:0;top:0">/productshot</div>`);
+}
+// 2 softlight: slider + sample word with a shadow that softens
+{const L=CL[2];const c=C[2]={};
+ c.word=mk(L,`<div class="abs" style="left:410px;top:250px;transform:translate(-50%,-50%);font-weight:900;font-size:150px;letter-spacing:-.04em;color:#14151b">SHADOW</div>`);
+ c.lab=mk(L,`<div class="abs lab" style="left:44px;top:420px">SHADOWS</div>`);
+ c.track=mk(L,`<div class="abs" style="left:44px;top:470px;width:732px;height:14px;border-radius:7px;background:#e6e9f1"><div id="sl_f" style="height:100%;border-radius:7px;background:#2f7bf5;width:0"></div></div>`);c.fill=$('sl_f');
+ c.knob=mk(L,`<div class="abs" style="left:44px;top:452px;width:50px;height:50px;border-radius:50%;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.25)"></div>`);
+ c.ends=mk(L,`<div class="abs" style="left:44px;top:520px;width:732px;display:flex;justify-content:space-between;font-weight:800;font-size:34px"><span id="sl_a">HARSH</span><span id="sl_b" style="color:#c3c9d8">GENTLE</span></div>`);c.ea=$('sl_a');c.eb=$('sl_b');
+ c.say=mk(L,`<div class="abs" style="left:44px;top:600px;font-weight:800;font-size:40px;color:#2f7bf5;white-space:nowrap"></div>`);
+}
+// 3 hardlight: same instrument snaps the other way
+{const L=CL[3];const c=C[3]={};
+ c.word=mk(L,`<div class="abs" style="left:410px;top:250px;transform:translate(-50%,-50%);font-weight:900;font-size:150px;letter-spacing:-.04em;color:#14151b">SHADOW</div>`);
+ c.lab=mk(L,`<div class="abs lab" style="left:44px;top:420px">CONTRAST</div>`);
+ c.bars=[...Array(10)].map((_,k)=>mk(L,`<div class="abs" style="left:${44+k*74}px;top:470px;width:60px;height:90px;border-radius:14px;background:#e6e9f1;transform-origin:50% 100%"></div>`));
+ c.x3=mk(L,`<div class="abs" style="left:630px;top:600px;font-weight:900;font-size:64px;color:#ff6a00;white-space:nowrap">×1</div>`);
+ c.say=mk(L,`<div class="abs" style="left:44px;top:610px;font-weight:800;font-size:40px;color:#ff6a00;white-space:nowrap"></div>`);
+}
+// 4 rimlight: card goes dark, a glowing edge traces the word
+{const L=CL[4];const c=C[4]={};
+ c.dark=mk(L,'<div class="abs" style="inset:0;background:#15161c"></div>');
+ c.svg=mk(L,`<svg class="abs" style="left:0;top:0" width="820" height="640"><text id="rim_t" x="410" y="330" text-anchor="middle" font-family="Inter Display" font-weight="900" font-size="190" letter-spacing="-6" fill="#1d1f27" stroke="#fff" stroke-width="5" stroke-dasharray="3000" stroke-dashoffset="3000" filter="url(#glow)">SUBJECT</text></svg>`);c.t=$('rim_t');
+ c.sep=mk(L,`<div class="abs" style="left:44px;top:440px;color:#fff"><div class="lab" style="color:#8a90a6">SEPARATION</div><div id="rim_n" style="font-weight:900;font-size:96px;line-height:1.05"></div></div>`);c.sO=odo($('rim_n'),2,{suf:'<span style="font-size:48px;color:#2f7bf5">%</span>',lead:false});
+ c.beh=mk(L,`<div class="abs" style="left:440px;top:480px;padding:16px 26px;border-radius:24px;background:#24262e;color:#fff;font-weight:800;font-size:28px;letter-spacing:.08em;white-space:nowrap">LIGHT: BEHIND</div>`);
+}
+// 5 goldenhour: clock rolls to evening, the card warms
+{const L=CL[5];const c=C[5]={};
+ c.warm=mk(L,'<div class="abs" style="inset:0;background:linear-gradient(180deg,#fff2dc,#ffc98a)"></div>');
+ c.clock=mk(L,`<div class="abs" style="left:410px;top:250px;transform:translate(-50%,-50%);font-weight:900;font-size:200px;letter-spacing:-.04em;display:flex"><span id="gh_h"></span>:<span id="gh_m"></span></div>`);c.hO=odo($('gh_h'),2);c.mO=odo($('gh_m'),2);
+ c.r1=row(L,410,'COLORS',`<span class="o" style="color:#a3a9bb">cool</span><span style="color:#ff6a00">→</span><span class="n" style="color:#ff6a00">warm</span>`,{style:'background:rgba(255,255,255,.6)'});
+ c.k=mk(L,`<div class="abs" style="left:44px;top:556px;font-weight:900;font-size:56px;color:#ff6a00;display:flex;align-items:baseline;gap:12px"><span id="gh_k"></span><span style="font-size:30px">K</span><span class="lab" style="margin-left:18px">COLOR TEMP</span></div>`);c.kO=odo($('gh_k'),4);
+}
+// 6 macro: camera dives into one word that becomes TEXTURE
+{const L=CL[6];const c=C[6]={};
+ c.txt=mk(L,`<div class="abs" style="left:44px;top:110px;width:732px;font-weight:700;font-size:40px;line-height:1.5;color:#c3c9d8">the whole watch, the strap, the dial, the case, the <span id="mc_w" style="color:#2f7bf5;display:inline-block">texture</span>, the light, the table, the room</div>`);c.w=$('mc_w');
+ c.zoom=mk(L,`<div class="abs" style="left:44px;top:470px;font-weight:900;font-size:120px;color:#2f7bf5;display:flex;line-height:1">×<span id="mc_z"></span></div>`);c.zO=odo($('mc_z'),2,{lead:false});
+ c.big=mk(FG,`<div class="abs" style="left:540px;top:1080px;font-weight:900;font-size:150px;letter-spacing:-.04em;color:#2f7bf5;white-space:nowrap">TEXTURE</div>`);
+}
+// 7 lowangle: camera chip slides down a height scale, the word grows tall
+{const L=CL[7];const c=C[7]={};
+ c.scale=mk(L,`<div class="abs" style="left:60px;top:110px;width:8px;height:600px;border-radius:4px;background:repeating-linear-gradient(180deg,#c9d3e6 0 6px,transparent 6px 30px)"></div>`);
+ c.ticks=['EYE LEVEL','WAIST','KNEE','GROUND'].map((l,k)=>mk(L,`<div class="abs lab" style="left:90px;top:${100+k*190}px">${l}</div>`));
+ c.cam=mk(L,`<div class="abs" style="left:40px;top:0;padding:10px 20px;border-radius:999px;background:#2f7bf5;color:#fff;font-weight:800;font-size:28px;white-space:nowrap">📷 camera</div>`);
+ c.word=mk(L,`<div class="abs" style="left:520px;top:690px;transform-origin:50% 100%;font-weight:900;font-size:130px;letter-spacing:-.04em;white-space:nowrap">SUBJECT</div>`);
+}
+// 8 minimal: word-clutter swiped away, one word left in empty space
+{const L=CL[8];const c=C[8]={};
+ const W=[['books',60,130],['candles',420,120],['plant',220,250],['frames',520,270],['decor',80,400],['pillows',380,420],['lamp',600,560],['tray',140,560]];
+ c.cl=W.map(([w,x,y],k)=>({x,y,el:mk(L,`<div class="abs" style="left:${x}px;top:${y}px;padding:12px 24px;border-radius:999px;background:#f2f4fa;font-weight:800;font-size:38px;color:#8a90a6;white-space:nowrap">${w}</div>`)}));
+ c.one=mk(L,`<div class="abs" style="left:410px;top:400px;transform:translate(-50%,-50%);font-weight:900;font-size:110px;letter-spacing:-.03em">vase</div>`);
+ c.cnt=mk(L,`<div class="abs lab" style="left:44px;top:640px;display:flex;align-items:baseline;gap:14px">CLUTTER <span id="mn_n" style="font-weight:900;font-size:56px;color:#2f7bf5"></span></div>`);c.nO=odo($('mn_n'),1);
+}
+// 9 editorial: text lines assemble into a magazine spread
+{const L=CL[9];const c=C[9]={};
+ c.lines=[...Array(9)].map((_,k)=>mk(L,`<div class="abs" style="left:0;top:0;height:22px;border-radius:11px;background:#d7dcea"></div>`));
+ c.title=mk(L,`<div class="abs" style="left:50px;top:100px;font-weight:900;font-size:100px;letter-spacing:-.04em;white-space:nowrap">STILL LIFE</div>`);
+ c.issue=mk(L,`<div class="abs" style="left:50px;top:560px;font-weight:900;font-size:130px;line-height:1">09</div>`);
+ c.acc=mk(L,`<div class="abs" style="left:470px;top:250px;width:380px;height:440px;border-radius:24px;background:#2f7bf5;display:flex;align-items:flex-end;padding:28px;color:#fff;font-weight:800;font-size:36px">one bold accent</div>`);
+}
+// 10 motionblur: everything streaks except one word
+{const L=CL[10];const c=C[10]={};
+ c.ws=['street','trees','windows','cars','people','light','road'].map((w,k)=>mk(L,`<div class="abs" style="left:${60+((k*230)%600)}px;top:${110+k*62}px;font-weight:800;font-size:40px;color:#a3a9bb;white-space:nowrap">${w}</div>`));
+ c.bike=mk(L,`<div class="abs" style="left:410px;top:330px;transform:translate(-50%,-50%);font-weight:900;font-size:150px;letter-spacing:-.04em;white-space:nowrap">BIKE</div>`);
+ c.box=mk(L,`<div class="abs" style="left:210px;top:230px;width:400px;height:200px;border-radius:26px;border:5px solid #34c759"></div>`);
+ c.say=mk(L,`<div class="abs" style="left:44px;top:560px;width:732px;padding:22px 30px;border-radius:28px;background:#f2f4fa;font-weight:700;font-size:36px;color:#3a3d4c;white-space:nowrap"><span style="display:inline-block;padding:2px 16px;border-radius:999px;background:#2f7bf5;color:#fff">/motionblur</span><span id="mb_t"></span></div>`);c.t=$('mb_t');
+}
+// 11 outro: the card unfolds into the keyword list
+{const L=CL[11];const c=C[11]={};
+ const K=[['productshot','clean, commercial look'],['softlight','gentle shadows'],['hardlight','crisp, bold shadows'],['rimlight','glowing edges'],['goldenhour','warm evening light'],['macro','texture & tiny details'],['lowangle','a stronger perspective'],['minimal','less clutter'],['editorial','magazine-style'],['motionblur','a sense of speed']];
+ c.bar=mk(L,`<div class="abs" style="left:24px;top:0;width:792px;height:88px;border-radius:24px;background:#2f7bf5"></div>`);
+ c.rows=K.map(([n,d],k)=>{const el=mk(L,`<div class="abs" style="left:24px;top:${96+k*100}px;width:792px;height:88px;display:flex;align-items:center;padding:0 28px;gap:22px"><span class="mono nm" style="font-size:26px;font-weight:700;color:#9aa0b4">${String(k+1).padStart(2,'0')}</span><span class="kw" style="font-weight:800;font-size:46px;letter-spacing:-.02em"><span style="color:#2f7bf5">/</span>${n}</span><span class="ds" style="margin-left:auto;font-weight:600;font-size:24px;color:#8a90a6">${d}</span></div>`);return {el,nm:el.querySelector('.nm'),kw:el.querySelector('.kw'),ds:el.querySelector('.ds')}});
+}
+
+// ───────── per-section action renderers (τ = local time). Each returns cursor keyframes it wants.
+const R={};
+R[0]=(τ,c)=>{ // hook: send → +2% → strike → three named looks pop out
+  c.t.innerHTML=τ<wordT(0,4)?'Make it look better.':`Make it <s style="text-decoration-color:#ff5a4f;text-decoration-thickness:5px;color:#a3a9bb">look better.</s>`;
+  const sq=prog(τ,1.3,1.45);c.send.style.transform=`scale(${1-.15*Math.sin(Math.PI*sq)})`;
+  const rq=prog(τ,1.6,2.2);setOdo(c.rO,2*E.out(rq));c.bf.style.width=E.out(rq)*2.2+'%';tp(c.res,{o:clamp(prog(τ,1.5,1.8)),y:(1-E.out(prog(τ,1.5,1.9)))*30});
+  c.chips.forEach((ch,k)=>{const t0=wordT(0,6)+k*.18;const q=prog(τ,t0,t0+.4);tp(ch,{s:E.back(q),o:clamp(q*4),y:(1-E.out(q))*60})});
+  return [[0,900,1900],[.8,900,1900],[1.2,826,935],[1.3,826,935,1],[1.45,826,935],[2.1,1000,1900]]};
+R[1]=(τ,c)=>{
+  // chip comes from the landed keyword tag… actually dragged by the cursor into the prompt field
+  const pick=1.7,drop=2.35;const f=E.io(prog(τ,pick,drop));
+  const sx=CX-300,sy=CY-330,ex=CX-410+44+30+390,ey=CY-380+536+50;
+  if(τ>=pick-.2&&τ<drop){tp(c.fchip,{x:lerp(sx-60,ex-110,f),y:lerp(sy+20,ey-30,f)-Math.sin(Math.PI*f)*80,s:lerp(1.1,.9,f),o:clamp(prog(τ,pick-.2,pick)*4),r:-4*Math.sin(Math.PI*f),blur:Math.sin(Math.PI*f)*3})}else vis(c.fchip,0);
+  c.dk.innerHTML=τ>=drop?`<span style="display:inline-block;padding:2px 16px;border-radius:999px;background:#2f7bf5;color:#fff;transform:scale(${lerp(1.2,1,E.back(prog(τ,drop,drop+.25)))})">/productshot</span>`:'';
+  c.drop.style.borderColor=τ>=drop?'#2f7bf5':'#c9d3e6';
+  c.rows.forEach((r,k)=>{const t0=wordT(1,5)+k*.45;const sq=prog(τ,t0,t0+.18);r.st.style.transform=`scaleX(${E.out(sq)})`;
+    const oq=prog(τ,t0+.12,t0+.35);r.o.style.opacity=1-.5*oq;r.o.style.filter=oq>0?`blur(${oq*2}px)`:'none';r.o.style.transform=`translateX(${-oq*14}px)`;
+    r.n.textContent=typed(r.b,τ,t0+.2,.03);const cq=prog(τ,t0+.5,t0+.8);tp(r.ck,{s:E.back(cq),o:clamp(cq*4)});
+    r.r.style.background=τ>t0+.5?'#eef4ff':'#f5f7fb';r.r.style.transform=`scale(${1+.04*Math.sin(Math.PI*prog(τ,t0,t0+.3))})`});
+  const bq=prog(τ,wordT(1,8),wordT(1,8)+.4);c.badge.style.transform=`translateX(-50%) scale(${E.back(bq)})`;vis(c.badge,clamp(bq*4));
+  return [[1.2,900,1900],[1.65,sx+40,sy+40],[1.75,sx+40,sy+40,1],[drop,ex-60,ey],[drop+.1,ex-60,ey,1],[drop+.25,ex-60,ey],[2.9,1000,1900]]};
+R[2]=(τ,c)=>{
+  const d0=wordT(2,3),d1=d0+1.1;const p=E.io(prog(τ,d0,d1));
+  c.knob.style.left=lerp(44,726,p)+'px';c.fill.style.width=p*100+'%';
+  const bl=lerp(0,34,p),off=lerp(16,26,p),al=lerp(.9,.35,p);c.word.style.textShadow=`${off}px ${off}px ${bl}px rgba(20,21,27,${al})`;
+  c.ea.style.color=p<.5?'#14151b':'#c3c9d8';c.eb.style.color=p<.5?'#c3c9d8':'#2f7bf5';
+  c.say.textContent=p<.5?'hard edges':typed('smooth transitions',τ,d0+.6,.03);
+  const kx=CX-410+lerp(44,726,p)+25,ky=CY-350+452+25;
+  return [[1.4,900,1900],[d0-.25,CX-410+69,ky],[d0-.1,CX-410+69,ky,1],[d1,kx,ky,1],[d1+.15,kx,ky],[d1+.8,1000,1900]]};
+R[3]=(τ,c)=>{
+  const t0=wordT(3,3);const snap=E.outExpo(prog(τ,t0,t0+.25));
+  c.word.style.textShadow=`${lerp(18,34,snap)}px ${lerp(18,34,snap)}px ${lerp(26,0,snap)}px rgba(20,21,27,${lerp(.4,1,snap)})`;
+  c.word.style.color=snap>.5?'#fff':'#14151b';c.word.style.webkitTextStroke=snap>.5?'4px #14151b':'0';
+  c.bars.forEach((b,k)=>{const q=prog(τ,t0+.1+k*.04,t0+.4+k*.04);b.style.background=k<8?(q>0?'#ff6a00':'#e6e9f1'):'#e6e9f1';b.style.transform=`scaleY(${lerp(.3,k%2?1:.8,E.back(q))})`});
+  const xq=prog(τ,t0+.5,t0+.9);c.x3.textContent='×'+(1+Math.floor(2.999*E.out(xq)));c.x3.style.transform=`scale(${1+.3*Math.sin(Math.PI*prog(τ,t0+.85,t0+1.1))})`;
+  c.say.textContent=typed('crisp & bold',τ,wordT(3,6),.03);
+  return []};
+R[4]=(τ,c)=>{
+  const dk=prog(τ,.3,.9);c.dark.style.opacity=dk;
+  const t0=wordT(4,3);const tr=E.io(prog(τ,t0,t0+1.3));c.t.setAttribute('stroke-dashoffset',3000*(1-tr));c.t.setAttribute('fill',tr>.95?'#262833':'#1d1f27');
+  const sq=prog(τ,wordT(4,6),wordT(4,6)+.35);tp(c.sep,{o:clamp(sq*3),y:(1-E.out(sq))*24});setOdo(c.sO,72*E.out(prog(τ,wordT(4,6),wordT(4,6)+.9)));
+  tp(c.beh,pop(τ,wordT(4,2)));
+  return []};
+R[5]=(τ,c)=>{
+  const t0=wordT(5,3),m=E.io(prog(τ,t0,t0+1.4));c.warm.style.opacity=m;
+  const mins=lerp(720,1122,m);setOdo(c.hO,Math.floor(mins/60));setOdo(c.mO,mins%60);
+  c.r1.querySelector('.n').style.opacity=prog(τ,t0+.6,t0+.9);c.r1.querySelector('.o').style.textDecoration=τ>t0+.5?'line-through':'none';
+  setOdo(c.kO,lerp(5600,3200,m));
+  return []};
+R[6]=(τ,c)=>{
+  const z0=wordT(6,3),z1=z0+1.0;const zq=prog(τ,z0,z1);setOdo(c.zO,1+9*E.out(zq));
+  c.w.style.transform=`scale(${1+.2*Math.sin(Math.PI*prog(τ,z0-.4,z0))})`;
+  // the big TEXTURE takes over during the dive, then settles into the card centre
+  const bq=prog(τ,z0+.35,z1+.3);tc(c.big,{s:lerp(.3,1,E.outExpo(bq)),o:clamp(bq*3)*(1-prog(τ,SEC-.6,SEC-.2)),blur:(1-E.out(bq))*10});
+  return [[1.4,900,1900],[z0-.5,CX-180,CY-130],[z0-.35,CX-180,CY-130,1],[z0-.2,CX-180,CY-130],[z0+.3,1000,1900]]};
+R[7]=(τ,c)=>{
+  const t0=wordT(7,2),t1=t0+1.2;const p=E.io(prog(τ,t0,t1));tp(c.cam,{y:lerp(84,650,p)});
+  c.ticks.forEach((tk,k)=>{tk.style.color=Math.round(p*3)===k?'#2f7bf5':'#a3a9bb'});
+  c.word.style.transform=`translate(-50%,-100%) scaleY(${lerp(.8,1.7,p)}) scaleX(${lerp(1,.9,p)})`;
+  return [[1.4,900,1900],[t0-.25,CX-330,CY-390+120],[t0-.1,CX-330,CY-390+120,1],[t1,CX-330,CY-390+680,1],[t1+.15,CX-330,CY-390+680],[t1+.7,1000,1900]]};
+R[8]=(τ,c)=>{
+  const s0=wordT(8,1);
+  c.cl.forEach((w,k)=>{const t0=s0+.15+k*.07;const q=E.in(prog(τ,t0,t0+.45));const dir=w.x<380?-1:1;tp(w.el,{x:dir*q*900,y:(w.y-380)*q*.5,r:dir*q*14,o:1-prog(q,.6,1),blur:q*14})});
+  const oq=prog(τ,s0+.9,s0+1.4);tc(c.one,{s:lerp(.7,1,E.back(oq)),o:lerp(.35,1,oq)});c.one.style.color=oq>0?'#14151b':'#a3a9bb';
+  setOdo(c.nO,8*(1-E.io(prog(τ,s0+.15,s0+.9))));
+  return [[1.4,1000,1700],[s0-.1,CX+300,CY+80],[s0,CX+300,CY+80,1],[s0+.6,CX-500,CY,1],[s0+.8,CX-700,CY+400]]};
+R[9]=(τ,c)=>{
+  const t0=wordT(9,2);const q=E.io(prog(τ,t0,t0+1.2));
+  const A=[...Array(9)].map((_,k)=>({x:50,y:110+k*58,w:720-(k%3)*60}));                       // plain paragraph
+  const Bp=[...Array(9)].map((_,k)=>k<6?{x:50,y:260+k*42,w:360-(k===5?120:0)}:{x:470,y:720+(k-6)*0,w:0}); // magazine column
+  c.lines.forEach((l,k)=>{const a=A[k],b_=Bp[k];const qq=E.io(prog(τ,t0+k*.05,t0+.8+k*.05));l.style.transform=`translate(${lerp(a.x,b_.x,qq)}px,${lerp(a.y,b_.y,qq)}px)`;l.style.width=lerp(a.w,b_.w,qq)+'px';l.style.opacity=b_.w===0?1-qq:1});
+  tp(c.title,{o:prog(τ,t0+.3,t0+.7),y:(1-E.out(prog(τ,t0+.3,t0+.8)))*-40});
+  tp(c.acc,{s:E.back(prog(τ,t0+.6,t0+1.0)),o:clamp(prog(τ,t0+.6,t0+.8)*4)});tp(c.issue,{o:prog(τ,t0+.9,t0+1.2),y:(1-E.out(prog(τ,t0+.9,t0+1.3)))*40});
+  return []};
+R[10]=(τ,c)=>{
+  const t0=wordT(10,2);const s=prog(τ,t0,t0+.5);
+  c.ws.forEach((w,k)=>{const sp=600+hash(k)*500;const x=s>0?((τ-t0)*sp)%900:0;tp(w,{x:x,o:1-.4*s,blur:0});w.style.filter=s>0?`url(#mbx)`:'none'});
+  const bq=prog(τ,wordT(10,7),wordT(10,7)+.5);c.box.style.opacity=bq;c.box.style.transform=`scale(${lerp(1.2,1,E.out(bq))})`;
+  c.t.textContent=typed('. Keep the bike sharp.',τ,wordT(10,5),.03);
+  return []};
+R[11]=(τ,c)=>{
+  c.rows.forEach((r,k)=>{const t0=.4+k*B*.5;const q=prog(τ,t0,t0+.35);tp(r.el,{x:(1-E.outExpo(q))*300,o:clamp(q*3),blur:(1-E.out(q))*10})});
+  const sw=(τ-3.9)/.14;const bi=clamp(sw,0,9.999);const fl=Math.floor(bi);
+  c.bar.style.transform=`translateY(${96+fl*100}px)`;vis(c.bar,sw>=0&&sw<10.5?1-prog(sw,9.6,10.5):0);
+  c.rows.forEach((r,k)=>{const on=sw>=0&&sw<10&&fl===k;r.kw.style.color=on?'#fff':'#14151b';r.kw.firstChild.style.color=on?'#fff':'#2f7bf5';r.nm.style.color=on?'#cfe0ff':'#9aa0b4';r.ds.style.color=on?'#e3ecff':'#8a90a6'});
+  return []};
+
+// ───────── camera: always breathing; per-section pushes; the macro dive
+function camAt(t){const i=secAt(t),τ=t-S[i].t0;
+  let z=1+.015*Math.sin(t*.7),r=1.1*Math.sin(t*.55),x=CX,y=CY,sy=CY;
+  // every section: small push-in during its main action, out before the next morph
+  const act=[0,1.3,wordT(1,5)-.3,wordT(2,3)-.3,wordT(3,3)-.2,wordT(4,3)-.3,wordT(5,3)-.3,0,wordT(7,2)-.3,wordT(8,1)-.3,wordT(9,2)-.3,wordT(10,2)-.3,0][i];
+  if(act){const pin=E.io(prog(τ,act,act+.9)),pout=E.io(prog(τ,SEC-1.2,SEC-.3));z*=1+.09*pin*(1-pout)}
+  if(i===3){const t0=wordT(3,3);const k=prog(τ,t0,t0+.35);if(k>0&&k<1){x+=Math.sin(τ*80)*14*(1-k);r+=Math.sin(τ*60)*1.5*(1-k)}}
+  if(i===6){ // dive into the highlighted word, hold, then pull back out to the card
+    const z0=wordT(6,3);const din=E.inExpo(prog(τ,z0-.2,z0+.45)),dout=E.outExpo(prog(τ,z0+.45,z0+1.3));
+    const fx=CX-410+44+300,fy=CY-320+110+120;const k=din*(1-dout);z*=lerp(1,7,k);x=lerp(CX,fx,k);y=lerp(CY,fy,k)}
+  if(i===11){const pin=E.io(prog(τ,.2,1.4));z*=lerp(1,.94,pin)}
+  return {z,r,x,y,sy}}
+
+// ───────── per frame
+function renderAt(t){
+  t=((t%DUR)+DUR)%DUR;const i=secAt(t),τ=t-S[i].t0,s=S[i],prev=S[(i+NS-1)%NS];
+  // camera
+  const cm=camAt(t);WORLD.style.transform=`translate(540px,${cm.sy}px) rotate(${cm.r}deg) scale(${cm.z}) translate(${-cm.x}px,${-cm.y}px)`;
+  // card size morph + content crossfade (old shrinks & blurs out, new grows in)
+  const mq=E.io(prog(τ,AN.m0,AN.m1));const w=lerp(prev.w,s.w,mq),h=lerp(prev.h,s.h,mq);
+  const breathe=1+.012*Math.sin(t*1.3);
+  CARD.style.width=w+'px';CARD.style.height=h+'px';CARD.style.transform=`translate(${CX-w/2}px,${CY-h/2}px) rotate(${.8*Math.sin(t*.9)}deg) scale(${breathe})`;
+  const pi=(i+NS-1)%NS;
+  CL.forEach((L,k)=>{if(k===i){const q=prog(τ,AN.m0+.25,AN.m1+.1);L.style.display='block';L.style.visibility='visible';L.style.opacity=clamp(q*1.5);L.style.transform=`scale(${lerp(1.08,1,E.out(q))})`;L.style.filter=q<1?`blur(${(1-q)*10}px)`:'none'}
+    else if(k===pi&&τ<AN.m1){const q=prog(τ,AN.m0,AN.m0+.4);L.style.display=q<1?'block':'none';L.style.visibility='visible';L.style.opacity=1-q;L.style.transform=`scale(${lerp(1,.9,q)})`;L.style.filter=`blur(${q*10}px)`}
+    else L.style.display='none'});
+  // per-section action (also renders the previous one at its end state while it fades)
+  Object.values(C).forEach(c=>{if(c.fchip)vis(c.fchip,0);if(c.big)vis(c.big,0)});
+  if(τ<AN.m1)R[pi](SEC+.01,C[pi]);
+  const path=R[i](τ,C[i]);
+  // tag: shows previous key until the new one lands
+  TAGT.textContent=i===0?'prompt':i===11?'saved prompt keywords':(τ<AN.land?(prev.key?'/'+prev.key:'prompt'):'/'+s.key);
+  TAG.style.color=i===4&&τ>.6?'#9cc3ff':'#2f7bf5';
+  // announcement: counter pill → ordinal plaque, keyword types big, flies into the tag
+  renderTop(t,i,τ);
+  // karaoke
+  KAR.forEach((K,k)=>{if(k!==i){K.el.style.visibility='hidden';return}K.el.style.visibility='visible';
+    const out=E.in(prog(τ,SEC-.35,SEC-.05));K.el.style.opacity=1-out;K.el.style.filter=out>0?`blur(${out*14}px)`:'none';K.el.style.transform=`translateY(${-out*30}px)`;
+    K.el.style.top=(i>0&&τ<AN.land+.2)?'2000px':'210px';
+    K.sp.forEach((sp,w)=>{const T=K.T[w];const a=prog(τ,T-.12,T+.02),d=prog(τ,T+.02,T+.22);sp.style.opacity=a;sp.style.filter=a<1?`blur(${(1-a)*8}px)`:'none';sp.style.transform=`translateY(${(1-E.out(a))*16}px)`;
+      sp.style.color=K.keys.includes(w)?'#2f7bf5':(d>=1?'#14151b':`rgb(${Math.round(lerp(150,20,d))},${Math.round(lerp(176,21,d))},${Math.round(lerp(230,27,d))})`)})});
+  // cursor
+  renderCursor(path,τ);
+  // finale flood (blue circle) & reset for the loop
+  if(i===11){const f=E.inExpo(prog(τ,SEC-2.4,SEC-1.6)),back=E.io(prog(τ,SEC-.5,SEC));FLOOD.style.width=FLOOD.style.height=lerp(10,3000,f)+'px';vis(FLOOD,f>0?1-back:0)}else vis(FLOOD,0);
+}
+function renderTop(t,i,τ){
+  const s=S[i];let n=i===0?0:i===11?10:i-1+E.out(prog(τ,AN.roll,AN.roll+.25));if(i===11)n=10*(1-E.io(prog(τ,SEC-.6,SEC-.15)));
+  setOdo(CO,n);SL.forEach((sp,k)=>{sp.style.color=k<Math.round(n)?'#2f7bf5':'#c6cbdb'});
+  const plq=i>0&&i<11?Math.min(E.out(prog(τ,AN.plq,AN.plq+.25)),1-E.out(prog(τ,AN.roll-.1,AN.roll+.15))):0;
+  CNTB.textContent=s.ord||'';CNTA.style.opacity=1-plq;CNTA.style.filter=plq>0?`blur(${plq*8}px)`:'none';CNTB.style.opacity=plq;
+  const wa=CNTA.offsetWidth||330,wb=Math.max(240,(s.ord||'').length*20+100);CNT.style.width=lerp(wa,wb,plq)+'px';CNT.style.transform=`translate(-50%,-50%) scale(${1+.06*Math.sin(Math.PI*plq)})`;CNT.style.left='540px';
+  if(i===0||i===11||τ>AN.land+.05){vis(BIG,0);return}
+  const word='/'+s.key;const n2=Math.floor(clamp((τ-AN.type)/.05,0,word.length));
+  BIG.innerHTML=word.slice(0,n2).split('').map((c,k)=>`<span style="display:inline-block;opacity:${k===n2-1?.55:1}">${c}</span>`).join('')+(τ<AN.fly?'<span style="display:inline-block;width:6px;height:104px;background:#2f7bf5;vertical-align:-14px;margin-left:4px"></span>':'');
+  // fly into the card tag
+  const f=E.inExpo(prog(τ,AN.fly,AN.land));const cm=camAt(t);
+  const tx=540+(CX-s.w/2+36+90-cm.x)*cm.z,ty=cm.sy+(CY-s.h/2+46-cm.y)*cm.z;
+  const bw=BIG.offsetWidth||400;
+  BIG.style.transform=`translate(${lerp(-bw/2,tx-540-bw/2,f)}px,${lerp(-62,ty-330-62,f)}px) scale(${lerp(1,.24,f)})`;BIG.style.transformOrigin='50% 50%';vis(BIG,τ<AN.type?0:1,f>.1&&f<.95?6:0);
+}
+function renderCursor(path,τ){if(!path||!path.length){vis(CUR,0);return}
+  if(τ<path[0][0]||τ>path[path.length-1][0]){vis(CUR,0);return}
+  let k=0;while(k<path.length-1&&τ>path[k+1][0])k++;const a=path[k],b_=path[Math.min(k+1,path.length-1)];const q=E.io(prog(τ,a[0],b_[0]));
+  const x=lerp(a[1],b_[1],q),y=lerp(a[2],b_[2],q);const press=a[3]&&b_[3]?1:a[3]?1-q:0;
+  // cursor positions are in world coords → screen
+  CUR.style.transform=`translate(${x-22}px,${y-6}px) scale(${1-.12*press})`;vis(CUR,1)}
+
+// ───────── sound events
+const SFX=[];const sx=(t,type,g=1,pan=0,extra)=>SFX.push(Object.assign({t:+t.toFixed(3),type,g,pan},extra||{}));
+S.forEach((s,i)=>{const a=s.t0;if(i>0&&i<11){sx(a+AN.plq,'pop',.4);for(let k=0;k<s.key.length+1;k++)sx(a+AN.type+k*.05,'key',.2,(hash(k+i)-.5)*.4,{s:k+i*20});sx(a+AN.roll,'tick',.45,.2);sx(a+AN.fly,'swish',.45,0,{d:.4});sx(a+AN.land,'snap',.45)}
+  sx(a+AN.m0,'air',.3,0,{d:.7})});
+window.SFX=SFX;window.renderAt=renderAt;window.DUR=DUR;window.SCN=S.map(s=>({t0:s.t0,line:s.line}));
+Promise.all([document.fonts.ready]).then(()=>{renderAt(0);window.ready=true});
+</script>
+</body>
+</html>
