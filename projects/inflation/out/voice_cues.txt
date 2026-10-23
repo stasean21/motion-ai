@@ -1,0 +1,15 @@
+Visual cues for the voice (seconds). No subtitles on screen, small shifts are fine.
+ 0.30  news signal, arrow nudges down     ("Inflation is down" — loop joins here)
+ 2.00  receipt slides out of the phone
+ 4.75  TOTAL jumps                        ("…like this?")
+ 9.50  INFLATION ↓ drops in, tag hesitates ("…lower prices")
+12.85  tag slows, JUST MORE SLOWLY        ("…more slowly")
+15.00  100.00 / ILLUSTRATIVE EXAMPLE      ("Imagine the same basket costs one hundred")
+18.15  ring + +10%, 19.3–20.4 counts to 110.00 ("Ten percent… one hundred and ten")
+22.10  10 morphs into 2                   ("…two percent")
+24.40  counts to 112.20                   ("…one hundred and twelve point two")
+29.60  INFLATION RATE gauge falls, 30.9 SLOWER ("Think of a car slowing down")
+34.55  REVERSE appears and is crossed out ("…reverse")
+43.00  SAME BASKET.  44.30 HIGHER BILL.   ("…exactly the same things")
+47.00  camera travels up the receipt      ("That's why your receipt…")
+53.90  back on the headline               ("…the headline that says…")
