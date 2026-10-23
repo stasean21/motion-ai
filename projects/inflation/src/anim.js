@@ -141,8 +141,10 @@ const BIG=mk(S3.cam,`<div class="cap" style="left:0;width:1080px;top:310px;font-
 const COLS=[];'000.00'.split('').forEach(ch=>{if(ch==='.'){BIG.insertAdjacentHTML('beforeend','<span style="display:inline-block;width:.28em;text-align:center">.</span>');return}
   const c=mk(BIG,`<span style="display:inline-block;width:.6em;height:.95em;overflow:hidden;position:relative"><span class="strip" style="position:absolute;left:0;top:0;width:100%;line-height:.95em">${[0,1,2,3,4,5,6,7,8,9,0].map(d=>`<span style="display:block;height:.95em;text-align:center">${d}</span>`).join('')}</span></span>`);COLS.push(c.firstElementChild)});
 const UNITS=[10000,1000,100,10,1];   // in cents
-function setNumber(v){const H=190*.95,c=Math.round(v*100*1000)/1000;UNITS.forEach((u,i)=>{const q=c/u;const d=Math.floor(q+1e-9)%10;let off=0;
-  if(i===UNITS.length-1)off=q-Math.floor(q+1e-9);else{const low=(c%u)/u;off=clamp((low-.9)/.1)}COLS[i].style.transform=`translateY(${-(d+off)*H}px)`})}
+function setNumber(v){const H=190*.95,c=Math.round(v*100*1000)/1000;let below=0,belowDigit=-1;   // odometer: a column rolls only while the one below goes 9 → 0
+  for(let i=UNITS.length-1;i>=0;i--){const u=UNITS[i];const d=Math.floor(c/u+1e-9)%10;let off;
+    if(i===UNITS.length-1)off=c-Math.floor(c+1e-9);else off=belowDigit===9?below:0;
+    COLS[i].style.transform=`translateY(${-(d+off)*H}px)`;below=off;belowDigit=d}}
 const MINI=mk(S3.cam,`<div class="abs" style="left:0;top:0;width:1080px;height:1920px"></div>`);MINI.insertAdjacentHTML('beforeend',basket(120,420,.34));
 const LINE3=mk(S3.cam,`<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"><path id="l3" d="M230 ${BASE-100*K} L540 ${BASE-110*K} L850 ${BASE-112.2*K}" stroke="#0d0d12" stroke-width="6" fill="none" stroke-dasharray="2 14" stroke-linecap="round"/>
   <path id="a3a" d="M330 690 Q 385 760 440 690" stroke="#ff6a00" stroke-width="6" fill="none" stroke-linecap="round" pathLength="1" stroke-dasharray="1 1"/><path id="a3b" d="M640 690 Q 695 740 750 690" stroke="#0fa3a0" stroke-width="6" fill="none" stroke-linecap="round" pathLength="1" stroke-dasharray="1 1"/>
@@ -197,9 +199,11 @@ const GLBL=mk(S4.cam,`<div class="abs" style="left:390px;top:930px;width:300px;t
 const SPEED=t=>lerp(1500,260,E.io(prog(t,29.6,35.8)));
 function roadOffset(t){let o=0;for(let s=28.5;s<t;s+=1/120)o+=SPEED(s)/120;return o}
 function renderS4(t){
-  if(t<28.75||t>37.9){show(S4,0);return}
+  if(t<28.75||t>37.75){show(S4,0);return}
   drift(S4,t);show(S4,E.out(prog(t,28.75,29.0)));
-  cam(S4.cam,kf(t,[[28.75,{x:540,y:1449,z:5.5}],[29.9,{x:540,y:960,z:1.0},'outExpo'],[36.4,{x:560,y:1000,z:1.03},'lin'],[37.9,{x:548,y:1427,z:11},'inExpo']]));
+  const wdx=Math.sin(t*.7)*10;   // the car sways; the dive follows its rear wheel
+  if(t<36.3)cam(S4.cam,kf(t,[[28.75,{x:540,y:1449,z:5.5}],[29.9,{x:540,y:960,z:1.0},'outExpo'],[36.3,{x:560,y:1000,z:1.03},'lin']]));
+  else{const pq=E.io(prog(t,36.3,37.25)),zq=E.inExpo(prog(t,36.45,37.65));cam(S4.cam,{x:lerp(560,548+wdx,pq),y:lerp(1000,1427,pq),z:lerp(1.03,15,zq),sx:540,sy:960})}
   const rate=lerp(10,2,E.io(prog(t,29.6,35.6)));const val=rate/10*.55+.07;   // needle 10% → 2%
   const gp=prog(t,29.1,29.8);GAUGE.innerHTML=gauge(540,820,330,val);GAUGE.style.transformOrigin='540px 820px';GAUGE.style.transform=`scale(${lerp(.12,1,E.back(gp))})`;vis(GAUGE,clamp(gp*3));
   glbl.textContent=Math.round(rate)+'%';vis(GLBL,clamp(prog(t,29.5,29.8)));
@@ -209,7 +213,7 @@ function renderS4(t){
   const bob=Math.sin(t*sp/40)*2;CARSVG.style.transform=`translate(${Math.sin(t*.7)*10}px,${bob}px)`;
   SPOKES.forEach(g=>{const c=g.previousElementSibling.previousElementSibling;const cx=+c.getAttribute('cx'),cy=+c.getAttribute('cy');g.setAttribute('transform',`translate(${cx} ${cy}) rotate(${(off*1.6)%360})`)});
   // wheel turns orange as the camera dives into it (becomes the tag)
-  const wo=E.io(prog(t,36.9,37.5));WHEELS.forEach(w=>w.setAttribute('fill',wo>0?mixHex('#22242c','#ff6a00',wo):'#22242c'));
+  const wo=E.io(prog(t,36.8,37.35));WHEELS.forEach(w=>w.setAttribute('fill',wo>0?mixHex('#22242c','#ff6a00',wo):'#22242c'));SPOKES.forEach(g=>g.style.opacity=1-wo);
   const rv=prog(t,34.55,35.0)*(1-prog(t,35.5,36.0));REV.style.opacity=.3*rv;REV.style.transform=`translateX(${(1-rv)*-30}px)`;REV.style.textDecoration=t>35.3?'line-through':'none';
 }
 
@@ -227,8 +231,8 @@ const RCLIP5=mk(S5.cam,`<div class="abs" style="left:0;top:1490px;width:1080px;h
 const HOLE5={x:690+20+13.5,y:760+75};
 function renderS5(t){
   if(t<37.65||t>47.2){show(S5,0);return}
-  drift(S5,t);show(S5,E.out(prog(t,37.65,37.8))*(1-prog(t,46.95,47.2)),prog(t,46.6,47.2)*10);
-  cam(S5.cam,kf(t,[[37.65,{x:HOLE5.x,y:HOLE5.y,z:14}],[38.9,{x:540,y:1000,z:1.0},'outExpo'],[42.5,{x:540,y:980,z:1.02},'lin'],[45.2,{x:560,y:1060,z:1.04},'io'],[46.4,{x:640,y:1300,z:1.1},'io'],[47.2,{x:780,y:1700,z:1.6},'in']]));
+  drift(S5,t);show(S5,E.out(prog(t,37.62,37.72))*(1-prog(t,46.95,47.2)),prog(t,46.6,47.2)*10);
+  const zq5=prog(t,37.65,38.9),pq5=E.io(prog(t,37.9,38.9));if(t<38.9){cam(S5.cam,{x:lerp(HOLE5.x,540,pq5),y:lerp(HOLE5.y,1000,pq5),z:Math.exp(lerp(Math.log(15),0,E.out(zq5))),sx:540,sy:960})}else cam(S5.cam,kf(t,[[38.9,{x:540,y:1000,z:1.0}],[42.5,{x:540,y:980,z:1.02},'lin'],[45.2,{x:560,y:1060,z:1.04},'io'],[46.4,{x:640,y:1300,z:1.1},'io'],[47.2,{x:780,y:1700,z:1.6},'in']]));
   const mv=E.io(prog(t,39.2,40.2));
   placeBasket(B5,lerp(540,800,mv),lerp(1080,960,mv),lerp(1.15,.88,mv));
   Object.values(B5.P).forEach(p=>{p.style.transform='none';vis(p,1)});
