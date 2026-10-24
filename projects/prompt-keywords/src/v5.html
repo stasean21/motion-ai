@@ -338,7 +338,7 @@ function renderAt(t){
     else L.style.display='none'});
   // per-section action (also renders the previous one at its end state while it fades)
   Object.values(C).forEach(c=>{if(c.fchip)vis(c.fchip,0);if(c.big)vis(c.big,0);if(c.light)vis(c.light,0)});
-  if(τ<AN.m1)R[pi](SEC+.01,C[pi]);
+  if(τ<AN.m1){R[pi](SEC+.01,C[pi]);const fq=1-prog(τ,AN.m0,AN.m0+.4);RIM.style.opacity*=fq;LBEH.style.opacity*=fq;if(fq<=0){vis(RIM,0);vis(LBEH,0)}}
   const path=R[i](τ,C[i]);
   vis(NIGHT,i===4?NIGHTV*(1-prog(τ,SEC-.45,SEC-.05)):0);
   // tag: shows previous key until the new one lands
