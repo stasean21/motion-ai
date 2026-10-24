@@ -97,8 +97,9 @@ const lerpPop=p=>.9+.1*p;const eo=p=>1-Math.pow(1-p,3),eb=p=>{const c1=1.7,c3=c1
 function renderSpeed(f,si,fin){const lvl=fin?3:si-1;const T=21;   // ≈0.35 s transition starting on the level's first frame
   const q=si>=2&&!fin?clamp((f-SEC_F[si])/T):1;const from=si>=2&&!fin?lvl-1:lvl;
   const pos=lvl<0?-1:from+(lvl-from)*eo(q);
-  const hl=$('sp_hl');if(lvl<0){hl.style.opacity=0}else{hl.style.opacity=1;hl.style.left=SPX+pos*(SPW+SPG)+'px';hl.style.width=SPW+'px';hl.style.transform=`scaleX(${1+.18*Math.sin(Math.PI*q)})`}
-  SPC.forEach((c,k)=>{const on=lvl<0?0:clamp(1-Math.abs(pos-k));   // how much of the blue pill covers this value
+  const q1=si===1?clamp((f-SEC_F[1])/T):1;   // level 1: the pill appears out of the blur
+  const hl=$('sp_hl');if(lvl<0){hl.style.opacity=0}else{hl.style.opacity=q1;hl.style.left=SPX+pos*(SPW+SPG)+'px';hl.style.width=SPW+'px';hl.style.transform=si===1?`scale(${.6+.4*eb(q1)})`:`scaleX(${1+.18*Math.sin(Math.PI*q)})`}
+  SPC.forEach((c,k)=>{const on=lvl<0?0:clamp(1-Math.abs(pos-k))*q1;   // how much of the blue pill covers this value
     const g=Math.round(154+(255-154)*on),gb=Math.round(160+(255-160)*on),bb=Math.round(180+(255-180)*on);c.style.color=`rgb(${g},${gb},${bb})`;
     c.style.filter=on>.98?'none':`blur(${(1-on)*3.2}px)`;c.style.opacity=.45+.55*on;const pop=k===lvl&&q<1?eb(q):1;c.style.transform=`scale(${(.92+.16*on)*(k===lvl?lerpPop(pop):1)})`});
   vis($('sp_u'),lvl<0?0:1)}
