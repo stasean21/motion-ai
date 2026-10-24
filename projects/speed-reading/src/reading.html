@@ -24,8 +24,8 @@ body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antia
  
  
  <!-- counter pill: level + four slashes as the progress -->
- <div id="cnt" class="pill" style="left:540px;top:150px;height:70px;padding:0 30px;gap:20px;font-weight:800;font-size:28px;letter-spacing:.04em"><span id="level"></span><span id="prog" class="mono" style="font-size:34px;letter-spacing:-.04em;font-weight:700"></span></div>
- <div id="title" class="ctr" style="left:540px;top:400px;font-weight:900;font-size:84px;letter-spacing:-.045em;line-height:.95">Как быстро<br>ты <span style="color:#2f7bf5">читаешь?</span></div>
+ <div id="cnt" class="pill" style="left:540px;top:150px;height:70px;padding:0 30px;gap:20px;font-weight:800;font-size:31px;letter-spacing:.04em"><span id="level"></span><span id="prog" class="mono" style="font-size:37px;letter-spacing:-.04em;font-weight:700"></span></div>
+ <div id="title" class="ctr" style="left:540px;top:400px;font-weight:900;font-size:87px;letter-spacing:-.045em;line-height:.95">Как быстро<br>ты <span style="color:#2f7bf5">читаешь?</span></div>
  <!-- reading window card with the two guides and ticks on the fixation axis -->
  <div class="card" style="left:60px;top:740px;width:960px;height:370px"></div>
  <div class="abs" style="left:110px;top:810px;width:860px;height:2px;background:#e3e6ee"></div>
@@ -36,15 +36,15 @@ body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antia
  <div id="speed" class="abs" style="left:0;top:0">
   <div id="sp_hl" class="abs" style="left:0;top:1160px;height:76px;border-radius:999px;background:#2f7bf5;box-shadow:0 14px 26px -12px rgba(47,123,245,.6)"></div>
   <div id="sp_row" class="abs" style="left:0;top:1160px;height:76px"></div>
-  <div id="sp_u" class="ctr" style="left:480px;top:1272px;font-weight:700;font-size:26px;letter-spacing:.08em;color:#8a90a6">СЛОВ В МИНУТУ</div>
+  <div id="sp_u" class="ctr" style="left:480px;top:1276px;font-weight:700;font-size:29px;letter-spacing:.08em;color:#8a90a6">СЛОВ В МИНУТУ</div>
  </div>
  <!-- result card -->
  <div id="rc" class="card" style="left:60px;top:1240px;width:960px;height:430px"></div>
- <div id="q" class="ctr" style="left:540px;top:950px;font-weight:900;font-size:62px;letter-spacing:-.035em;line-height:1.02;text-align:center">На какой скорости<br><span style="color:#2f7bf5">стало трудно?</span></div>
- <div id="nums" class="abs" style="left:540px;top:1330px;transform:translateX(-50%);display:flex;gap:16px;font-size:52px">
+ <div id="q" class="ctr" style="left:540px;top:950px;font-weight:900;font-size:65px;letter-spacing:-.035em;line-height:1.02;text-align:center">На какой скорости<br><span style="color:#2f7bf5">стало трудно?</span></div>
+ <div id="nums" class="abs" style="left:540px;top:1330px;transform:translateX(-50%);display:flex;gap:16px;font-size:55px">
    <span class="chip">250</span><span class="chip">375</span><span class="chip">500</span><span class="chip">750</span></div>
- <div id="cta" class="ctr" style="left:540px;top:1500px;font-weight:800;font-size:44px;letter-spacing:-.01em">Напиши в комментариях</div>
- <div id="like" class="ctr" style="left:540px;top:1575px;font-weight:700;font-size:30px;letter-spacing:.06em;color:#8a90a6">ДОШЁЛ ДО КОНЦА? СТАВЬ ЛАЙК</div>
+ <div id="cta" class="ctr" style="left:540px;top:1500px;font-weight:800;font-size:47px;letter-spacing:-.01em">Напиши в комментариях</div>
+ <div id="like" class="ctr" style="left:540px;top:1578px;font-weight:700;font-size:33px;letter-spacing:.06em;color:#8a90a6">ДОШЁЛ ДО КОНЦА? СТАВЬ ЛАЙК</div>
 </div>
 <script src="text_ru.js"></script>
 <script>
@@ -92,7 +92,7 @@ function showWord(w){const m=LAY.get(w);const ch=[...w];
 $('prog').innerHTML=[0,1,2,3].map(()=>'<span style="font-style:italic">/</span>').join('');const SEG=[...$('prog').children];
 // speed row: four values, the current one sharp in a blue pill, the rest blurred
 const SPV=[250,375,500,750],SPW=150,SPG=18,SPX=AX-(4*SPW+3*SPG)/2;
-const SPC=SPV.map((v,k)=>{const d=document.createElement('div');d.className='abs';d.style.cssText=`left:${SPX+k*(SPW+SPG)}px;top:0;width:${SPW}px;height:76px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:44px;letter-spacing:-.01em;transform-origin:50% 50%`;d.textContent=v;$('sp_row').appendChild(d);return d});
+const SPC=SPV.map((v,k)=>{const d=document.createElement('div');d.className='abs';d.style.cssText=`left:${SPX+k*(SPW+SPG)}px;top:0;width:${SPW}px;height:76px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:47px;letter-spacing:-.01em;transform-origin:50% 50%`;d.textContent=v;$('sp_row').appendChild(d);return d});
 const lerpPop=p=>.9+.1*p;const eo=p=>1-Math.pow(1-p,3),eb=p=>{const c1=1.7,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)};
 function renderSpeed(f,si,fin){const lvl=fin?3:si-1;const T=21;   // ≈0.35 s transition starting on the level's first frame
   const q=si>=2&&!fin?clamp((f-SEC_F[si])/T):1;const from=si>=2&&!fin?lvl-1:lvl;
