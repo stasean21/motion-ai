@@ -30,8 +30,8 @@ body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antia
  <div class="card" style="left:60px;top:740px;width:960px;height:370px"></div>
  <div class="abs" style="left:110px;top:810px;width:860px;height:2px;background:#e3e6ee"></div>
  <div class="abs" style="left:110px;top:1040px;width:860px;height:2px;background:#e3e6ee"></div>
- <div class="abs" style="left:478px;top:796px;width:4px;height:30px;border-radius:2px;background:#2f7bf5;opacity:.55"></div>
- <div class="abs" style="left:478px;top:1026px;width:4px;height:30px;border-radius:2px;background:#2f7bf5;opacity:.55"></div>
+ <div id="tk1" class="abs" style="left:478px;top:796px;width:4px;height:30px;border-radius:2px;background:#2f7bf5;opacity:.55"></div>
+ <div id="tk2" class="abs" style="left:478px;top:1026px;width:4px;height:30px;border-radius:2px;background:#2f7bf5;opacity:.55"></div>
  <div id="word"></div>
  <div id="speed" class="abs" style="left:0;top:0">
   <div id="sp_hl" class="abs" style="left:0;top:1160px;height:76px;border-radius:999px;background:#2f7bf5;box-shadow:0 14px 26px -12px rgba(47,123,245,.6)"></div>
@@ -103,6 +103,7 @@ function renderSpeed(f,si,fin){const lvl=fin?3:si-1;const T=21;   // ≈0.35 s t
     const g=Math.round(154+(255-154)*on),gb=Math.round(160+(255-160)*on),bb=Math.round(180+(255-180)*on);c.style.color=`rgb(${g},${gb},${bb})`;
     c.style.filter=on>.98?'none':`blur(${(1-on)*3.2}px)`;c.style.opacity=.45+.55*on;const pop=k===lvl&&q<1?eb(q):1;c.style.transform=`scale(${(.92+.16*on)*(k===lvl?lerpPop(pop):1)})`});
   vis($('sp_u'),lvl<0?0:1)}
+['tk1','tk2'].forEach(id=>$(id).style.left=(AX-2)+'px');   // ticks always sit on the fixation axis
 const vis=(el,o)=>{el.style.opacity=o;el.style.visibility=o<=.004?'hidden':'visible'};
 
 function renderAt(t){
