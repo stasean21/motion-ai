@@ -3,36 +3,44 @@
 <head>
 <meta charset="utf-8">
 <title>Как быстро ты читаешь — RU</title>
-<link rel="stylesheet" href="fonts/manrope.css">
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{width:1080px;height:1920px;overflow:hidden;background:#f4f5f8}
-body{font-family:'Manrope',sans-serif;-webkit-font-smoothing:antialiased;color:#14151b}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#eef0f6}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#111218}
 .abs{position:absolute}
+.mono{font-family:'DejaVu Sans Mono',monospace}
 .ctr{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;text-align:center}
-#word{position:absolute;left:0;top:0;white-space:pre;font-weight:600;font-kerning:normal;line-height:1}
+.pill{position:absolute;border-radius:999px;display:flex;align-items:center;justify-content:center;white-space:nowrap;background:rgba(255,255,255,.92);border:1.5px solid #fff;box-shadow:0 12px 26px -14px rgba(40,50,110,.3);transform:translate(-50%,-50%)}
+.card{position:absolute;border-radius:46px;background:#fff;box-shadow:0 46px 90px -40px rgba(40,50,110,.4),0 10px 24px -12px rgba(40,50,110,.14)}
+.chip{display:inline-block;padding:10px 26px;border-radius:999px;background:#2f7bf5;color:#fff;font-weight:800;box-shadow:0 14px 26px -12px rgba(47,123,245,.6)}
+#word{position:absolute;left:0;top:0;white-space:pre;font-weight:700;font-kerning:normal;line-height:1;letter-spacing:-.01em}
 #word .r{color:#C43D3D}
-.seg{position:absolute;top:0;height:10px;border-radius:5px;background:#dfe2ea}
 </style>
 </head>
 <body>
 <div id="root" class="abs" style="inset:0">
- <div class="abs" style="inset:0;background:radial-gradient(120% 60% at 50% 0%,#fbfbfd 0%,#f4f5f8 55%,#eef0f5 100%)"></div>
- <div id="title" class="ctr" style="left:540px;top:430px;font-weight:600;font-size:54px;letter-spacing:-.01em">Как быстро ты читаешь?</div>
- <div id="prog" class="abs" style="left:0;top:640px"></div>
- <div id="level" class="ctr" style="left:480px;top:752px;font-weight:700;font-size:32px;letter-spacing:.08em;color:#8a90a3"></div>
- <!-- reading window: two guides with short ticks on the fixation axis -->
- <div class="abs" style="left:90px;top:810px;width:810px;height:2px;background:#d6d9e2"></div>
- <div class="abs" style="left:90px;top:1040px;width:810px;height:2px;background:#d6d9e2"></div>
- <div class="abs" style="left:479px;top:810px;width:3px;height:26px;background:#b9bdca"></div>
- <div class="abs" style="left:479px;top:1016px;width:3px;height:26px;background:#b9bdca"></div>
+ <div class="abs" style="inset:0;background:radial-gradient(110% 55% at 50% 0%,#fbfbfd 0%,#f1f2f7 55%,#e9ebf2 100%)"></div>
+ <div class="abs" style="left:-260px;top:300px;width:900px;height:900px;border-radius:50%;background:radial-gradient(circle,rgba(160,190,255,.45),rgba(160,190,255,0) 65%)"></div>
+ <div class="abs" style="left:380px;top:1100px;width:1000px;height:1000px;border-radius:50%;background:radial-gradient(circle,rgba(255,190,150,.35),rgba(255,190,150,0) 65%)"></div>
+ <!-- counter pill: level + four slashes as the progress -->
+ <div id="cnt" class="pill" style="left:540px;top:150px;height:70px;padding:0 30px;gap:20px;font-weight:800;font-size:28px;letter-spacing:.04em"><span id="level"></span><span id="prog" class="mono" style="font-size:34px;letter-spacing:-.04em;font-weight:700"></span></div>
+ <div id="title" class="ctr" style="left:540px;top:400px;font-weight:900;font-size:84px;letter-spacing:-.045em;line-height:.95">Как быстро<br>ты <span style="color:#2f7bf5">читаешь?</span></div>
+ <!-- reading window card with the two guides and ticks on the fixation axis -->
+ <div class="card" style="left:60px;top:740px;width:960px;height:370px"></div>
+ <div class="abs" style="left:110px;top:810px;width:860px;height:2px;background:#e3e6ee"></div>
+ <div class="abs" style="left:110px;top:1040px;width:860px;height:2px;background:#e3e6ee"></div>
+ <div class="abs" style="left:478px;top:796px;width:4px;height:30px;border-radius:2px;background:#2f7bf5;opacity:.55"></div>
+ <div class="abs" style="left:478px;top:1026px;width:4px;height:30px;border-radius:2px;background:#2f7bf5;opacity:.55"></div>
  <div id="word"></div>
- <div id="speed" class="ctr" style="left:480px;top:1112px;font-weight:600;font-size:40px;color:#14151b"></div>
+ <div id="speed" class="ctr" style="left:480px;top:1190px;font-size:40px"></div>
  <!-- result card -->
- <div id="q" class="ctr" style="left:480px;top:720px;font-weight:800;font-size:44px;letter-spacing:.01em">НА КАКОЙ СКОРОСТИ СТАЛО ТРУДНО?</div>
- <div id="nums" class="ctr" style="left:480px;top:1150px;font-weight:800;font-size:76px;letter-spacing:-.01em">250 / 375 / 500 / 750</div>
- <div id="cta" class="ctr" style="left:480px;top:1262px;font-weight:700;font-size:40px;letter-spacing:.04em;color:#2c2e38">НАПИШИ В КОММЕНТАРИЯХ</div>
- <div id="like" class="ctr" style="left:480px;top:1336px;font-weight:600;font-size:30px;letter-spacing:.04em;color:#8a90a3">ДОШЁЛ ДО КОНЦА? СТАВЬ ЛАЙК</div>
+ <div id="rc" class="card" style="left:60px;top:1240px;width:960px;height:430px"></div>
+ <div id="q" class="ctr" style="left:540px;top:950px;font-weight:900;font-size:62px;letter-spacing:-.035em;line-height:1.02;text-align:center">На какой скорости<br><span style="color:#2f7bf5">стало трудно?</span></div>
+ <div id="nums" class="abs" style="left:540px;top:1330px;transform:translateX(-50%);display:flex;gap:16px;font-size:52px">
+   <span class="chip">250</span><span class="chip">375</span><span class="chip">500</span><span class="chip">750</span></div>
+ <div id="cta" class="ctr" style="left:540px;top:1500px;font-weight:800;font-size:44px;letter-spacing:-.01em">Напиши в комментариях</div>
+ <div id="like" class="ctr" style="left:540px;top:1575px;font-weight:700;font-size:30px;letter-spacing:.06em;color:#8a90a6">ДОШЁЛ ДО КОНЦА? СТАВЬ ЛАЙК</div>
 </div>
 <script src="text_ru.js"></script>
 <script>
@@ -40,7 +48,7 @@ body{font-family:'Manrope',sans-serif;-webkit-font-smoothing:antialiased;color:#
 // ═══════════ Чтение с ускорением (RU): RSVP, one word at a time, red letter locked to x = 480 / baseline y = 960 ═══════════
 const FPS=60,NFR=8122,DUR=NFR/FPS,AX=480,BASE=960,RED='#C43D3D';
 const SECS=[ // ideal grid (seconds), words per minute, music BPM
- {key:'intro',t0:0,     wpm:125,bpm:62.5, label:'4 уровня',      speed:''},
+ {key:'intro',t0:0,     wpm:125,bpm:62.5, label:'4 УРОВНЯ',      speed:''},
  {key:'l1',   t0:7.68,  wpm:250,bpm:62.5, label:'УРОВЕНЬ 1 ИЗ 4',speed:'250 слов/мин'},
  {key:'l2',   t0:38.4,  wpm:375,bpm:93.75,label:'УРОВЕНЬ 2 ИЗ 4',speed:'375 слов/мин'},
  {key:'l3',   t0:69.12, wpm:500,bpm:125,  label:'УРОВЕНЬ 3 ИЗ 4',speed:'500 слов/мин'},
@@ -77,7 +85,7 @@ function showWord(w){const m=LAY.get(w);const ch=[...w];
   WORD.innerHTML=ch.map((c,k)=>k===m.ri?`<span class="r">${c}</span>`:c).join('');
   WORD.style.transform=`translate(${(AX-m.cx).toFixed(2)}px,${(BASE-window.BASE_OFF).toFixed(2)}px)`;WORD.style.visibility='visible'}
 // progress: four static segments centred on the fixation axis
-const PW=118,PG=14,PX=AX-(4*PW+3*PG)/2;const SEG=[0,1,2,3].map(k=>{const d=document.createElement('div');d.className='seg';d.style.left=PX+k*(PW+PG)+'px';d.style.width=PW+'px';$('prog').appendChild(d);return d});
+$('prog').innerHTML=[0,1,2,3].map(()=>'<span style="font-style:italic">/</span>').join('');const SEG=[...$('prog').children];
 const vis=(el,o)=>{el.style.opacity=o;el.style.visibility=o<=.004?'hidden':'visible'};
 
 function renderAt(t){
@@ -87,12 +95,12 @@ function renderAt(t){
   let lo=0,hi=EV.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(EV[m].f<=f)lo=m;else hi=m-1}
   if(fin)WORD.style.visibility='hidden';else showWord(EV[lo].w);
   // labels: level/indicator changes on the first word of the level; speed may fade in over 6 frames
-  const s=SECS[si];$('level').textContent=s.label;$('speed').textContent=s.speed;
-  vis($('level'),fin?0:1);vis($('speed'),fin||!s.speed?0:clamp((f-SEC_F[si]+1)/6));
-  SEG.forEach((g,k)=>{g.style.background=(si>=1&&k<si)||fin?'#14151b':'#dfe2ea'});
+  const s=SECS[si];$('level').textContent=s.label;$('speed').innerHTML=s.speed?`<span class="chip" style="font-size:38px">${s.speed}</span>`:'';
+  vis($('level'),1);if(fin)$('level').textContent='ГОТОВО';vis($('speed'),fin||!s.speed?0:clamp((f-SEC_F[si]+1)/6));
+  SEG.forEach((g,k)=>{g.style.color=(si>=1&&k<si)||fin?'#2f7bf5':'#c6cbdb'});
   // result card: static; last 0.3 s fade back to the clean opening state
-  const out=clamp((f-(NFR-18))/18);const card=fin?1-out:0;['q','nums','cta','like'].forEach(id=>vis($(id),card));
-  if(fin&&out>0){SEG.forEach(g=>{g.style.background='#dfe2ea';g.style.opacity=1});vis($('level'),out);$('level').textContent=SECS[0].label}
+  const out=clamp((f-(NFR-18))/18);const card=fin?1-out:0;['q','nums','cta','like','rc'].forEach(id=>vis($(id),card));
+  if(fin&&out>0){SEG.forEach(g=>{g.style.color='#c6cbdb'});$('level').textContent=SECS[0].label}
 }
 
 // ───────── sound events (frame-exact: sample = frame × 800 at 48 kHz)
@@ -101,7 +109,7 @@ EV.forEach(e=>sx(e.f,'tick',[.55,.5,.42,.32,.26][e.si],{sec:e.si}));
 [2,3,4].forEach(k=>sx(SEC_F[k],'accent',.5,{n:k}));sx(FIN_F,'end',.6);
 window.SFX=SFX;window.renderAt=renderAt;window.DUR=DUR;window.SCN=SECS.map((s,k)=>({t0:SEC_F[k]/FPS,bpm:s.bpm,wpm:s.wpm,f0:SEC_F[k]})).concat([{t0:FIN_F/FPS,bpm:62.5,f0:FIN_F}]);
 window.EVT=EV.map(e=>[e.f,e.w]);
-document.fonts.load('600 100px Manrope','АБВабвёЁ—?').then(()=>document.fonts.ready).then(()=>{layoutAll();renderAt(0);window.ready=true});
+document.fonts.load('700 100px "Inter Display"','АБВабвёЁ—?').then(()=>document.fonts.ready).then(()=>{layoutAll();renderAt(0);window.ready=true});
 </script>
 </body>
 </html>
