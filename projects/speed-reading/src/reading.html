@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Как быстро ты читаешь — RU</title>
+<link rel="stylesheet" href="fonts/manrope.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#f4f5f8}
+body{font-family:'Manrope',sans-serif;-webkit-font-smoothing:antialiased;color:#14151b}
+.abs{position:absolute}
+.ctr{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;text-align:center}
+#word{position:absolute;left:0;top:0;white-space:pre;font-weight:600;font-kerning:normal;line-height:1}
+#word .r{color:#C43D3D}
+.seg{position:absolute;top:0;height:10px;border-radius:5px;background:#dfe2ea}
+</style>
+</head>
+<body>
+<div id="root" class="abs" style="inset:0">
+ <div class="abs" style="inset:0;background:radial-gradient(120% 60% at 50% 0%,#fbfbfd 0%,#f4f5f8 55%,#eef0f5 100%)"></div>
+ <div id="title" class="ctr" style="left:540px;top:430px;font-weight:600;font-size:54px;letter-spacing:-.01em">Как быстро ты читаешь?</div>
+ <div id="prog" class="abs" style="left:0;top:640px"></div>
+ <div id="level" class="ctr" style="left:480px;top:752px;font-weight:700;font-size:32px;letter-spacing:.08em;color:#8a90a3"></div>
+ <!-- reading window: two guides with short ticks on the fixation axis -->
+ <div class="abs" style="left:90px;top:810px;width:810px;height:2px;background:#d6d9e2"></div>
+ <div class="abs" style="left:90px;top:1040px;width:810px;height:2px;background:#d6d9e2"></div>
+ <div class="abs" style="left:479px;top:810px;width:3px;height:26px;background:#b9bdca"></div>
+ <div class="abs" style="left:479px;top:1016px;width:3px;height:26px;background:#b9bdca"></div>
+ <div id="word"></div>
+ <div id="speed" class="ctr" style="left:480px;top:1112px;font-weight:600;font-size:40px;color:#14151b"></div>
+ <!-- result card -->
+ <div id="q" class="ctr" style="left:480px;top:720px;font-weight:800;font-size:44px;letter-spacing:.01em">НА КАКОЙ СКОРОСТИ СТАЛО ТРУДНО?</div>
+ <div id="nums" class="ctr" style="left:480px;top:1150px;font-weight:800;font-size:76px;letter-spacing:-.01em">250 / 375 / 500 / 750</div>
+ <div id="cta" class="ctr" style="left:480px;top:1262px;font-weight:700;font-size:40px;letter-spacing:.04em;color:#2c2e38">НАПИШИ В КОММЕНТАРИЯХ</div>
+ <div id="like" class="ctr" style="left:480px;top:1336px;font-weight:600;font-size:30px;letter-spacing:.04em;color:#8a90a3">ДОШЁЛ ДО КОНЦА? СТАВЬ ЛАЙК</div>
+</div>
+<script src="text_ru.js"></script>
+<script>
+'use strict';
+// ═══════════ Чтение с ускорением (RU): RSVP, one word at a time, red letter locked to x = 480 / baseline y = 960 ═══════════
+const FPS=60,NFR=8122,DUR=NFR/FPS,AX=480,BASE=960,RED='#C43D3D';
+const SECS=[ // ideal grid (seconds), words per minute, music BPM
+ {key:'intro',t0:0,     wpm:125,bpm:62.5, label:'4 уровня',      speed:''},
+ {key:'l1',   t0:7.68,  wpm:250,bpm:62.5, label:'УРОВЕНЬ 1 ИЗ 4',speed:'250 слов/мин'},
+ {key:'l2',   t0:38.4,  wpm:375,bpm:93.75,label:'УРОВЕНЬ 2 ИЗ 4',speed:'375 слов/мин'},
+ {key:'l3',   t0:69.12, wpm:500,bpm:125,  label:'УРОВЕНЬ 3 ИЗ 4',speed:'500 слов/мин'},
+ {key:'l4',   t0:99.84, wpm:750,bpm:187.5,label:'УРОВЕНЬ 4 ИЗ 4',speed:'750 слов/мин'},
+];
+const FIN_T=130.56;
+const fr=t=>Math.floor(t*FPS+.5);                 // ideal time → frame (never round per-word durations)
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const $=id=>document.getElementById(id);
+// ───────── event table: every word's start frame from the exact formula
+const EV=[];SECS.forEach((s,si)=>TEXT[s.key].forEach((w,i)=>EV.push({w,si,i,f:fr(s.t0+i*60/s.wpm)})));
+const SEC_F=SECS.map(s=>fr(s.t0)),FIN_F=fr(FIN_T);
+// ───────── red-letter rule: count letters without quotes/punctuation; 1→1st, 2–5→2nd, 6–9→3rd, 10–13→4th, 14+→5th
+const isL=c=>/[\p{L}\p{N}]/u.test(c);
+function redIndex(w){const idx=[];[...w].forEach((c,k)=>{if(isL(c))idx.push(k)});const n=idx.length;if(!n)return -1;
+  const pick=n===1?1:n<=5?2:n<=9?3:n<=13?4:5;return idx[Math.min(pick,n)-1]}
+// ───────── layout: measure the real font with kerning, one size for the whole version
+const WORD=$('word');let SIZE=100;const LAY=new Map();
+function measure(w,size){const ri=redIndex(w),ch=[...w];WORD.style.fontSize=size+'px';
+  WORD.innerHTML=ch.map((c,k)=>k===ri?`<span class="r">${c}</span>`:c.replace(/&/g,'&amp;').replace(/</g,'&lt;')).join('');
+  WORD.style.transform='translate(0px,0px)';const wb=WORD.getBoundingClientRect();
+  const r=WORD.querySelector('.r');let cx=wb.width/2;if(r){const rb=r.getBoundingClientRect();cx=rb.left-wb.left+rb.width/2}
+  // kerning check: the coloured span must not change the advance of the whole word
+  WORD.textContent=w;const w2=WORD.getBoundingClientRect().width;return {cx,width:wb.width,kernOk:Math.abs(w2-wb.width)<.5,ri}}
+function layoutAll(){const words=[...new Set(EV.map(e=>e.w))];let s=SIZE;
+  // largest single size that keeps every word inside x = 90…900 with its red letter on x = 480
+  for(const w of words){const m=measure(w,100);const left=m.cx,right=m.width-m.cx;s=Math.min(s,100*Math.min((AX-90)/left,(900-AX)/right))}
+  SIZE=Math.floor(Math.min(110,s));let bad=0;
+  for(const w of words){const m=measure(w,SIZE);if(!m.kernOk)bad++;LAY.set(w,m)}
+  // baseline: place the line box so the alphabetic baseline sits on y = 960
+  WORD.style.fontSize=SIZE+'px';WORD.innerHTML='Hxg<span id="bl" style="display:inline-block;width:0;height:0;vertical-align:baseline"></span>';
+  const top=WORD.getBoundingClientRect().top,bl=$('bl').getBoundingClientRect().top;window.BASE_OFF=bl-top;window.KERN_BAD=bad;window.FONT_SIZE=SIZE}
+function showWord(w){const m=LAY.get(w);const ch=[...w];
+  WORD.innerHTML=ch.map((c,k)=>k===m.ri?`<span class="r">${c}</span>`:c).join('');
+  WORD.style.transform=`translate(${(AX-m.cx).toFixed(2)}px,${(BASE-window.BASE_OFF).toFixed(2)}px)`;WORD.style.visibility='visible'}
+// progress: four static segments centred on the fixation axis
+const PW=118,PG=14,PX=AX-(4*PW+3*PG)/2;const SEG=[0,1,2,3].map(k=>{const d=document.createElement('div');d.className='seg';d.style.left=PX+k*(PW+PG)+'px';d.style.width=PW+'px';$('prog').appendChild(d);return d});
+const vis=(el,o)=>{el.style.opacity=o;el.style.visibility=o<=.004?'hidden':'visible'};
+
+function renderAt(t){
+  const f=Math.min(NFR-1,Math.round(t*FPS));
+  // current section and word (each word holds until the next event; the last one until the next section)
+  let si=0;while(si<SECS.length-1&&f>=SEC_F[si+1])si++;const fin=f>=FIN_F;
+  let lo=0,hi=EV.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(EV[m].f<=f)lo=m;else hi=m-1}
+  if(fin)WORD.style.visibility='hidden';else showWord(EV[lo].w);
+  // labels: level/indicator changes on the first word of the level; speed may fade in over 6 frames
+  const s=SECS[si];$('level').textContent=s.label;$('speed').textContent=s.speed;
+  vis($('level'),fin?0:1);vis($('speed'),fin||!s.speed?0:clamp((f-SEC_F[si]+1)/6));
+  SEG.forEach((g,k)=>{g.style.background=(si>=1&&k<si)||fin?'#14151b':'#dfe2ea'});
+  // result card: static; last 0.3 s fade back to the clean opening state
+  const out=clamp((f-(NFR-18))/18);const card=fin?1-out:0;['q','nums','cta','like'].forEach(id=>vis($(id),card));
+  if(fin&&out>0){SEG.forEach(g=>{g.style.background='#dfe2ea';g.style.opacity=1});vis($('level'),out);$('level').textContent=SECS[0].label}
+}
+
+// ───────── sound events (frame-exact: sample = frame × 800 at 48 kHz)
+const SFX=[];const sx=(f,type,g=1,extra)=>SFX.push(Object.assign({t:+(f/FPS).toFixed(6),f,type,g,pan:0},extra||{}));
+EV.forEach(e=>sx(e.f,'tick',[.55,.5,.42,.32,.26][e.si],{sec:e.si}));
+[2,3,4].forEach(k=>sx(SEC_F[k],'accent',.5,{n:k}));sx(FIN_F,'end',.6);
+window.SFX=SFX;window.renderAt=renderAt;window.DUR=DUR;window.SCN=SECS.map((s,k)=>({t0:SEC_F[k]/FPS,bpm:s.bpm,wpm:s.wpm,f0:SEC_F[k]})).concat([{t0:FIN_F/FPS,bpm:62.5,f0:FIN_F}]);
+window.EVT=EV.map(e=>[e.f,e.w]);
+document.fonts.load('600 100px Manrope','АБВабвёЁ—?').then(()=>document.fonts.ready).then(()=>{layoutAll();renderAt(0);window.ready=true});
+</script>
+</body>
+</html>
