@@ -51,15 +51,20 @@ function smooth(pts){let d=`M${pts[0][0]},${pts[0][1]}`;for(let i=0;i<pts.length
 
 
 // ───────────── full-bleed map; all UI sits on top: progress pill (n/6 + slashes + era), phrase capsule, chips + subtitle raised
-function topUI(n,era,phrase){
-  const sl=[0,1,2,3,4,5].map(k=>`<span style="font-style:italic;color:${k<n?BLUE:'#c6cbdb'}">/</span>`).join('');
-  html(`<div class="pill" style="left:540px;top:140px;height:66px;padding:0 26px;gap:18px;font-weight:800;font-size:29px;letter-spacing:.02em">
-    <span><span style="font-size:33px">${n}</span><span style="color:#8a90a6">/6</span></span><span class="mono" style="font-size:34px;letter-spacing:-.04em;font-weight:700">${sl}</span>
-    <span style="width:2px;height:28px;background:#e1e4ec"></span><span style="color:${BLUE};letter-spacing:.05em">${era}</span></div>`);
-  html(`<div class="abs" style="left:540px;top:215px;transform:translateX(-50%);padding:22px 44px 26px;border-radius:40px;background:rgba(255,255,255,.96);box-shadow:0 22px 46px -22px rgba(10,20,40,.55);font-weight:900;font-size:66px;letter-spacing:-.04em;line-height:1.02;text-align:center;white-space:nowrap">${phrase}</div>`);
+function topUI(n,era,phrase,opt={}){
+  // year pill: the year only; on a change the old year rolls up and the new one rolls in
+  const yr=opt.from?`<span style="position:relative;display:inline-block;height:44px;overflow:hidden;vertical-align:middle"><span style="display:block;transform:translateY(${-44*opt.roll}px)"><span style="display:block;height:44px;line-height:44px;filter:blur(${opt.roll*6}px);opacity:${1-opt.roll}">${opt.from}</span><span style="display:block;height:44px;line-height:44px;filter:blur(${(1-opt.roll)*6}px);opacity:${opt.roll}">${era}</span></span></span>`:era;
+  html(`<div class="pill" style="left:540px;top:140px;height:70px;padding:0 34px;font-weight:900;font-size:38px;letter-spacing:.02em;color:${BLUE}">${yr}</div>`);
+  // phrase capsule: words come out of the blur one by one (opt.words = how many are in, fractional)
+  const ws=phrase.split(' ');const k=opt.words??ws.length;
+  const inner=ws.map((w,i)=>{if(w==='|')return '<br>';const p=Math.max(0,Math.min(1,k-i));return `<span style="display:inline-block;margin:0 .12em;opacity:${p};filter:blur(${(1-p)*10}px);transform:translateY(${(1-p)*14}px)">${w.replace(/_/g,' ')}</span>`}).join(' ');
+  if(opt.noPhrase)return;
+  html(`<div class="abs" style="left:540px;top:215px;transform:translateX(-50%);padding:22px 44px 26px;border-radius:40px;background:rgba(255,255,255,.96);box-shadow:0 22px 46px -22px rgba(10,20,40,.55);font-weight:900;font-size:66px;letter-spacing:-.04em;line-height:1.02;text-align:center;white-space:nowrap">${inner}</div>`);
 }
 const SUBY=1560,CHIPY=1440;
-function subp(t){return html(`<div class="sub" style="top:${SUBY}px">${t}</div>`)}
+function subp(t,o={}){const y=SUBY+(o.dy||0);const ws=t.split(' '),k=o.words??ws.length,cur=Math.floor(k);
+  // karaoke: spoken words dark, the word being said blue, the rest waits at 30 %
+  return html(`<div class="sub" style="top:${y}px">${ws.map((w,i)=>`<span style="display:inline-block;margin:0 .08em;${i<cur||!o.hl?'':i===cur?`color:${BLUE}`:'opacity:.3'}">${w}</span>`).join(' ')}</div>`)}
 function chipRow(items){return html(`<div class="abs" style="left:540px;top:${CHIPY}px;transform:translate(-50%,-50%);display:flex;gap:16px">${items.map(([t,st])=>`<span class="chip" style="font-size:29px;${st||''}">${t}</span>`).join('')}</div>`)}
 const ROUTE=[[-9.1,38.7],[-16,29],[-22,14],[-27,0],[-24,-18],[-8,-33],[10,-37.5],[20,-36.6],[31,-30],[39,-19],[41,-6],[52,4],[66,10],[75.8,11.25]];
 const ANGER=s=>`<svg width="${110*s}" height="${110*s}" viewBox="-45 -45 90 90">${[0,90,180,270].map(r=>`<path transform="rotate(${r})" d="M8 -30 Q8 -10 28 -8" stroke="#d62828" stroke-width="8" fill="none" stroke-linecap="round"/>`).join('')}</svg>`;
@@ -70,7 +75,7 @@ if(V==='F1'){
   html(`<svg class="abs" style="left:0;top:0" width="1080" height="1920"><defs><filter id="gl" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="14"/></filter></defs>
    <path d="${path(byId('076'))}" fill="none" stroke="#7fb2ff" stroke-width="18" opacity=".55" filter="url(#gl)"/><path d="${path(byId('076'))}" fill="${BLUE}" fill-opacity=".34" stroke="#fff" stroke-width="4"/></svg>`);
   const c=pr([-51,-10]);at(c[0]-80,c[1]-80,ICON.pulse(BLUE,.35));
-  topUI(1,'TODAY',`Why does <span class="blue">Brazil</span><br>speak Portuguese?`);
+  topUI(1,'TODAY','Why does <span_class="blue">Brazil</span> | speak Portuguese?');
   chipRow([['#1 IN SOUTH AMERICA',`background:${BLUE};color:#fff`],['#5 IN THE WORLD',`color:${BLUE}`]]);
   subp('the biggest country in South America');
 }
@@ -83,7 +88,7 @@ if(V==='F2'){
   const sp=route[k];at(sp[0]-300,sp[1]-34,ICON.wake(250));at(sp[0]-110,sp[1]-176,ICON.caravel(.95));
   const L=route[0];html(`<div class="chip" style="position:absolute;left:${L[0]+24}px;top:${L[1]-26}px;font-size:26px;padding:8px 20px 8px 10px">${ICON.flagPT(.42)} LISBON</div>`);
   const T=route[route.length-1];at(T[0]-80,T[1]-80,ICON.pulse(BLUE,.6));html(`<div class="chip" style="position:absolute;left:${T[0]}px;top:${T[1]+50}px;transform:translateX(-80%);font-size:26px;color:${BLUE}">INDIA</div>`);
-  topUI(2,'1497',`Portugal sails<br><span class="blue">around Africa</span>`);
+  topUI(2,'1497','Portugal sails | <span_class="blue">around</span> <span_class="blue">Africa</span>');
   subp('looking for a sea route to India');
 }
 if(V==='F3'){
@@ -98,7 +103,7 @@ if(V==='F3'){
   at(X-330,900,CAST2.isabella(.85));at(X-200,930,CAST2.ferdinand(.85));
   at(X-110,1060,CAST2.pope(.9));
   at(X+120,900,CAST2.joao(.88));
-  topUI(3,'1493',`The Pope splits<br>the world <span class="blue">in two</span>`);
+  topUI(3,'1493','The Pope splits | the world <span_class="blue">in_two</span>');
   chipRow([[`${ICON.flagES(.42)} SPAIN · WEST`,'padding:8px 22px 8px 10px'],[`${ICON.flagPT(.42)} PORTUGAL · EAST`,'padding:8px 22px 8px 10px']]);
   subp('everything west for Spain, east for Portugal');
 }
@@ -113,7 +118,7 @@ if(V==='F4'){
    <path d="M${LX1} 0 V315" stroke="#c4342d" stroke-width="6" stroke-dasharray="16 9"/><path d="M${LX0-6} 160 H${LX1+14}" stroke="#c4342d" stroke-width="5" stroke-linecap="round"/><path d="M${LX1+26} 148 L${LX1+12} 160 L${LX1+26} 172" stroke="#c4342d" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
   at(560,960,CAST2.ferdinand(1.05));at(735,1000,CAST2.isabella(1.0));
   at(120,980,CAST2.joao(1.1));at(120+225,950,ANGER(1));
-  topUI(4,'1494',`Portugal wants<br>a <span class="blue">better deal</span>`);
+  topUI(4,'1494','Portugal wants | a <span_class="blue">better_deal</span>');
   chipRow([['370 LEAGUES WEST',`color:${BLUE}`],['TREATY OF TORDESILLAS','']]);
   subp('and demands to move the line');
 }
@@ -125,8 +130,20 @@ if(V==='F5'){
   const b=pr([-50,-12]),a=pr([-66,-33]);
   html(`<div class="chip" style="position:absolute;left:${b[0]}px;top:${b[1]}px;transform:translate(-50%,-50%);font-size:34px;background:${BLUE};color:#fff">PORTUGUESE</div>`);
   html(`<div class="chip" style="position:absolute;left:${a[0]}px;top:${a[1]}px;transform:translate(-50%,-50%);font-size:34px;background:${ORANGE};color:#fff">SPANISH</div>`);
-  topUI(6,'TODAY',`One line —<br><span class="blue">two languages</span>`);
+  topUI(6,'TODAY','One line — | <span_class="blue">two_languages</span>');
   subp('that’s why Brazil speaks Portuguese');
+}
+
+if(V.startsWith('SB')){const st=+V.slice(2);
+  at(0,0,'<img class="plate" src="plates/iberia_hist.png">');
+  const pr=proj('iberia'),path=d3.geoPath(pr);
+  html(`<svg class="abs" style="left:0;top:0" width="1080" height="1920"><g style="mix-blend-mode:multiply"><path d="${path(byId('724'))}" fill="#e3822b" opacity=".85"/><path d="${path(byId('620'))}" fill="#2f4fd1" opacity=".95"/></g></svg>`);
+  at(560,960,CAST2.ferdinand(1.05));at(735,1000,CAST2.isabella(1.0));at(120,980,CAST2.joao(1.1));
+  const A='The Pope splits | the world <span_class="blue">in_two</span>',B='Portugal wants | a <span_class="blue">better_deal</span>';
+  if(st===1){topUI(0,'1493',A);subp('everything west for Spain,',{words:3.4,hl:1});}
+  if(st===2){topUI(0,'1493',A);subp('east for Portugal',{words:3});}
+  if(st===3){topUI(0,'1494',B,{from:'1493',roll:.5,words:1.5});subp('Portugal wasn’t happy',{words:2.3,hl:1});}
+  if(st===4){topUI(0,'1494',B,{words:9});subp('and demands to move the line',{words:4.5,hl:1});}
 }
 document.fonts.load('700 30px "Cormorant Garamond"').then(()=>Promise.all([...document.images].map(i=>i.decode()))).then(()=>{window.ready=true});
 </script>
