@@ -4,7 +4,7 @@
 import json, sys, wave
 import numpy as np
 
-SR = 48000; FPS = 60; SPF = SR // FPS; NFR = 8122; N = NFR * SPF
+SR = 48000; FPS = 60; SPF = SR // FPS; NFR = 8242; N = NFR * SPF
 meta = json.load(open(sys.argv[1])); out = sys.argv[2]
 SFX, SCN = meta['SFX'], meta['SCN']
 rng = np.random.default_rng(7)
@@ -52,7 +52,9 @@ TICK_G = [.55, .5, .42, .33, .28]                    # levels 3–4 sit 3–6 dB
 for e in SFX:
     if e['type'] == 'tick': put(ticks, tick, e['f'], TICK_G[e['sec']])
     if e['type'] == 'accent': put(acc, ping(76 + 2 * e['n']), e['f'], .5)
-    if e['type'] == 'end': put(acc, ping(81), e['f'], .55)
+    if e['type'] == 'end': put(acc, ping(81), e['f'], .4)
+    if e['type'] == 'chip': put(acc, ping([69, 72, 76, 81][e['n']]), e['f'], .22)   # chips land one by one, rising
+    if e['type'] == 'cta': put(acc, ping(84), e['f'], .18)
 
 ROOT = [45, 41, 48, 43]                              # A – F – C – G, one per bar
 CHORD = [[57, 60, 64], [53, 57, 60], [55, 60, 64], [55, 59, 62]]
@@ -60,18 +62,21 @@ secs = SCN[:5] + [SCN[5]]                            # intro, l1..l4, final
 ends = [s['f0'] for s in SCN[1:]] + [NFR]
 for si, s in enumerate(SCN):
     t0 = s['f0'] / FPS; bpm = s['bpm']; beat = 60 / bpm; endf = ends[si]
-    nb = int(round((endf - s['f0']) / FPS / beat)) if si < 5 else 5
+    nb = int(round((endf - s['f0']) / FPS / beat)) if si < 5 else int((endf - s['f0']) / FPS / beat) + 1
     for b in range(nb):
         f = fr(t0 + b * beat)
         if f >= endf: break
         bar, pos = divmod(b, 4)
-        if si == 0 or si == 5:                       # intro / final: light low pulse on every beat
-            put(kicks, kick(.35 if si == 0 else .3), f)
+        if si == 0:                                  # intro: light low pulse on every beat
+            put(kicks, kick(.35), f)
+        elif si == 5:                                # final: the pulse comes back gently after the landing
+            if b >= 2: put(kicks, kick(.12 + .06 * min(b - 2, 3)), f)
         else:
             if pos in (0, 2): put(kicks, kick([0, .45, .62, .7, .72][si]), f)
             if si >= 2 and (pos in (1, 3) if si < 4 else pos == 2): put(claps, clap(), f, .32)
             if si == 3:
                 for h in (0, .5): put(hats, hat(), fr(t0 + (b + h) * beat), .18)
+        if si == 5: continue                         # final has its own long chord below
         put(bas, bass(ROOT[bar % 4], beat * .95), f, .55 if si else .35)
         if pos == 0:                                 # pad chord per bar (quiet, no rhythm of its own)
             dur = min(beat * 4, (endf - f) / FPS); m = int(SR * dur)
@@ -80,7 +85,24 @@ for si, s in enumerate(SCN):
                 x *= np.minimum(1, tt / .25) * np.minimum(1, (dur - tt) / .25)
                 put(pad, lp(x, 1600), f, .12)
 
+# ───────── smooth landing into the final
+FIN = SCN[5]['f0']; i0 = FIN * SPF
+m = int(SR * 1.0); tt = np.arange(m) / SR                 # 1 s filtered-noise swell that peaks on the final's first frame
+sw = rng.standard_normal(m); sw = lp(sw, 2500) - lp(sw, 300); sw *= (tt / tt[-1]) ** 2.2
+pad[i0 - m:i0] += sw / np.max(np.abs(sw)) * .16
+L4 = SCN[4]['f0'] * SPF; fdm = int(SR * .8)                # L4 drums duck slightly under the swell
+for b_ in (kicks, claps, hats, bas):
+    b_[i0 - fdm:i0] *= np.linspace(1, .55, fdm)
+put(kicks, kick(.5) * 1, FIN)                            # soft low boom on the landing
+n2 = int(SR * 1.6); t2 = np.arange(n2) / SR
+boom = sine(41 + 20 * np.exp(-t2 * 6), n2) * env(n2, .004, .55); put(bas, boom / np.max(np.abs(boom)), FIN, .45)
+m = N - i0; tt = np.arange(m) / SR; dur = m / SR          # resolving chord A (A–C#–E) swells and holds to the end
+ch = sum(sine(midi(c), m) for c in (45, 57, 61, 64, 69)) / 5
+ch *= np.minimum(1, tt / .7) * np.minimum(1, (dur - tt) / .6)
+pad[i0:] += lp(ch, 1400) * .2
 music = kicks + claps * 1.0 + hats + bas + pad + acc
+fo = int(SR * .6); g_ = np.ones(N); g_[-fo:] = np.linspace(1, 0, fo) ** 1.5
+music *= g_; ticks *= g_
 mix = music + ticks
 def norm_rms(x, db): return x / (np.sqrt(np.mean(x ** 2)) + 1e-12) * 10 ** (db / 20)
 mix = norm_rms(mix, -17); music_n = music * (np.sqrt(np.mean(mix ** 2)) / (np.sqrt(np.mean((music + ticks) ** 2)) + 1e-12))

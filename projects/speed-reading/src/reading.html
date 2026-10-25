@@ -50,7 +50,7 @@ body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antia
 <script>
 'use strict';
 // ═══════════ Чтение с ускорением (RU): RSVP, one word at a time, red letter locked to x = 480 / baseline y = 960 ═══════════
-const FPS=60,NFR=8122,DUR=NFR/FPS,AX=400,BASE=960,RED='#C43D3D';
+const FPS=60,NFR=8242,DUR=NFR/FPS,AX=400,BASE=960,RED='#C43D3D';
 const SECS=[ // ideal grid (seconds), words per minute, music BPM
  {key:'intro',t0:0,     wpm:125,bpm:62.5, label:'4 УРОВНЯ',      speed:''},
  {key:'l1',   t0:7.68,  wpm:250,bpm:62.5, label:'УРОВЕНЬ 1 ИЗ 4',speed:'250 слов/мин'},
@@ -106,25 +106,38 @@ function renderSpeed(f,si,fin){const lvl=fin?3:si-1;const T=21;   // ≈0.35 s t
 ['tk1','tk2'].forEach(id=>$(id).style.left=(AX-2)+'px');   // ticks always sit on the fixation axis
 const vis=(el,o)=>{el.style.opacity=o;el.style.visibility=o<=.004?'hidden':'visible'};
 
+const CHIPS=[...$('nums').children];
+function rise(id,p,fade,base,dy){const el=$(id),e=eo(p);vis(el,e*fade);el.style.transform=`${base} translateY(${((1-e)*dy).toFixed(2)}px)`;el.style.filter=e>.98?'none':`blur(${(1-e)*6}px)`}
 function renderAt(t){
   const f=Math.min(NFR-1,Math.round(t*FPS));
   // current section and word (each word holds until the next event; the last one until the next section)
   let si=0;while(si<SECS.length-1&&f>=SEC_F[si+1])si++;const fin=f>=FIN_F;
   let lo=0,hi=EV.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(EV[m].f<=f)lo=m;else hi=m-1}
-  if(fin)WORD.style.visibility='hidden';else showWord(EV[lo].w);
+  showWord(EV[lo].w);const g=fin?f-FIN_F:-1;   // g: frames since the final began
+  // the last word does not vanish: it softens, blurs and sinks away over 0.4 s
+  if(fin){const p=eo(clamp(g/24));WORD.style.opacity=1-p;WORD.style.filter=`blur(${p*8}px)`;WORD.style.transform+=` translateY(${p*18}px)`;if(p>=1)WORD.style.visibility='hidden'}
+  else{WORD.style.opacity=1;WORD.style.filter='none'}
   // labels: level/indicator changes on the first word of the level; speed may fade in over 6 frames
   const s=SECS[si];$('level').textContent=s.label;renderSpeed(f,si,fin);
-  vis($('level'),1);if(fin)$('level').textContent='ГОТОВО';vis($('speed'),fin?0:1);
+  // counter: УРОВЕНЬ 4 ИЗ 4 dissolves, ГОТОВО comes in; the speed row blurs away together with the word
+  if(fin){const a=clamp((g-10)/14),b=clamp((g-24)/16);if(g>=24)$('level').textContent='ГОТОВО';$('level').style.opacity=g<24?1-a:eo(b)}else $('level').style.opacity=1;
+  const sp=fin?eo(clamp(g/30)):0;vis($('speed'),1-sp);$('speed').style.filter=sp>0?`blur(${sp*10}px)`:'none';
   SEG.forEach((g,k)=>{g.style.color=(si>=1&&k<si)||fin?'#2f7bf5':'#c6cbdb'});
   // result card: static; last 0.3 s fade back to the clean opening state
-  const out=clamp((f-(NFR-18))/18);const card=fin?1-out:0;['q','nums','cta','like','rc'].forEach(id=>vis($(id),card));
+  // result: staged reveal — question, card, chips one by one, call to action; last 0.6 s fade back to the opening state
+  const out=eo(clamp((f-(NFR-36))/36));const fade=1-out;
+  rise('q',fin?clamp((g-20)/34):0,fade,'translate(-50%,-50%)',34);
+  rise('rc',fin?clamp((g-48)/32):0,fade,'',40);
+  CHIPS.forEach((c,k)=>{const p=fin?clamp((g-70-k*8)/22):0;c.style.opacity=eo(p);c.style.transform=`translateY(${(1-eo(p))*22}px) scale(${.7+.3*eb(p)})`});vis($('nums'),fade);
+  rise('cta',fin?clamp((g-108)/28):0,fade,'translate(-50%,-50%)',22);
+  rise('like',fin?clamp((g-126)/28):0,fade,'translate(-50%,-50%)',18);
   if(fin&&out>0){SEG.forEach(g=>{g.style.color='#c6cbdb'});$('level').textContent=SECS[0].label}
 }
 
 // ───────── sound events (frame-exact: sample = frame × 800 at 48 kHz)
 const SFX=[];const sx=(f,type,g=1,extra)=>SFX.push(Object.assign({t:+(f/FPS).toFixed(6),f,type,g,pan:0},extra||{}));
 EV.forEach(e=>sx(e.f,'tick',[.55,.5,.42,.32,.26][e.si],{sec:e.si}));
-[2,3,4].forEach(k=>sx(SEC_F[k],'accent',.5,{n:k}));sx(FIN_F,'end',.6);
+[2,3,4].forEach(k=>sx(SEC_F[k],'accent',.5,{n:k}));sx(FIN_F,'end',.6);[0,1,2,3].forEach(k=>sx(FIN_F+70+k*8,'chip',.3,{n:k}));sx(FIN_F+108,'cta',.35);
 window.SFX=SFX;window.renderAt=renderAt;window.DUR=DUR;window.SCN=SECS.map((s,k)=>({t0:SEC_F[k]/FPS,bpm:s.bpm,wpm:s.wpm,f0:SEC_F[k]})).concat([{t0:FIN_F/FPS,bpm:62.5,f0:FIN_F}]);
 window.EVT=EV.map(e=>[e.f,e.w]);
 document.fonts.load('700 100px "Inter Display"','АБВабвёЁ—?').then(()=>document.fonts.ready).then(()=>{layoutAll();renderAt(0);window.ready=true});
