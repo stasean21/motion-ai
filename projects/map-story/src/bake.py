@@ -86,6 +86,7 @@ if not ONLY or 'intro' in ONLY: PL['intro'] = bake('intro', -55, -16, 68, ['sat'
 if not ONLY or 'voyage' in ONLY: PL['voyage'] = bake('voyage', 22, 4, 118, ['hist', 'fog'])
 if not ONLY or 'treaty' in ONLY: PL['treaty'] = bake('treaty', -24, 14, 104, ['hist'])
 if not ONLY or 'iberia' in ONLY: PL['iberia'] = bake('iberia', -4.5, 40, 17, ['hist'])
+if 'europe' in ONLY: PL['europe'] = bake('europe', 5.5, 50.5, 34, ['sat'])
 if 'benelux' in ONLY: PL['benelux'] = bake('benelux', 4.6, 51.0, 13, ['sat'])
 open(OUT + '/plates.js', 'w').write('const PLATES=' + json.dumps(PL) + ';\n')
 print(json.dumps(PL))

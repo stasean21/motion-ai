@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Baarle — door and window (80 s)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#dde6f0}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#111218}
+.abs{position:absolute}
+.chip{position:absolute;display:inline-flex;align-items:center;gap:12px;white-space:nowrap;padding:10px 24px;border-radius:999px;background:#fff;font-weight:800;letter-spacing:.04em;font-size:28px;box-shadow:0 14px 28px -12px rgba(10,20,40,.5);transform-origin:50% 50%}
+.plate{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:0 0}
+svg{display:block}
+</style>
+</head>
+<body>
+<div id="mapw" class="abs" style="inset:0;overflow:hidden">
+ <img id="pE" class="plate" src="plates/europe_sat.png">
+ <div id="bw" class="abs" style="left:0;top:0;width:1080px;height:1920px;transform-origin:0 0"><img id="pB" class="plate" src="plates/benelux_sat.png"><svg id="msvg" class="abs" style="left:0;top:0" width="1080" height="1920"></svg></div>
+ <div id="mui" class="abs" style="inset:0"></div>
+</div>
+<div id="facw" class="abs" style="inset:0;overflow:hidden">
+ <div id="cam" class="abs" style="left:0;top:0;width:1080px;height:1920px;transform-origin:0 0">
+  <div class="abs" style="left:-1200px;top:-1200px;width:3480px;height:4320px;background:#dde6f0"></div>
+  <div id="facC" class="abs" style="left:-45px;top:520px"></div>
+  <div id="facC2" class="abs" style="left:-45px;top:520px;opacity:0;visibility:hidden"></div>
+  <svg id="tl" class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"></svg>
+  <div id="fui" class="abs" style="inset:0"></div>
+ </div>
+</div>
+<div id="ui" class="abs" style="inset:0"></div>
+<script src="lib/d3-array.min.js"></script>
+<script src="lib/d3-geo.min.js"></script>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/world10m.js"></script>
+<script src="plates/plates.js"></script>
+<script src="icons.js"></script>
+<script src="characters2.js"></script>
+<script src="baarle_art.js"></script>
+<script>
+const FPS=60,NFR=4800,DUR=80,BLUE='#2f7bf5';
+const $=id=>document.getElementById(id);
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),seg=(t,a,b)=>clamp((t-a)/(b-a)),lerp=(a,b,t)=>a+(b-a)*t;
+const eo=p=>1-Math.pow(1-p,3),eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+const eb=p=>{const c1=1.7,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)};
+const mk=(parent,html)=>{const d=document.createElement('div');d.innerHTML=html.trim();const e=d.firstChild;$(parent).appendChild(e);return e};
+const vis=(el,o)=>{el.style.opacity=o;el.style.visibility=o<=.003?'hidden':'visible'};
+const popS=(t,t0,d=.45)=>{const p=seg(t,t0,t0+d);return {o:clamp(p*2.5),s:t<t0?0:.55+.45*eb(p)}};
+
+// ───────── voice script: scene windows from the brief; '*' = key word (pops blue), '~' joins a spoken group into one token
+const SC=[[0,7.5],[7.5,17.5],[17.5,27.5],[27.5,40],[40,50],[50,60],[60,67.5],[67.5,80]];
+const VO=[
+ 'Why would anyone swap a *front~door with a *window? In this village, the *border explains it.',
+ 'Welcome to *Baarle, where *Belgian and *Dutch territory fit together like pieces of a puzzle. The border runs through streets, gardens, and buildings.',
+ 'But when a border crosses a home, the position of its *front~door can become surprisingly *important.',
+ 'According to the local tourism office, a survey in *1995 revealed a problem: a supposedly *Belgian home had its entrance on the *Dutch side.',
+ 'The elderly woman living there wanted to remain a *Belgian resident. So a practical *solution was found.',
+ 'The *front~door and the *window beside it *swapped~places, putting the entrance on the *Belgian side.',
+ 'The *house stayed in place. So did the *border. Only the *entrance moved.',
+ 'Would you have thought of that? Comment your solution, and leave a *like for more map stories. Now that first question makes a little more sense.'];
+// word timing estimate (replaced by measured voice timings later): weight = letters + 3, pauses after punctuation
+const W=[];const CH=[];
+VO.forEach((line,si)=>{const toks=line.split(' ').map(x=>{const key=x[0]==='*';let s=key?x.slice(1):x;const txt=s.replace(/~/g,' ');
+    const letters=txt.replace(/[^A-Za-z0-9]/g,'').length+(txt==='1995'?14:0);const p=/[.?!]$/.test(txt)?7:/[,:]$/.test(txt)?3.5:0;return {txt,key,w:letters+3,p}});
+  const [a,b]=SC[si];const unit=.056,total=toks.reduce((s,k)=>s+k.w+k.p,0)*unit,avail=b-a-.95,sc=Math.min(1,avail/total);let t=a+.4;
+  const words=toks.map(k=>{const o={...k,t,si};t+=(k.w+k.p)*unit*sc;o.end=t-k.p*unit*sc;return o});W.push(...words);
+  // subtitle chunks: break at punctuation, ≤ 5 words
+  let cur=[];words.forEach((w,i)=>{cur.push(w);if(/[.?!,:]$/.test(w.txt)||cur.length>=5||i===words.length-1){CH.push(cur);cur=[]}});
+});
+CH.forEach((c,i)=>{const nx=CH[i+1];c.t0=c[0].t;c.t1=nx&&nx[0].si===c[0].si?nx[0].t-.02:Math.min(c[c.length-1].end+.7,SC[c[0].si][1]-.05)});
+const WT=(word,si,n=0)=>{const l=W.filter(w=>w.si===si&&w.txt.replace(/[^A-Za-z0-9 ]/g,'').toLowerCase()===word.toLowerCase());return (l[n]||l[0]).t};
+
+// ───────── top UI: year pill (rolls), phrase capsule (words out of blur), kinetic subtitle
+const YR=mk('ui',`<div class="abs" style="left:540px;top:140px;transform:translate(-50%,-50%);height:70px;padding:0 34px;border-radius:999px;background:rgba(255,255,255,.95);box-shadow:0 14px 30px -14px rgba(10,20,40,.45);display:flex;align-items:center;font-weight:900;font-size:38px;color:${BLUE};overflow:hidden"><div id="yrIn" style="position:relative;height:46px;line-height:46px;overflow:hidden"></div></div>`);
+const YEARS=[[0,'TODAY'],[WT('1995',3)-.1,'1995'],[60.25,'TODAY']];
+function renderYear(t){let i=0;while(i<YEARS.length-1&&t>=YEARS[i+1][0])i++;const p=eio(seg(t,YEARS[i][0],YEARS[i][0]+.45));const prev=i>0?YEARS[i-1][1]:null;
+  $('yrIn').innerHTML=prev&&p<1?`<div style="transform:translateY(${-46*p}px)"><div style="filter:blur(${p*6}px);opacity:${1-p}">${prev}</div><div style="filter:blur(${(1-p)*6}px);opacity:${p}">${YEARS[i][1]}</div></div>`:`<div>${YEARS[i][1]}</div>`;
+  $('yrIn').style.width=(YEARS[i][1].length*25+(prev&&p<1?20:0))+'px'}
+const CAPS=['<b>Door</b> ↔ <b>window?</b>','Welcome to | <b>Baarle</b>','The front door | <b>matters</b>','A <b>border</b> | <b>survey</b>','A practical | <b>solution</b>','The entrance | <b>moves</b>','Only the | <b>entrance</b> moved','What would | <b>you</b> do?'];
+const CAP=mk('ui',`<div class="abs" style="left:540px;top:215px;transform:translateX(-50%);padding:22px 44px 26px;border-radius:40px;background:rgba(255,255,255,.96);box-shadow:0 22px 46px -22px rgba(10,20,40,.55);font-weight:900;font-size:66px;letter-spacing:-.04em;line-height:1.02;text-align:center;white-space:nowrap"></div>`);
+function renderCap(t){let si=0;while(si<7&&t>=SC[si+1][0])si++;const [a,b]=SC[si];const ws=CAPS[si].split(' ');
+  const out=si<7?seg(t,b-.3,b):seg(t,78.6,79.0),inn=si===0?seg(t,.5,99):1;
+  let mx=0;CAP.innerHTML=ws.map((w,i)=>{if(w==='|')return '<br>';const st=a+.15+(si===0?.45:0)+i*.12,p=eo(seg(t,st,st+.3));const q=p*(1-out),bl=/<b>/.test(w);mx=Math.max(mx,q);
+    return `<span style="display:inline-block;margin:0 .12em;opacity:${q};filter:blur(${((1-p)*10+out*8).toFixed(2)}px);transform:translateY(${((1-p)*14).toFixed(1)}px);${bl?`color:${BLUE}`:''}">${w.replace(/<\/?b>/g,'')}</span>`}).join(' ');
+  const first=eo(seg(t,a+.1,a+.4));vis(CAP,Math.min(first,clamp(mx*1.4))*(si===0?eo(seg(t,.4,.7)):1))}
+const SUB=mk('ui',`<div class="abs" style="left:540px;top:1770px;transform:translate(-50%,-50%);padding:16px 36px;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 16px 34px -16px rgba(10,20,40,.55);font-weight:700;font-size:40px;letter-spacing:-.01em;text-align:center;white-space:nowrap"></div>`);
+const lc=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t)),LB=[157,182,234],NV=[43,58,103],BK=[17,18,24],BLc=[47,123,245],GR=[150,156,170];
+function renderSub(t){const c=CH.find(c=>t>=c.t0-.01&&t<c.t1+.15);if(!c){vis(SUB,0);return}
+  const ex=clamp((t-c.t1)/.15);vis(SUB,1-ex*.9);
+  SUB.innerHTML=c.filter(w=>t>=w.t).map(w=>{const p=clamp((t-w.t)/.28),q=clamp((t-w.t-.28)/.25);let col=w.key?lc(LB,BLc,p):p<1?lc(LB,NV,p):lc(NV,BK,q);if(ex>0)col=lc(col,GR,ex);
+    const s=w.key?(.6+.4*eb(p))*1.12:1;
+    return `<span style="display:inline-block;margin:0 ${w.key?'.36em':'.1em'};color:rgb(${col});opacity:${Math.min(1,p*1.6)};filter:blur(${((1-p)*8+ex*5).toFixed(2)}px);transform:translateY(${((1-p)*18).toFixed(1)}px) scale(${s.toFixed(3)});${w.key?'font-weight:900':''}">${w.txt}</span>`}).join(' ')}
+
+// ───────── map world: Europe → Benelux zoom, countries draw in, Baarle marker
+const C10=topojson.feature(WORLD10,WORLD10.objects.countries).features,by10=id=>C10.find(c=>c.id===id);
+const prE=d3.geoMercator().scale(PLATES.europe.k).translate([PLATES.europe.tx,PLATES.europe.ty]),prB=d3.geoMercator().scale(PLATES.benelux.k).translate([PLATES.benelux.tx,PLATES.benelux.ty]);
+const BAARLE=[4.93,51.44],pE=prE(BAARLE),pB=prB(BAARLE),RATIO=PLATES.benelux.k/PLATES.europe.k,pathB=d3.geoPath(prB);
+$('msvg').innerHTML=`<path id="mBE" d="${pathB(by10('056'))}" pathLength="1" fill="${BE}" fill-opacity="0" stroke="#fff" stroke-width="4" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+ <path id="mNL" d="${pathB(by10('528'))}" pathLength="1" fill="${NL}" fill-opacity="0" stroke="#fff" stroke-width="4" stroke-dasharray="1 1" stroke-dashoffset="1"/>`;
+const mBEc=prB([4.6,50.6]),mNLc=prB([5.6,52.3]);
+const chBE=mk('mui',`<div class="chip">${FLAG.BE(.5)} BELGIUM</div>`),chNL=mk('mui',`<div class="chip">${FLAG.NL(.5)} NETHERLANDS</div>`),chBA=mk('mui',`<div class="chip" style="background:${BLUE};color:#fff;font-size:32px">BAARLE</div>`);
+const MK=mk('mui',`<div class="abs" style="width:160px;height:160px"></div>`);
+const T_BEL=WT('Belgian',1),T_DUT=WT('Dutch',1),T_BAA=WT('Baarle',1);
+function renderMap(t){
+  const z1=eio(seg(t,8.0,11.6));const zE=lerp(1,RATIO,z1),q=z1;const L=[lerp(pE[0],pB[0],q),lerp(pE[1],pB[1],q)];
+  const push=1+.18*eio(seg(t,14.2,17.2));   // second, gentle push toward Baarle
+  const zB=zE/RATIO*push,LB2=[L[0],L[1]];
+  $('pE').style.transform=`translate(${L[0]-pE[0]*zE}px,${L[1]-pE[1]*zE}px) scale(${zE})`;vis($('pE'),1-seg(t,10.6,11.6));
+  $('bw').style.transform=`translate(${LB2[0]-pB[0]*zB}px,${LB2[1]-pB[1]*zB}px) scale(${zB})`;vis($('bw'),seg(t,10.4,11.4));
+  const sB=seg(t,T_BEL-.2,T_BEL+.9),sN=seg(t,T_DUT-.2,T_DUT+.9);
+  $('mBE').setAttribute('stroke-dashoffset',1-eio(sB));$('mBE').setAttribute('fill-opacity',.42*seg(t,T_BEL+.4,T_BEL+1.1));
+  $('mNL').setAttribute('stroke-dashoffset',1-eio(sN));$('mNL').setAttribute('fill-opacity',.42*seg(t,T_DUT+.4,T_DUT+1.1));
+  const sc=(p)=>[LB2[0]+(p[0]-pB[0])*zB,LB2[1]+(p[1]-pB[1])*zB];
+  const place=(el,p,pp,dx=0,dy=0)=>{const s=sc(p);el.style.left=s[0]+dx+'px';el.style.top=s[1]+dy+'px';el.style.transform=`translate(-50%,-50%) scale(${pp.s})`;vis(el,pp.o)};
+  place(chBE,mBEc,popS(t,T_BEL+.3));place(chNL,mNLc,popS(t,T_DUT+.3));
+  const mp=popS(t,T_BAA+.1);const sb=sc(pB);MK.innerHTML=ICON.pulse(BLUE,((t*.8)%1));MK.style.left=sb[0]-80+'px';MK.style.top=sb[1]-80+'px';MK.style.transform=`scale(${mp.s})`;vis(MK,mp.o);
+  place(chBA,pB,popS(t,T_BAA+.25),130,-56);
+  return sb;
+}
+
+// ───────── facade world
+const FX=-45,FY=520,FS=1.3,P=(x,y)=>[FX+x*FS,FY+y*FS];
+const fchip=(html,st='')=>mk('fui',`<div class="chip" style="${st}">${html}</div>`);
+const chSch=fchip('SCHEMATIC','font-size:20px;color:#8a90a6;letter-spacing:.1em'),chSBE=fchip(`${FLAG.BE(.5)} BELGIUM`,'padding:8px 20px 8px 10px;font-size:25px'),chSNL=fchip(`${FLAG.NL(.5)} NETHERLANDS`,'padding:8px 20px 8px 10px;font-size:25px');
+const chWhy=fchip('WHY?',`background:${BLUE};color:#fff;font-size:30px`),chDoor=fchip('THE FRONT DOOR',`background:${BLUE};color:#fff`),chNLs=fchip('ENTRANCE · NL SIDE',`color:${NL};font-size:25px`);
+const chSurv=fchip('1995 · BORDER SURVEY',`background:${BLUE};color:#fff`),chNew=fchip('NEW ENTRANCE',`background:${BLUE};color:#fff;font-size:24px`);
+const chH=fchip('HOUSE'),chBo=fchip('BORDER'),chEn=fchip('ENTRANCE'),chMore=fchip('MORE MAP STORIES',`color:${BLUE};font-size:30px`);
+const arr1=mk('fui',`<div class="abs" style="font-weight:800;font-size:30px;color:#c6cbdb">→</div>`),arr2=mk('fui',`<div class="abs" style="font-weight:800;font-size:30px;color:#c6cbdb">→</div>`);
+const RES=mk('fui',`<div class="abs" style="left:20px;top:1150px;transform-origin:162px 425px">${RESIDENT(1.25)}</div>`);
+const BUB=mk('fui',`<div class="abs" style="left:150px;top:1050px;transform-origin:30px 90px"><div style="position:relative;display:inline-flex;align-items:center;gap:14px;padding:16px 26px;border-radius:30px;background:#fff;font-weight:800;font-size:30px;letter-spacing:.03em;box-shadow:0 18px 36px -16px rgba(10,20,40,.55)">${FLAG.BE(.6)}BELGIAN RESIDENT<svg width="36" height="30" style="position:absolute;left:40px;bottom:-24px"><path d="M0 0 H36 L6 28 Z" fill="#fff"/></svg></div></div>`);
+const LIKE=mk('fui',`<div class="abs" style="left:780px;top:440px;width:200px;height:200px;border-radius:40px;background:#fff;box-shadow:0 40px 80px -36px rgba(10,20,40,.6);display:flex;align-items:center;justify-content:center;transform-origin:50% 50%"><svg width="110" height="110" viewBox="0 0 24 24"><path d="M2 10h4v12H2z M8 22h10.5a2 2 0 0 0 2-1.6l1.4-7A2 2 0 0 0 20 11h-6l1-5a2.2 2.2 0 0 0-4.2-1L8 10z" fill="${BLUE}"/></svg></div>`);
+const MINI=mk('ui',`<div class="abs" style="left:74px;top:450px;width:230px;height:230px;border-radius:40px;overflow:hidden;box-shadow:0 30px 60px -30px rgba(10,20,40,.6);transform-origin:50% 50%"></div>`);
+{const z=.55,b=prB(BAARLE);MINI.innerHTML=`<div style="position:absolute;inset:0;background:url(plates/benelux_sat.png) ${-(b[0]*z-115)}px ${-(b[1]*z-115)}px / ${1080*z}px auto"></div><div style="position:absolute;left:105px;top:105px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 0 0 6px ${BLUE}"></div>`}
+const placeF=(el,x,y,pp,anchor='-50%,-50%')=>{el.style.left=x+'px';el.style.top=y+'px';el.style.transform=`translate(${anchor}) scale(${pp.s})`;vis(el,pp.o)};
+let facKey='';
+function renderFacade(t){
+  // swap: two steps 52.4–57; loop return 79.72–80 (graphic dissolve back to the opening facade)
+  let m=t<52.4?0:t<57?seg(t,52.4,57):1;
+  const T_SOL=WT('solution',4),T_SWAP=WT('swapped places',5),T_H=WT('house',6),T_B=WT('border',6),T_E=WT('entrance',6);
+  const o={s:FS,marks:false};
+  o.lineP=t<7.5?eio(seg(t,5.2,6.6)):1;
+  o.arrows=t<7.5?eo(seg(t,3.2,4.4)):t>=40&&t<52.4?eo(seg(t,T_SOL-.2,T_SOL+.4)):t>=52.4&&t<57?1-seg(t,55.5,57):0;
+  if(t>=17.5&&t<40){o.hl='B';o.hlOp=t<27.5?eo(seg(t,19.3,19.8)):1-seg(t,39,39.6)}
+  if(t>=57&&t<60){o.hl='A';o.hlOp=eo(seg(t,57.1,57.5))*(1-seg(t,59.4,60))}
+  if(t>=60&&t<67.5){o.houseGlow=eo(seg(t,T_H-.1,T_H+.3))*(1-seg(t,T_B,T_B+.4))*.9;o.lineGlow=eo(seg(t,T_B-.1,T_B+.3))*(1-seg(t,T_E,T_E+.4));if(t>T_E-.1){o.hl='A';o.hlOp=eo(seg(t,T_E-.1,T_E+.3))*(1-seg(t,67,67.5))}}
+  const key=JSON.stringify([m.toFixed(4),o]);if(key!==facKey){$('facC').innerHTML=facade(m,o);facKey=key}
+  const dz=seg(t,DUR-16/FPS,DUR);if(dz>0&&!$('facC2').innerHTML)$('facC2').innerHTML=facade(0,{s:FS,marks:false});vis($('facC2'),dz);
+  // loop return: cross-dissolve to the opening facade over the last 16 frames
+  // camera keyframes: [t, zoom, world point brought to (540,1000)]
+  const H=P(690,580),D=P(620,560);
+  const K=[[0,2.6,H],[.3,2.6,H],[3,1,[540,1000]],[21,1,[540,1000]],[27,1.12,D],[28.6,1,[540,1000]],[60,1,[540,1000]],[62.5,.95,[540,1000]],[77.6,.95,[540,1000]],[79.7,2.6,H],[80,2.6,H]];
+  let i=0;while(i<K.length-2&&t>=K[i+1][0])i++;const [ta,za,ca]=K[i],[tb,zb,cb]=K[i+1];const p=eio(seg(t,ta,tb));
+  const z=lerp(za,zb,p),cx=lerp(ca[0],cb[0],p),cy=lerp(ca[1],cb[1],p);
+  $('cam').style.transform=`translate(${540-cx*z}px,${1000-cy*z}px) scale(${z})`;
+  // chips that live in the street
+  const facadeUI=t<7.5||t>=17.5;
+  placeF(chSch,P(760,190)[0],P(760,190)[1],{o:facadeUI&&t<77.6?(t<7.5?seg(t,2.6,3.2):1):0,s:1});
+  const sideOn=(t<7.5?seg(t,5.6,6.2):t<60?1:1-seg(t,60,60.4))*(t>=7.5&&t<17.5?0:1)*(t>=27.5&&t<41.5?(1-seg(t,27.6,28))+seg(t,40.6,41.2):1);
+  placeF(chSBE,250,1650,{o:sideOn,s:1});placeF(chSNL,830,1650,{o:sideOn,s:1});
+  placeF(chWhy,540,P(0,150)[1],t<7.5?(()=>{const q=popS(t,4.4);q.o*=1-seg(t,7.1,7.5);return q})():{o:0,s:0});
+  placeF(chDoor,P(760,290)[0]-20,P(760,290)[1],t>=17.5&&t<27.5?(()=>{const q=popS(t,20.2);q.o*=1-seg(t,27,27.5);return q})():{o:0,s:0});
+  // timeline on the pavement
+  const TY=1620,x0=120,x1=960,yr=y=>x0+(y-1975)/(2025-1975)*(x1-x0),T95=WT('1995',3);
+  const tlOn=t>=27.5&&t<41?eo(seg(t,28,28.8))*(1-seg(t,40.2,40.9)):0,mv=eio(seg(t,T95-1.8,T95-.05)),xm=lerp(x0,yr(1995),mv),draw=eio(seg(t,28,29.4));
+  $('tl').style.opacity=tlOn;$('tl').innerHTML=tlOn>0?`<path d="M${x0} ${TY} H${lerp(x0,x1,draw)}" stroke="#c6cbdb" stroke-width="6" stroke-linecap="round"/>
+   ${[1980,1990,2000,2010,2020].map((y,k)=>`<g opacity="${seg(t,28.2+k*.15,28.5+k*.15)}"><path d="M${yr(y)} ${TY-14} V${TY+14}" stroke="#c6cbdb" stroke-width="4"/><text x="${yr(y)}" y="${TY+52}" text-anchor="middle" font-family="Inter Display" font-weight="700" font-size="26" fill="#8a90a6">${y}</text></g>`).join('')}
+   <path d="M${x0} ${TY} H${xm}" stroke="${BLUE}" stroke-width="6" stroke-linecap="round"/><circle cx="${xm}" cy="${TY}" r="18" fill="#fff" stroke="${BLUE}" stroke-width="7"/>`:'';
+  placeF(chSurv,yr(1995),TY-70,t>=27.5&&t<41?(()=>{const q=popS(t,T95+.1);q.o*=1-seg(t,40.2,40.7);return q})():{o:0,s:0});
+  const T_DS=WT('Dutch',3);placeF(chNLs,P(620,262)[0],P(620,262)[1]-8,t>=27.5&&t<41?(()=>{const q=popS(t,T_DS);q.o*=1-seg(t,39.4,40);return q})():{o:0,s:0});
+  // resident + bubble
+  const rp=popS(t,40.9,.55);const rOut=1-seg(t,77.4,77.9);RES.style.opacity=t<40.9?0:rOut;
+  const drop=t<40.9?0:(1-eo(clamp(seg(t,40.9,41.45)/.45)))*-260,land=seg(t,41.1,41.6),sq=Math.sin(land*Math.PI)*(1-land)*.9,br=Math.sin((t-41)*Math.PI*2*.5)*.01*(t>41.6?1:0);
+  RES.style.transform=`translateY(${drop}px) scale(${1+sq*.18-br*.5},${1-sq*.2+br})`;
+  const T_RES=WT('resident',4);const bp=popS(t,T_RES-.3);bp.o*=1-seg(t,49.5,50);BUB.style.transform=`scale(${bp.s})`;vis(BUB,t>=40?bp.o:0);
+  placeF(chNew,P(280,262)[0],P(280,262)[1]-6,t>=57&&t<60?(()=>{const q=popS(t,57.4);q.o*=1-seg(t,59.5,60);return q})():{o:0,s:0});
+  // HOUSE → BORDER → ENTRANCE
+  const row=t>=60&&t<67.5;const rx=[300,540,780];
+  [[chH,T_H],[chBo,T_B],[chEn,T_E]].forEach(([c,tt],k)=>{const q=row?popS(t,tt-.1):{o:0,s:0};q.o*=1-seg(t,67,67.5);placeF(c,rx[k],1650,q);
+    const on=row&&t>=tt-.1&&(k===2||t<[T_B,T_E][k]-.1);c.style.background=on?BLUE:'#fff';c.style.color=on?'#fff':'#8a90a6'});
+  [arr1,arr2].forEach((a,k)=>{a.style.left=(rx[k]+rx[k+1])/2-12+'px';a.style.top='1630px';vis(a,row?seg(t,[T_B,T_E][k]-.3,[T_B,T_E][k])*(1-seg(t,67,67.5)):0)});
+  // like + more
+  const T_LIKE=WT('like',7);const lp=popS(t,T_LIKE-.15);lp.o*=1-seg(t,77.4,77.9);LIKE.style.transform=`scale(${lp.s})`;vis(LIKE,t>=67.5?lp.o:0);
+  placeF(chMore,540,1650,t>=67.5?(()=>{const q=popS(t,WT('map',7));q.o*=1-seg(t,77.4,77.9);return q})():{o:0,s:0});
+  // mini map in S3
+  const mn=t>=17.5&&t<27.5?popS(t,18.2):{o:0,s:0};mn.o*=1-seg(t,27,27.5);MINI.style.transform=`scale(${mn.s})`;vis(MINI,mn.o);
+}
+function renderAt(t){
+  t=Math.min(t,DUR-1e-6);
+  // world switching: facade (S1) → map (S2) → facade (S3…) through a circular reveal from the Baarle marker
+  const toMap=seg(t,7.2,8.0),sb=t>=7&&t<18?renderMap(t):[540,1000];
+  const rev=eio(seg(t,16.9,17.8));
+  vis($('mapw'),t<7.2?0:t<17.8?1:0);
+  if(t<7.2){vis($('facw'),1);$('facw').style.clipPath='none';$('facw').style.filter='none'}
+  else if(t<8){vis($('facw'),1-toMap);$('facw').style.filter=`blur(${toMap*10}px)`;$('facw').style.clipPath='none'}
+  else if(t<16.9){vis($('facw'),0)}
+  else{vis($('facw'),1);$('facw').style.filter='none';$('facw').style.clipPath=rev<1?`circle(${(rev*2300).toFixed(1)}px at ${sb[0].toFixed(1)}px ${sb[1].toFixed(1)}px)`:'none'}
+  if(t<8||t>=16.9)renderFacade(t);
+  renderYear(t);renderCap(t);renderSub(t);
+}
+// ───────── sound events (frame-exact on render)
+const SFX=[];const sx=(t,type,g=1)=>SFX.push({t:+t.toFixed(4),f:Math.floor(t*FPS+.5),type,g});
+sx(.25,'click',.7);sx(.45,'whoosh',.6);sx(5.2,'tick',.4);sx(7.25,'whoosh',.7);sx(9.6,'whoosh',.55);
+sx(T_BEL+.3,'pop',.6);sx(T_DUT+.3,'pop',.6);sx(T_BAA+.1,'pop',.7);sx(16.9,'whoosh',.6);
+sx(19.3,'click',.45);sx(20.2,'pop',.5);sx(WT('1995',3)+.05,'mclick',.8);sx(WT('Dutch',3),'reveal',.6);
+sx(40.9+.5,'pop',.6);sx(WT('resident',4)-.3,'pop',.45);sx(WT('solution',4)-.2,'accent',.55);
+sx(52.4,'morph',.7);sx(54.8,'morph',.7);sx(57.2,'confirm',.6);
+['house','border','entrance'].forEach(w=>sx(WT(w,6)-.1,'click',.45));sx(WT('like',7)-.15,'pop',.6);sx(WT('map',7),'pop',.45);sx(77.7,'whoosh',.5);
+window.SFX=SFX;window.SCN=SC.map(([a,b],i)=>({t0:a,t1:b,f0:Math.floor(a*FPS+.5)}));window.WORDS=W.map(w=>({t:+w.t.toFixed(3),end:+w.end.toFixed(3),txt:w.txt,si:w.si}));window.renderAt=renderAt;window.DUR=DUR;
+Promise.all([...document.images].map(i=>i.decode())).then(()=>document.fonts.ready).then(()=>{renderAt(0);window.ready=true});
+</script>
+</body>
+</html>

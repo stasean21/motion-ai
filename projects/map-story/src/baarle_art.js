@@ -23,7 +23,7 @@ function facade(m = 0, o = {}) {
       <rect x="${x0 + 48 + (w - 82) / 2}" y="${top + 140 + (h - 180) / 2}" width="${(w - 82) / 2}" height="${(h - 180) / 2 - 20}" rx="5" fill="none" stroke="#123a3d" stroke-opacity=".45" stroke-width="4"/>
       <circle cx="${x1 - 40}" cy="${top + h * .56}" r="10" fill="url(#brass)" stroke="#6b4a12" stroke-width="2"/><rect x="${x0 + w / 2 - 26}" y="${top + h * .4}" width="52" height="12" rx="3" fill="url(#brass)"/>
       <rect x="${x0 - 20}" y="${GY}" width="${w + 40}" height="26" rx="3" fill="#cfc9bd" stroke="#9f978a" stroke-width="2"/></g>`;
-    const hl = o.hl === id ? `<rect x="${x0 - 10}" y="${top - 10}" width="${w + 20}" height="${h + 20}" rx="14" fill="none" stroke="#2f7bf5" stroke-width="8"/><rect x="${x0 - 22}" y="${top - 22}" width="${w + 44}" height="${h + 44}" rx="22" fill="none" stroke="#2f7bf5" stroke-width="3" opacity=".45"/>` : '';
+    const hl = o.hl === id ? `<g opacity="${o.hlOp ?? 1}"><rect x="${x0 - 10}" y="${top - 10}" width="${w + 20}" height="${h + 20}" rx="14" fill="none" stroke="#2f7bf5" stroke-width="8"/><rect x="${x0 - 22}" y="${top - 22}" width="${w + 44}" height="${h + 44}" rx="22" fill="none" stroke="#2f7bf5" stroke-width="3" opacity=".45"/></g>` : '';
     return `<rect x="${x0}" y="${top}" width="${w}" height="${h}" fill="#f4f1ea" stroke="#d8d1c3" stroke-width="2"/>
       <rect x="${x0 - 12}" y="${top - 26}" width="${w + 24}" height="26" fill="#e9e4da" stroke="#b9b1a2" stroke-width="2"/>${win}${door}${hl}`;
   };
@@ -56,7 +56,8 @@ function facade(m = 0, o = {}) {
  ${o.marks === false ? '' : `<text x="380" y="${GY + 150}" text-anchor="middle" font-family="Inter Display" font-weight="900" font-size="48" fill="#fff">B</text>
   <text x="530" y="${GY + 150}" text-anchor="middle" font-family="Inter Display" font-weight="900" font-size="48" fill="#fff">NL</text>`}
   <!-- border line through the building -->
-  ${o.line === false ? '' : `<path d="M450 ${o.lineTop ?? 140} V${GY + 26}" stroke="#fff" stroke-width="12" opacity=".7"/><path d="M450 ${o.lineTop ?? 140} V${GY + 26}" stroke="#111218" stroke-width="5" stroke-dasharray="18 12"/>`}
+  ${o.line === false || (o.lineP ?? 1) <= 0 ? '' : (() => { const y0 = o.lineTop ?? 140, y1 = y0 + (GY + 26 - y0) * (o.lineP ?? 1); return `<path d="M450 ${y0} V${y1}" stroke="#fff" stroke-width="12" opacity=".7"/><path d="M450 ${y0} V${y1}" stroke="#111218" stroke-width="5" stroke-dasharray="18 12"/>` + (o.lineGlow ? `<path d="M450 ${y0} V${y1}" stroke="#2f7bf5" stroke-width="16" opacity="${o.lineGlow * .55}"/>` : '') })()}
+  ${o.houseGlow ? `<path d="M-6 826 V140 L450 20 L906 140 V826 Z" fill="none" stroke="#2f7bf5" stroke-width="10" stroke-linejoin="round" opacity="${o.houseGlow}"/>` : ''}
   ${arrows}
  </svg>`;
 }
