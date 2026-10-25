@@ -79,9 +79,12 @@ def bake(name, lon0, lat0, width, styles):
         im = np.concatenate([rgb, a[..., None]], -1); save(im, name + '_fog')
     return P
 
-PL = {}
-PL['intro'] = bake('intro', -55, -16, 68, ['sat'])
-PL['voyage'] = bake('voyage', 22, 4, 118, ['hist', 'fog'])
-PL['treaty'] = bake('treaty', -24, 14, 104, ['hist'])
+import sys
+ONLY = sys.argv[1:]
+PL = json.loads(open(OUT + '/plates.js').read()[13:-2]) if os.path.exists(OUT + '/plates.js') else {}
+if not ONLY or 'intro' in ONLY: PL['intro'] = bake('intro', -55, -16, 68, ['sat'])
+if not ONLY or 'voyage' in ONLY: PL['voyage'] = bake('voyage', 22, 4, 118, ['hist', 'fog'])
+if not ONLY or 'treaty' in ONLY: PL['treaty'] = bake('treaty', -24, 14, 104, ['hist'])
+if not ONLY or 'iberia' in ONLY: PL['iberia'] = bake('iberia', -4.5, 40, 17, ['hist'])
 open(OUT + '/plates.js', 'w').write('const PLATES=' + json.dumps(PL) + ';\n')
 print(json.dumps(PL))

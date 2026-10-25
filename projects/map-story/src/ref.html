@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Map story — painted cast</title>
+<style>
+@font-face{font-family:'Cormorant Garamond';font-weight:700;src:url(fonts/cormorant-garamond-cyrillic-700-normal.woff2) format('woff2');unicode-range:U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Cormorant Garamond';font-weight:700;src:url(fonts/cormorant-garamond-latin-700-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#f1f2f6}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#111218}
+.abs{position:absolute}
+.mono{font-family:'DejaVu Sans Mono',monospace}
+.ctr{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;text-align:center}
+.pill{position:absolute;border-radius:999px;display:flex;align-items:center;justify-content:center;white-space:nowrap;background:rgba(255,255,255,.95);border:1.5px solid #fff;box-shadow:0 14px 30px -14px rgba(10,20,40,.45);transform:translate(-50%,-50%)}
+.card{position:absolute;border-radius:40px;background:#fff;box-shadow:0 40px 80px -36px rgba(10,20,40,.6),0 10px 24px -12px rgba(10,20,40,.25)}
+.chip{display:inline-flex;align-items:center;gap:12px;white-space:nowrap;padding:10px 24px;border-radius:999px;background:#fff;font-weight:800;letter-spacing:.04em;box-shadow:0 14px 28px -12px rgba(10,20,40,.5)}
+.blue{color:#2f7bf5}
+.sub{position:absolute;left:540px;transform:translate(-50%,-50%);padding:16px 34px;border-radius:999px;background:rgba(255,255,255,.96);font-weight:700;font-size:37px;letter-spacing:-.01em;white-space:nowrap;box-shadow:0 16px 34px -16px rgba(10,20,40,.55)}
+.subw{position:absolute;left:540px;transform:translate(-50%,-50%);white-space:nowrap;font-weight:700;font-size:58px;letter-spacing:-.01em;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.25),0 4px 18px rgba(0,0,0,.55)}
+.plate{position:absolute;left:0;top:0;width:1080px;height:1920px}
+svg{display:block}
+</style>
+</head>
+<body>
+<div id="root" class="abs" style="inset:0"></div>
+<script src="lib/d3-array.min.js"></script>
+<script src="lib/d3-geo.min.js"></script>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/world50m.js"></script>
+<script src="plates/plates.js"></script>
+<script src="icons.js"></script>
+<script src="characters2.js"></script>
+<script>
+const V=(location.hash||'#R1').slice(1);
+const ROOT=document.getElementById('root');
+const BLUE='#2f7bf5',ORANGE='#f08a24',INK='#2a2118';
+const countries=topojson.feature(WORLD,WORLD.objects.countries).features.filter(c=>c.id!=='010');
+const byId=id=>countries.find(c=>c.id===id);
+const MIDEAST=new Set(['682','887','512','784','634','414','368','400','376','760','422','364','792','275','048','196']);
+const html=s=>{const d=document.createElement('div');d.innerHTML=s.trim();const e=d.firstChild;ROOT.appendChild(e);return e};
+const proj=name=>{const P=PLATES[name];return d3.geoMercator().scale(P.k).translate([P.tx,P.ty])};
+function counter(n){const sl=[0,1,2,3,4,5].map(k=>`<span style="font-style:italic;color:${k<n?BLUE:'#c6cbdb'}">/</span>`).join('');
+  html(`<div class="pill" style="left:540px;top:150px;height:70px;padding:0 30px;gap:20px;font-weight:800;font-size:31px;letter-spacing:.04em"><span>CHAPTER ${n} OF 6</span><span class="mono" style="font-size:37px;letter-spacing:-.04em;font-weight:700">${sl}</span></div>`)}
+const at=(x,y,inner,extra='')=>html(`<div class="abs" style="left:${x}px;top:${y}px;${extra}">${inner}</div>`);
+// smooth curve through projected points (Catmull-Rom → cubic Bézier)
+function smooth(pts){let d=`M${pts[0][0]},${pts[0][1]}`;for(let i=0;i<pts.length-1;i++){const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
+  d+=` C${p1[0]+(p2[0]-p0[0])/6},${p1[1]+(p2[1]-p0[1])/6} ${p2[0]-(p3[0]-p1[0])/6},${p2[1]-(p3[1]-p1[1])/6} ${p2[0]},${p2[1]}`}return d}
+
+
+
+// ───────────── R1: Lisbon vs Castile — João demands the line be moved; the map of the split on an easel behind
+if(V==='R1'){
+  at(0,0,'<img class="plate" src="plates/iberia_hist.png">');
+  const pr=proj('iberia'),path=d3.geoPath(pr);
+  html(`<svg class="abs" style="left:0;top:0" width="1080" height="1920">
+   <defs><filter id="tx"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="9"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .18 0"/><feComposite in2="SourceGraphic" operator="in"/><feBlend in="SourceGraphic" mode="multiply"/></filter></defs>
+   <g style="mix-blend-mode:multiply"><path d="${path(byId('724'))}" fill="#e3822b" opacity=".85"/><path d="${path(byId('620'))}" fill="#2f4fd1" opacity=".95"/></g>
+   <path d="${path(byId('620'))}" fill="none" stroke="#1a1f3a" stroke-width="3" opacity=".7"/><path d="${path(byId('724'))}" fill="none" stroke="#3a2412" stroke-width="2.5" opacity=".55"/>
+  </svg>`);
+  // easel with the papal split map, behind the characters
+  const E=at(300,170,PROP.easel('plates/treaty_hist.png',-20,-250,.85,540));
+  html(`<svg class="abs" style="left:${300+25.5}px;top:${170+17}px" width="425" height="315"><path d="M${306*.5-10} 0 V315" stroke="#c4342d" stroke-width="5" stroke-dasharray="14 8"/></svg>`);
+  // cast
+  at(560,860,CAST2.ferdinand(1.1));at(740,900,CAST2.isabella(1.05));
+  at(130,880,CAST2.joao(1.15));
+  html(`<div class="subw" style="top:1500px">and demands to move the line</div>`);
+}
+
+// ───────────── cast sheet
+if(V==='RCAST'){
+  html(`<div class="ctr" style="left:540px;top:150px;font-weight:900;font-size:64px;letter-spacing:-.04em">The cast</div>`);
+  [['isabella','ISABELLA'],['ferdinand','FERDINAND'],['joao','JOÃO II'],['pope','ALEXANDER VI']].forEach(([k,t],i)=>{const x=40+(i%2)*500,y=300+Math.floor(i/2)*700;
+    at(x+60,y,CAST2[k](1.4));html(`<div class="chip" style="position:absolute;left:${x+242}px;top:${y+540}px;transform:translateX(-50%);font-size:28px">${t}</div>`)});
+}
+document.fonts.load('700 30px "Cormorant Garamond"','Договор').then(()=>Promise.all([...document.images].map(i=>i.decode()))).then(()=>{window.ready=true});
+</script>
+</body>
+</html>
