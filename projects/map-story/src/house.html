@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Map story — house style</title>
+<style>
+@font-face{font-family:'Cormorant Garamond';font-weight:700;src:url(fonts/cormorant-garamond-cyrillic-700-normal.woff2) format('woff2');unicode-range:U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Cormorant Garamond';font-weight:700;src:url(fonts/cormorant-garamond-latin-700-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#f1f2f6}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#111218}
+.abs{position:absolute}
+.mono{font-family:'DejaVu Sans Mono',monospace}
+.ctr{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;text-align:center}
+.pill{position:absolute;border-radius:999px;display:flex;align-items:center;justify-content:center;white-space:nowrap;background:rgba(255,255,255,.95);border:1.5px solid #fff;box-shadow:0 14px 30px -14px rgba(10,20,40,.45);transform:translate(-50%,-50%)}
+.card{position:absolute;border-radius:40px;background:#fff;box-shadow:0 40px 80px -36px rgba(10,20,40,.6),0 10px 24px -12px rgba(10,20,40,.25)}
+.chip{display:inline-flex;align-items:center;gap:12px;white-space:nowrap;padding:10px 24px;border-radius:999px;background:#fff;font-weight:800;letter-spacing:.04em;box-shadow:0 14px 28px -12px rgba(10,20,40,.5)}
+.blue{color:#2f7bf5}
+.sub{position:absolute;left:540px;transform:translate(-50%,-50%);padding:16px 34px;border-radius:999px;background:rgba(255,255,255,.96);font-weight:700;font-size:37px;letter-spacing:-.01em;white-space:nowrap;box-shadow:0 16px 34px -16px rgba(10,20,40,.55)}
+.subw{position:absolute;left:540px;transform:translate(-50%,-50%);white-space:nowrap;font-weight:700;font-size:58px;letter-spacing:-.01em;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.25),0 4px 18px rgba(0,0,0,.55)}
+.plate{position:absolute;left:0;top:0;width:1080px;height:1920px}
+svg{display:block}
+</style>
+</head>
+<body>
+<div id="root" class="abs" style="inset:0"></div>
+<script src="lib/d3-array.min.js"></script>
+<script src="lib/d3-geo.min.js"></script>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/world50m.js"></script>
+<script src="plates/plates.js"></script>
+<script src="icons.js"></script>
+<script src="characters2.js"></script>
+<script>
+const V=(location.hash||'#H1').slice(1);
+const ROOT=document.getElementById('root');
+const BLUE='#2f7bf5',ORANGE='#f08a24',INK='#2a2118';
+const countries=topojson.feature(WORLD,WORLD.objects.countries).features.filter(c=>c.id!=='010');
+const byId=id=>countries.find(c=>c.id===id);
+const MIDEAST=new Set(['682','887','512','784','634','414','368','400','376','760','422','364','792','275','048','196']);
+const html=s=>{const d=document.createElement('div');d.innerHTML=s.trim();const e=d.firstChild;ROOT.appendChild(e);return e};
+const proj=name=>{const P=PLATES[name];return d3.geoMercator().scale(P.k).translate([P.tx,P.ty])};
+function counter(n){const sl=[0,1,2,3,4,5].map(k=>`<span style="font-style:italic;color:${k<n?BLUE:'#c6cbdb'}">/</span>`).join('');
+  html(`<div class="pill" style="left:540px;top:150px;height:70px;padding:0 30px;gap:20px;font-weight:800;font-size:31px;letter-spacing:.04em"><span>CHAPTER ${n} OF 6</span><span class="mono" style="font-size:37px;letter-spacing:-.04em;font-weight:700">${sl}</span></div>`)}
+const at=(x,y,inner,extra='')=>html(`<div class="abs" style="left:${x}px;top:${y}px;${extra}">${inner}</div>`);
+// smooth curve through projected points (Catmull-Rom → cubic Bézier)
+function smooth(pts){let d=`M${pts[0][0]},${pts[0][1]}`;for(let i=0;i<pts.length-1;i++){const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
+  d+=` C${p1[0]+(p2[0]-p0[0])/6},${p1[1]+(p2[1]-p0[1])/6} ${p2[0]-(p3[0]-p1[0])/6},${p2[1]-(p3[1]-p1[1])/6} ${p2[0]},${p2[1]}`}return d}
+
+
+
+
+// ───────────── house style: flat light bg, counter pill, big two-line title, map inside a white card, chips
+const CX=60,CY=520,CW=960,CH=980;
+function title(a,b){html(`<div class="ctr" style="left:540px;top:350px;font-weight:900;font-size:80px;letter-spacing:-.045em;line-height:.98">${a}<br><span class="blue">${b}</span></div>`)}
+function subp(t,y=1780){return html(`<div class="sub" style="top:${y}px">${t}</div>`)}
+function chipC(x,y,t,st=''){return html(`<div class="chip" style="position:absolute;left:${x}px;top:${y}px;transform:translate(-50%,-50%);font-size:28px;${st}">${t}</div>`)}
+// map card: plate cropped around plate point (px,py) at zoom z; returns plate→page mapper
+function mapCard(plate,px,py,z){
+  const bw=1080*z,ox=px*z-CW/2,oy=py*z-CH/2;
+  html(`<div class="card" style="left:${CX}px;top:${CY}px;width:${CW}px;height:${CH}px;overflow:hidden;background:url(plates/${plate}.png) ${-ox}px ${-oy}px / ${bw}px auto"></div>`);
+  const sv=html(`<svg class="abs" style="left:${CX}px;top:${CY}px;border-radius:40px;overflow:hidden;clip-path:inset(0 round 40px)" width="${CW}" height="${CH}"></svg>`);
+  return {m:(x,y)=>[CX+x*z-ox,CY+y*z-oy],svg:sv,z,ox,oy,g:`<g transform="translate(${-ox} ${-oy}) scale(${z})">`};
+}
+
+if(V==='H1'){ counter(1); title('Why does Brazil','speak Portuguese?');
+  const pr=proj('intro'),path=d3.geoPath(pr),M=mapCard('intro_sat',...pr([-58,-20]),1.0);
+  M.svg.innerHTML=`${M.g}<path d="${path(byId('076'))}" fill="${BLUE}" fill-opacity=".4" stroke="#fff" stroke-width="4"/></g>`;
+  const p=M.m(...pr([-51,-10]));at(p[0]-80,p[1]-80,ICON.pulse(BLUE,.35));
+  chipC(p[0],p[1]+100,'BRAZIL','font-size:32px');
+  html(`<div class="abs" style="left:540px;top:1580px;transform:translateX(-50%);display:flex;gap:16px"><span class="chip" style="font-size:30px;background:${BLUE};color:#fff">#1 IN SOUTH AMERICA</span><span class="chip" style="font-size:30px;color:${BLUE}">#5 IN THE WORLD</span></div>`);
+  subp('the biggest country in South America');
+}
+
+if(V==='H2'){ counter(2); title('Portugal looks','for a sea route');
+  const pr=proj('voyage'),M=mapCard('voyage_hist',...pr([24,2]),1.0);
+  const route=[[-9.1,38.7],[-16,29],[-22,14],[-27,0],[-24,-18],[-8,-33],[10,-37.5],[20,-36.6],[31,-30],[39,-19],[41,-6],[52,4],[66,10],[75.8,11.25]].map(q=>M.m(...pr(q)).map((v,i)=>v-(i?CY:CX)));
+  const k=7;M.svg.innerHTML=`<path d="${smooth(route.slice(k))}" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="3 14" stroke-linecap="round" opacity=".8"/>
+    <path d="${smooth(route.slice(0,k+1))}" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round"/><path d="${smooth(route.slice(0,k+1))}" fill="none" stroke="${BLUE}" stroke-width="6" stroke-dasharray="18 12" stroke-linecap="round"/>`;
+  const sp=route[k];at(CX+sp[0]-250,CY+sp[1]-30,ICON.wake(200));at(CX+sp[0]-85,CY+sp[1]-140,ICON.caravel(.75));
+  const L=route[0];chipC(CX+L[0]+150,CY+L[1],`${ICON.flagPT(.42)} LISBON · 1497`,'padding:8px 22px 8px 10px');
+  const T=route[route.length-1];at(CX+T[0]-80,CY+T[1]-80,ICON.pulse(BLUE,.6));chipC(CX+T[0]-60,CY+T[1]+70,'INDIA',`color:${BLUE}`);
+  at(70,1290,CAST2.joao(.95));
+  subp('around Africa — to India');
+}
+
+if(V==='H3'){ counter(3); title('The Pope splits','the world in two');
+  const pr=proj('treaty'),path=d3.geoPath(pr),cen=c=>d3.geoCentroid(c),M=mapCard('treaty_hist',...pr([-38,18]),1.0);
+  const X=pr([-38,0])[0];
+  const west=countries.filter(c=>cen(c)[0]<-25),east=countries.filter(c=>{const [lo,la]=cen(c);return lo>-20&&lo<52&&la<37&&!MIDEAST.has(c.id)});
+  M.svg.innerHTML=`${M.g}<defs><clipPath id="cw"><rect x="-500" y="0" width="${X+500}" height="1920"/></clipPath><clipPath id="ce"><rect x="${X}" width="1600" height="1920"/></clipPath></defs>
+   <g style="mix-blend-mode:multiply"><g clip-path="url(#cw)" fill="${ORANGE}" opacity=".62">${west.map(c=>`<path d="${path(c)}"/>`).join('')}</g>
+   <g clip-path="url(#ce)" fill="${BLUE}" opacity=".7">${east.map(c=>`<path d="${path(c)}"/>`).join('')}<path d="${path(byId('076'))}"/></g></g>
+   <path d="M${X} -200 V2000" stroke="#fff" stroke-width="14" opacity=".6"/><path d="M${X} -200 V2000" stroke="${INK}" stroke-width="7"/></g>`;
+  const lx=M.m(X,0)[0];
+  html(`<div class="pill" style="left:${lx}px;top:${CY+60}px;height:58px;padding:0 22px;font-weight:800;font-size:27px;letter-spacing:.05em;background:${INK};color:#fff;border-color:${INK}">LINE OF 1493</div>`);
+  at(lx-300,1230,CAST2.isabella(.9));at(lx-170,1250,CAST2.ferdinand(.9));
+  at(lx+40,1210,CAST2.pope(.95));
+  at(lx+300,1260,CAST2.joao(.9));
+  html(`<div class="abs" style="left:540px;top:1640px;transform:translateX(-50%);display:flex;gap:16px"><span class="chip" style="font-size:28px;padding:8px 22px 8px 10px">${ICON.flagES(.42)} SPAIN · WEST</span><span class="chip" style="font-size:28px;padding:8px 22px 8px 10px">${ICON.flagPT(.42)} PORTUGAL · EAST</span></div>`);
+  subp('everything west for Spain, east for Portugal',1770);
+}
+
+if(V==='H4'){ counter(4); title('Portugal wants','a better deal');
+  const pr=proj('treaty'),path=d3.geoPath(pr),M=mapCard('treaty_hist',...pr([-40,8]),1.35);
+  const X0=pr([-38,0])[0],X1=pr([-46.5,0])[0],AY=pr([0,22])[1];
+  M.svg.innerHTML=`${M.g}<path d="${path(byId('076'))}" fill="${BLUE}" fill-opacity=".0"/>
+   <path d="M${X0} -200 V2000" stroke="#fff" stroke-width="5" stroke-dasharray="14 12" opacity=".9"/>
+   <path d="M${X1} -200 V2000" stroke="#fff" stroke-width="14" opacity=".6"/><path d="M${X1} -200 V2000" stroke="${INK}" stroke-width="7"/>
+   <path d="M${X0-6} ${AY} H${X1+20}" stroke="${BLUE}" stroke-width="6" stroke-linecap="round"/><path d="M${X1+34} ${AY-12} L${X1+18} ${AY} L${X1+34} ${AY+12}" stroke="${BLUE}" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  const a=M.m(X0,0)[0],b=M.m(X1,0)[0];
+  html(`<div class="pill" style="left:${a}px;top:${CY+60}px;height:54px;padding:0 20px;font-weight:800;font-size:25px;letter-spacing:.05em;color:#8a90a6">1493</div>`);
+  html(`<div class="pill" style="left:${b}px;top:${CY+60}px;height:54px;padding:0 20px;font-weight:800;font-size:25px;letter-spacing:.05em;background:${INK};color:#fff;border-color:${INK}">1494</div>`);
+  chipC((a+b)/2,M.m(0,AY)[1]+50,'370 LEAGUES WEST',`color:${BLUE};font-size:25px`);
+  at(560,1210,CAST2.joao(1.0));
+  at(560+215,1190,`<svg width="110" height="110" viewBox="-45 -45 90 90">${[0,90,180,270].map(r=>`<path transform="rotate(${r})" d="M8 -30 Q8 -10 28 -8" stroke="#d62828" stroke-width="8" fill="none" stroke-linecap="round"/>`).join('')}</svg>`);
+  at(140,1300,ICON.treaty(.68,'Treaty of','Tordesillas · 1494'),'filter:drop-shadow(0 18px 24px rgba(0,0,0,.25))');
+  subp('so the line moves farther west');
+}
+
+if(V==='H5'){ counter(6); title('One line —','two languages');
+  const pr=proj('intro'),path=d3.geoPath(pr),M=mapCard('intro_sat',...pr([-60,-22]),1.0);
+  const sa=countries.filter(c=>{const [lo,la]=d3.geoCentroid(c);return lo<-33&&lo>-90&&la<13&&la>-60&&c.id!=='076'});
+  M.svg.innerHTML=`${M.g}${sa.map(c=>`<path d="${path(c)}" fill="${ORANGE}" fill-opacity=".45" stroke="#fff" stroke-width="2" stroke-opacity=".8"/>`).join('')}<path d="${path(byId('076'))}" fill="${BLUE}" fill-opacity=".45" stroke="#fff" stroke-width="4"/></g>`;
+  const pb=M.m(...pr([-50,-11])),pa=M.m(...pr([-65,-30]));
+  chipC(pb[0],pb[1],'PORTUGUESE',`background:${BLUE};color:#fff;font-size:32px`);
+  chipC(pa[0],pa[1],'SPANISH',`background:${ORANGE};color:#fff;font-size:32px`);
+  html(`<div class="abs" style="left:540px;top:1610px;transform:translateX(-50%);font-weight:800;font-size:44px">Did you know this?</div>`);
+  subp('LIKE IF YOU LEARNED SOMETHING',1700).style.cssText+=';font-size:30px;letter-spacing:.06em;color:#8a90a6';
+}
+document.fonts.load('700 30px "Cormorant Garamond"').then(()=>Promise.all([...document.images].map(i=>i.decode()))).then(()=>{window.ready=true});
+</script>
+</body>
+</html>
