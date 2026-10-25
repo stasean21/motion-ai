@@ -2,7 +2,7 @@
 # usage: python3 -I audio_baarle.py meta.json outdir
 import json, sys, wave
 import numpy as np
-SR = 48000; FPS = 60; SPF = 800; NFR = 4800; N = NFR * SPF
+SR = 48000; FPS = 60; SPF = 800; NFR = 3900; N = NFR * SPF; BARS = 26
 meta = json.load(open(sys.argv[1])); out = sys.argv[2]; SFX = meta['SFX']
 rng = np.random.default_rng(11)
 BEAT = 60 / 96; BAR = 4 * BEAT
@@ -29,17 +29,17 @@ def pad(ch, d, bright=1400):
     return lp(x * np.minimum(1, t / .5) * np.minimum(1, (d - t) / .5), bright)
 CH = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]]          # Am F C G
 ROOT = [45, 41, 48, 43]
-SEC = [0, 3, 7, 11, 16, 20, 24, 27, 32]                               # first bar of each scene
+SEC = [0, 3, 7, 10, 14, 17, 20, 22, 26]                               # first bar of each scene (voice-driven 65 s cut)
 def scene(bar): return max(i for i in range(8) if SEC[i] <= bar)
 mus = {k: np.zeros(N) for k in ('kick', 'hat', 'bass', 'arp', 'pad')}
-for bar in range(32):
+for bar in range(BARS):
     s = scene(bar); t0 = bar * BAR; ch = CH[bar % 4]
     if s == 6: ch = [[48, 52, 55], [53, 57, 60], [48, 52, 55], [55, 59, 62]][bar % 4]        # S7 settles on C
     # pulse
     for b in range(4):
         tb = t0 + b * BEAT
         if b == 0 or (s >= 1 and b == 2): put(mus['kick'], kick([.45, .6, .5, .7, .45, .75, .6, .55][s]), tb)
-        if s in (3, 5) or (s == 7 and bar < 31):
+        if s in (3, 5) or (s == 7 and bar < BARS - 1):
             for h in (0, .5): put(mus['hat'], hat(), tb + h * BEAT, g=.12 if s != 7 else .07)
     if s >= 1: put(mus['bass'], bass(ROOT[bar % 4] if s != 6 else [36, 41, 36, 43][bar % 4], BEAT * 1.9), t0, g=.5); put(mus['bass'], bass(ROOT[bar % 4] if s != 6 else [36, 41, 36, 43][bar % 4], BEAT * 1.9), t0 + 2 * BEAT, g=.4)
     # arpeggio: 8ths; density per scene (S3 restrained, S5 thinned, S6 lifted an octave)
@@ -73,9 +73,20 @@ sfx = np.zeros(N)
 for e in SFX: put(sfx, FX[e['type']](), f=e['f'], g=e['g'])
 def rms(x): return np.sqrt(np.mean(x ** 2))
 music_n = music / rms(music) * 10 ** (-21 / 20); sfx_n = sfx / (np.max(np.abs(sfx)) or 1) * .5
-mix = music_n + sfx_n; mix *= min(1, 10 ** (-1 / 20) / np.max(np.abs(mix)))
+# voice: the ElevenLabs take cut per scene and placed on the new windows (timeline.json)
+import subprocess
+TL = json.load(open(sys.argv[3])); raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', sys.argv[4], '-ac', '1', '-ar', str(SR), '-f', 's16le', '-'], capture_output=True).stdout
+vr = np.frombuffer(raw, '<i2') / 32768; voice = np.zeros(N)
+for c in TL['clips']:
+    a, b = int(c['src'][0] * SR), int(c['src'][1] * SR); seg_ = vr[a:b].copy(); fd = int(.01 * SR); seg_[:fd] *= np.linspace(0, 1, fd); seg_[-fd:] *= np.linspace(1, 0, fd)
+    i = int(round(c['dst'] * SR)); voice[i:i + len(seg_)] += seg_[:N - i]
+voice = voice / rms(voice[np.abs(voice) > 1e-3]) * 10 ** (-16 / 20)
+# duck music ~7 dB under speech (smoothed envelope)
+envv = np.convolve(np.abs(voice) > .01, np.ones(int(.25 * SR)) / int(.25 * SR), 'same'); duck = 1 - .55 * np.clip(envv * 3, 0, 1)
+mix = music_n * duck + sfx_n * .8 + voice; mix *= min(1, 10 ** (-1 / 20) / np.max(np.abs(mix)))
+bed = music_n + sfx_n; bed *= min(1, 10 ** (-1 / 20) / np.max(np.abs(bed)))
 def wr(path, x):
     x = (np.clip(np.stack([x, x], 1), -1, 1) * 32767).astype('<i2')
     with wave.open(path, 'wb') as w: w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(x.tobytes())
-wr(out + '/mix_music_sfx.wav', mix); wr(out + '/stem_music.wav', music_n * min(1, .89 / np.max(np.abs(music_n)))); wr(out + '/stem_sfx.wav', sfx_n)
+wr(out + '/stem_voice.wav', voice * min(1, .89 / np.max(np.abs(voice)))); wr(out + '/mix_full.wav', mix); wr(out + '/mix_music_sfx.wav', bed); wr(out + '/stem_music.wav', music_n * min(1, .89 / np.max(np.abs(music_n)))); wr(out + '/stem_sfx.wav', sfx_n)
 print('rms dB', round(20 * np.log10(rms(mix)), 1), 'peak dB', round(20 * np.log10(np.max(np.abs(mix))), 1), 'sfx', len(SFX))
