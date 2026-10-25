@@ -66,7 +66,7 @@ ICON.quill = (s = 1) => `
 </svg>`;
 
 // parchment treaty with a wax seal
-ICON.treaty = (s = 1) => `
+ICON.treaty = (s = 1, t1 = 'Договор', t2 = 'Тордесильяс · 1494') => `
 <svg width="${300 * s}" height="${380 * s}" viewBox="0 0 300 380" style="overflow:visible">
  <defs>
   <linearGradient id="pp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7ebcb"/><stop offset=".6" stop-color="#ecd9a8"/><stop offset="1" stop-color="#d4b97f"/></linearGradient>
@@ -79,8 +79,8 @@ ICON.treaty = (s = 1) => `
   <path d="M14 14 L286 10 L290 352 Q150 366 12 356 Z" fill="url(#pp)" stroke="#b08f55" stroke-width="2"/>
  </g>
  <path d="M14 14 L286 10 L290 352 Q150 366 12 356 Z" fill="none" stroke="#8a6b38" stroke-width="10" opacity=".12"/>
- <text x="150" y="74" text-anchor="middle" font-family="Cormorant Garamond" font-weight="700" font-size="38" fill="#3c2c17">Договор</text>
- <text x="150" y="108" text-anchor="middle" font-family="Cormorant Garamond" font-weight="700" font-size="25" fill="#5a4426">Тордесильяс · 1494</text>
+ <text x="150" y="74" text-anchor="middle" font-family="Cormorant Garamond" font-weight="700" font-size="38" fill="#3c2c17">${t1}</text>
+ <text x="150" y="108" text-anchor="middle" font-family="Cormorant Garamond" font-weight="700" font-size="25" fill="#5a4426">${t2}</text>
  <g stroke="#6d5634" stroke-width="2.2" stroke-linecap="round" opacity=".55">
   <path d="M44 140 H256 M44 162 H246 M44 184 H252 M44 206 H230 M44 228 H250 M44 250 H200"/>
  </g>

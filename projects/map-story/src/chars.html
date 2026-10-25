@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Map story — characters</title>
+<style>
+@font-face{font-family:'Cormorant Garamond';font-weight:700;src:url(fonts/cormorant-garamond-cyrillic-700-normal.woff2) format('woff2');unicode-range:U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Cormorant Garamond';font-weight:700;src:url(fonts/cormorant-garamond-latin-700-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#f1f2f6}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#111218}
+.abs{position:absolute}
+.mono{font-family:'DejaVu Sans Mono',monospace}
+.ctr{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;text-align:center}
+.pill{position:absolute;border-radius:999px;display:flex;align-items:center;justify-content:center;white-space:nowrap;background:rgba(255,255,255,.95);border:1.5px solid #fff;box-shadow:0 14px 30px -14px rgba(10,20,40,.45);transform:translate(-50%,-50%)}
+.card{position:absolute;border-radius:40px;background:#fff;box-shadow:0 40px 80px -36px rgba(10,20,40,.6),0 10px 24px -12px rgba(10,20,40,.25)}
+.chip{display:inline-flex;align-items:center;gap:12px;white-space:nowrap;padding:10px 24px;border-radius:999px;background:#fff;font-weight:800;letter-spacing:.04em;box-shadow:0 14px 28px -12px rgba(10,20,40,.5)}
+.blue{color:#2f7bf5}
+.sub{position:absolute;left:540px;transform:translate(-50%,-50%);padding:16px 34px;border-radius:999px;background:rgba(255,255,255,.96);font-weight:700;font-size:37px;letter-spacing:-.01em;white-space:nowrap;box-shadow:0 16px 34px -16px rgba(10,20,40,.55)}
+.plate{position:absolute;left:0;top:0;width:1080px;height:1920px}
+svg{display:block}
+</style>
+</head>
+<body>
+<div id="root" class="abs" style="inset:0"></div>
+<script src="lib/d3-array.min.js"></script>
+<script src="lib/d3-geo.min.js"></script>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/world50m.js"></script>
+<script src="plates/plates.js"></script>
+<script src="icons.js"></script>
+<script src="characters.js"></script>
+<script>
+const V=(location.hash||'#C1').slice(1);
+const ROOT=document.getElementById('root');
+const BLUE='#2f7bf5',ORANGE='#f08a24',INK='#2a2118';
+const countries=topojson.feature(WORLD,WORLD.objects.countries).features.filter(c=>c.id!=='010');
+const byId=id=>countries.find(c=>c.id===id);
+const MIDEAST=new Set(['682','887','512','784','634','414','368','400','376','760','422','364','792','275','048','196']);
+const html=s=>{const d=document.createElement('div');d.innerHTML=s.trim();const e=d.firstChild;ROOT.appendChild(e);return e};
+const proj=name=>{const P=PLATES[name];return d3.geoMercator().scale(P.k).translate([P.tx,P.ty])};
+function counter(n){const sl=[0,1,2,3,4,5].map(k=>`<span style="font-style:italic;color:${k<n?BLUE:'#c6cbdb'}">/</span>`).join('');
+  html(`<div class="pill" style="left:540px;top:150px;height:70px;padding:0 30px;gap:20px;font-weight:800;font-size:31px;letter-spacing:.04em"><span>CHAPTER ${n} OF 6</span><span class="mono" style="font-size:37px;letter-spacing:-.04em;font-weight:700">${sl}</span></div>`)}
+const at=(x,y,inner,extra='')=>html(`<div class="abs" style="left:${x}px;top:${y}px;${extra}">${inner}</div>`);
+// smooth curve through projected points (Catmull-Rom → cubic Bézier)
+function smooth(pts){let d=`M${pts[0][0]},${pts[0][1]}`;for(let i=0;i<pts.length-1;i++){const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
+  d+=` C${p1[0]+(p2[0]-p0[0])/6},${p1[1]+(p2[1]-p0[1])/6} ${p2[0]-(p3[0]-p1[0])/6},${p2[1]-(p3[1]-p1[1])/6} ${p2[0]},${p2[1]}`}return d}
+
+
+const label=(x,y,t,col,extra='')=>html(`<div class="chip" style="position:absolute;left:${x}px;top:${y}px;transform:translateX(-50%);font-size:25px;${col?`color:${col}`:''};${extra}">${t}</div>`);
+
+// ───────────── C1: the split — monarchs on either side of the line, the Pope with the treaty
+if(V==='C1'){
+  at(0,0,'<img class="plate" src="plates/treaty_hist.png">');
+  const pr=proj('treaty'),path=d3.geoPath(pr),X=pr([-46.5,0])[0],cen=c=>d3.geoCentroid(c);
+  const west=countries.filter(c=>cen(c)[0]<-25),east=countries.filter(c=>{const [lo,la]=cen(c);return lo>-20&&lo<52&&la<37&&!MIDEAST.has(c.id)});
+  html(`<svg class="abs" style="left:0;top:0;mix-blend-mode:multiply" width="1080" height="1920">
+   <defs><clipPath id="cw"><rect width="${X}" height="1920"/></clipPath><clipPath id="ce"><rect x="${X}" width="${1080-X}" height="1920"/></clipPath></defs>
+   <g clip-path="url(#cw)" fill="${ORANGE}" opacity=".62">${west.map(c=>`<path d="${path(c)}"/>`).join('')}</g>
+   <g clip-path="url(#ce)" fill="${BLUE}" opacity=".72">${east.map(c=>`<path d="${path(c)}"/>`).join('')}<path d="${path(byId('076'))}"/></g>
+   <path d="${path(byId('724'))}" fill="${ORANGE}"/><path d="${path(byId('620'))}" fill="${BLUE}"/></svg>`);
+  html(`<svg class="abs" style="left:0;top:0" width="1080" height="1920"><path d="M${X} 0 V1920" stroke="#fff" stroke-width="14" opacity=".55"/><path d="M${X} 0 V1920" stroke="${INK}" stroke-width="8"/></svg>`);
+  at(X-300,640,CAST.isabella(.85));at(X-165,670,CAST.ferdinand(.85));
+  label(X-150,960,`${ICON.flagES(.42)} SPAIN`,'','padding:8px 22px 8px 10px');
+  at(X+70,620,CAST.joao(1.05));label(X+175,970,`${ICON.flagPT(.42)} PORTUGAL`,'','padding:8px 22px 8px 10px');
+  at(X-130,1150,CAST.pope(1.15));
+  at(X+90,1250,ICON.treaty(.72,'Treaty of','Tordesillas · 1494'),'filter:drop-shadow(0 18px 24px rgba(0,0,0,.3))');
+  label(X-15,1530,'POPE ALEXANDER VI · 1494',INK);
+  counter(3);
+  html(`<div class="sub" style="top:1760px">so the Pope split the world in two</div>`);
+}
+
+// ───────────── C2: the voyage — Vasco da Gama in front, his ship rounding the Cape behind him
+if(V==='C2'){
+  at(0,0,'<img class="plate" src="plates/voyage_hist.png">');
+  const pr=proj('voyage');
+  const route=[[-9.1,38.7],[-16,29],[-22,14],[-27,0],[-24,-18],[-8,-33],[10,-37.5],[20,-36.6],[31,-30],[39,-19],[41,-6],[52,4],[66,10],[75.8,11.25]].map(p=>pr(p));
+  const shipAt=7,done=smooth(route.slice(0,shipAt+1)),todo=smooth(route.slice(shipAt));
+  html(`<svg class="abs" style="left:0;top:0" width="1080" height="1920">
+   <path d="${todo}" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="3 14" stroke-linecap="round" opacity=".75"/>
+   <path d="${done}" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" opacity=".9"/>
+   <path d="${done}" fill="none" stroke="${BLUE}" stroke-width="6" stroke-dasharray="18 12" stroke-linecap="round"/></svg>`);
+  at(0,0,'<img class="plate" src="plates/voyage_fog.png" style="-webkit-mask-image:radial-gradient(ellipse 470px 640px at 540px 1020px,transparent 50%,#000 88%)">');
+  const sp=route[shipAt];at(sp[0]-260,sp[1]-30,ICON.wake(210));at(sp[0]-90,sp[1]-145,ICON.caravel(.78));
+  const T=route[route.length-1];at(T[0]-80,T[1]-80,ICON.pulse(BLUE,.6));label(T[0]-40,T[1]+50,'INDIA',BLUE);
+  at(60,1060,CAST.gama(1.45));
+  label(205,1540,'VASCO DA GAMA · 1497',INK);
+  html(`<div class="abs" style="left:300px;top:930px">${bubble('India — this way!','left')}</div>`).firstChild.style.fontSize='40px';
+  counter(2);
+  html(`<div class="sub" style="top:1760px">Portugal sailed around Africa</div>`);
+}
+
+// ───────────── C3: today — neighbours greet each other in different languages
+if(V==='C3'){
+  at(0,0,'<img class="plate" src="plates/intro_sat.png">');
+  const pr=proj('intro'),path=d3.geoPath(pr);
+  const sa=countries.filter(c=>{const [lo,la]=d3.geoCentroid(c);return lo<-33&&lo>-90&&la<13&&la>-60&&c.id!=='076'});
+  html(`<svg class="abs" style="left:0;top:0" width="1080" height="1920">
+   ${sa.map(c=>`<path d="${path(c)}" fill="${ORANGE}" fill-opacity=".42" stroke="#fff" stroke-width="2" stroke-opacity=".7"/>`).join('')}
+   <path d="${path(byId('076'))}" fill="${BLUE}" fill-opacity=".42" stroke="#fff" stroke-width="4"/></svg>`);
+  const b=pr([-50,-12]),a=pr([-66,-36]);
+  at(b[0]-110,b[1]-210,CAST.brazil(1.15));
+  at(b[0]-10,b[1]-330,bubble('Olá!','left',BLUE));
+  at(a[0]-60,a[1]-160,CAST.argentina(1.1));
+  at(a[0]-200,a[1]-290,bubble('¡Hola!','right','#d06a10'));
+  html(`<div class="abs" style="left:540px;top:300px;transform:translateX(-50%);display:flex;gap:16px"><span class="chip" style="font-size:30px;background:${BLUE};color:#fff">PORTUGUESE</span><span class="chip" style="font-size:30px;background:${ORANGE};color:#fff">SPANISH</span></div>`);
+  counter(6);
+  html(`<div class="sub" style="top:1760px">that's why Brazil speaks Portuguese</div>`);
+}
+
+// ───────────── cast sheet
+if(V==='CAST'){
+  html(`<div class="ctr" style="left:540px;top:150px;font-weight:900;font-size:64px;letter-spacing:-.04em">The cast</div>`);
+  const L=[['isabella','ISABELLA'],['ferdinand','FERDINAND'],['joao','JOÃO II'],['pope','ALEXANDER VI'],['gama','VASCO DA GAMA'],['brazil','BRAZIL TODAY'],['argentina','ARGENTINA TODAY'],];
+  L.forEach(([k,t],i)=>{const col=i%3,row=Math.floor(i/3),x=60+col*330,y=300+row*520;
+    at(x+40,y+40,CAST[k](1.15));label(x+155,y+430,t,INK)});
+}
+document.fonts.load('700 30px "Cormorant Garamond"','Договор').then(()=>Promise.all([...document.images].map(i=>i.decode()))).then(()=>{window.ready=true});
+</script>
+</body>
+</html>
