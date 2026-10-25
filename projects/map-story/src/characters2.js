@@ -32,7 +32,7 @@ function figure(o, s = 1) {
   <rect width="${W}" height="${H}" fill="url(#${u}ao)"/>
  </g>
  <path d="${body}" fill="none" stroke="#2a1c12" stroke-width="2.4" stroke-opacity=".55"/>
- ${o.face === false ? '' : eye(cx - eyeDx) + eye(cx + eyeDx) + brows + mouth}
+ ${o.face === false ? '' : `<g class="eyes" style="transform-box:fill-box;transform-origin:center">${eye(cx - eyeDx) + eye(cx + eyeDx)}</g>` + brows + mouth}
  ${o.front ? o.front(C) : ''}
 </svg>`;
 }
