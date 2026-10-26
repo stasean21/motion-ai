@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Point Roberts — key frames</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#d4ebfa}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#111218}
+.abs{position:absolute}
+.chip{position:absolute;display:inline-flex;align-items:center;gap:12px;white-space:nowrap;padding:10px 24px;border-radius:999px;background:#fff;font-weight:800;letter-spacing:.04em;font-size:28px;box-shadow:0 14px 28px -12px rgba(10,20,40,.5);transform:translate(-50%,-50%)}
+.blue{color:#2f7bf5}
+svg{display:block}
+</style>
+</head>
+<body>
+<div id="root" class="abs" style="inset:0"></div>
+<script src="lib/d3-array.min.js"></script>
+<script src="lib/d3-geo.min.js"></script>
+<script src="geo_pr.js"></script>
+<script src="pr_art.js"></script>
+<script>
+const V=(location.hash||'#P1').slice(1),BLUE='#2f7bf5';
+const html=s=>{const d=document.createElement('div');d.innerHTML=s.trim();const e=d.firstChild;document.getElementById('root').appendChild(e);return e};
+const at=(x,y,inner,st='')=>html(`<div class="abs" style="left:${x}px;top:${y}px;${st}">${inner}</div>`);
+const chip=(x,y,t,st='')=>html(`<div class="chip" style="left:${x}px;top:${y}px;${st}">${t}</div>`);
+// ───────── map: Mercator, centre + width in degrees; mainland split at 49°N (US below, Canada above)
+function map(lon,lat,w,o={}){
+  const g=w<2.2?GEO.local:GEO.region,k=1080/(w*Math.PI/180);
+  const pr=d3.geoMercator().scale(k).translate([540-k*lon*Math.PI/180,0]);const y0=pr([lon,lat])[1];pr.translate([540-k*lon*Math.PI/180,(o.cy??1000)-y0]);
+  const P=p=>pr(p),path=pts=>'M'+pts.map(q=>P(q).map(v=>v.toFixed(1)).join(',')).join('L')+'Z';
+  const y49=P([lon,49])[1],H=o.hist;
+  const land=H?'#efe3c4':C_LAND,us=H?'#9fb6d8':C_US,ca=H?'#e6b98a':C_CA,water=H?'#b7cfcb':C_WATER;
+  const tint=o.tint??1;
+  let s=`<rect width="1080" height="1920" fill="${water}"/><defs><clipPath id="cS"><rect x="-99" y="${y49}" width="1300" height="3000"/></clipPath><clipPath id="cN"><rect x="-99" y="-999" width="1300" height="${y49+999}"/></clipPath>
+   <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" seed="4"/><feColorMatrix values="0 0 0 0 .45  0 0 0 0 .38  0 0 0 0 .25  0 0 0 .22 0"/></filter></defs>`;
+  g.land.forEach(p=>{const d=path(p.pts);
+    if(p.cc==='MIX'){s+=`<path d="${d}" fill="${land}"/><path d="${d}" fill="${us}" opacity="${.9*tint*(o.usOp??1)}" clip-path="url(#cS)"/><path d="${d}" fill="${ca}" opacity="${.9*tint*(o.caOp??1)}" clip-path="url(#cN)"/>`}
+    else s+=`<path d="${d}" fill="${land}"/><path d="${d}" fill="${p.cc==='US'?us:ca}" opacity="${.9*tint*(p.cc==='US'?(o.usOp??1):(o.caOp??1))}"/>`;
+    s+=`<path d="${d}" fill="none" stroke="#fff" stroke-width="${H?1.5:2.5}" stroke-opacity=".9"/>`});
+  if(!H&&o.border!==false) g.border.forEach(b=>s+=`<path d="M${b.map(q=>P(q).map(v=>v.toFixed(1)).join(',')).join('L')}" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="2 10" stroke-linecap="round"/>`);
+  if(H)s+=`<rect width="1080" height="1920" filter="url(#paper)"/>`;
+  html(`<svg class="abs" style="left:0;top:0" width="1080" height="1920">${s}</svg>`);
+  return {P,y49,k};
+}
+function route(M,upto=1,o={}){const pts=ROUTE.map(M.P);const n=Math.max(2,Math.round(upto*(pts.length-1))+1);
+  const d=pts=>'M'+pts.map(p=>p.map(v=>v.toFixed(1)).join(',')).join('L');
+  html(`<svg class="abs" style="left:0;top:0" width="1080" height="1920"><path d="${d(pts)}" fill="none" stroke="#fff" stroke-width="${o.w??14}" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+   <path d="${d(pts)}" fill="none" stroke="#1f2a3d" stroke-width="${(o.w??14)*.35}" stroke-dasharray="4 12" stroke-linecap="round" opacity=".45"/>
+   <path d="${d(pts.slice(0,n))}" fill="none" stroke="${BLUE}" stroke-width="${(o.w??14)*.55}" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
+  return pts;
+}
+function car(p,ang,s=1){at(p[0]-48*s,p[1]-26*s,ART.car(s),`transform:rotate(${ang}deg);transform-origin:${48*s}px ${26*s}px`)}
+const angAt=(pts,i)=>Math.atan2(pts[i+1][1]-pts[i][1],pts[i+1][0]-pts[i][0])*180/Math.PI;
+// ───────── house UI: year pill, phrase capsule, subtitle (static key frames)
+function topUI(year,phrase){html(`<div class="abs" style="left:540px;top:140px;transform:translate(-50%,-50%);height:70px;padding:0 34px;border-radius:999px;background:rgba(255,255,255,.95);box-shadow:0 14px 30px -14px rgba(10,20,40,.45);display:flex;align-items:center;font-weight:900;font-size:38px;color:${BLUE}">${year}</div>`);
+  html(`<div class="abs" style="left:540px;top:215px;transform:translateX(-50%);padding:22px 44px 26px;border-radius:40px;background:rgba(255,255,255,.96);box-shadow:0 22px 46px -22px rgba(10,20,40,.55);font-weight:900;font-size:62px;letter-spacing:-.04em;line-height:1.02;text-align:center;white-space:nowrap">${phrase}</div>`)}
+function sub(words,k){const ws=words.split(' '),cur=Math.floor(k);html(`<div class="abs" style="left:540px;top:1770px;transform:translate(-50%,-50%);padding:16px 36px;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 16px 34px -16px rgba(10,20,40,.55);font-weight:700;font-size:40px;white-space:nowrap">${ws.map((w,i)=>{const key=w[0]==='*',t=key?w.slice(1):w;return `<span style="display:inline-block;margin:0 .1em;${i>cur?'opacity:.3;':''}${(key&&i<=cur)||i===cur?`color:${BLUE};`:''}${key?'font-weight:900':''}">${t}</span>`}).join(' ')}</div>`)}
+function counter(n,x=540,y=1610){chip(x,y,`BORDER CROSSINGS <span style="display:inline-flex;align-items:center;justify-content:center;min-width:46px;height:46px;border-radius:12px;background:${BLUE};color:#fff;font-size:30px">${n}</span>`,'font-size:25px;padding:8px 10px 8px 24px')}
+
+const LOC=[-122.91,49.035,.48];   // local view framing PR → Blaine
+if(V==='P1'){const M=map(...LOC);const pts=route(M,0);
+  const a=M.P(ROUTE[0]),b=M.P(ROUTE[ROUTE.length-1]);
+  at(a[0]-28,a[1]-64,ART.pin(BLUE,1));at(a[0]-18,a[1]-112,ART.flagUS(.6));at(b[0]-28,b[1]-64,ART.pin(BLUE,1));at(b[0]-18,b[1]-112,ART.flagUS(.6));
+  car(pts[0],-80,.9);
+  topUI('TODAY','U.S. <span class="blue">→</span> CANADA <span class="blue">→</span> U.S.');
+  chip(M.P([-122.93,49.13])[0],M.P([-122.93,49.13])[1],`${ART.flagCA(.5)} CANADA`,'padding:8px 20px 8px 10px');
+  sub('you have to go through *Canada.',5);
+}
+if(V==='P2'){const M=map(-123.0,48.2,6.5,{cy:1000});const p=M.P([-123.06,48.985]);
+  html(`<div class="abs" style="left:${p[0]-60}px;top:${p[1]-60}px;width:120px;height:120px;border-radius:50%;border:6px solid #fff;box-shadow:0 0 0 6px ${BLUE},0 12px 30px rgba(0,0,0,.3)"></div>`);
+  chip(p[0]-60,p[1]-140,`<span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.1"><span style="font-size:32px">POINT ROBERTS</span><span style="font-size:22px;color:#8a90a6;letter-spacing:.06em">WASHINGTON, USA</span></span>`,'padding:14px 26px');
+  const wa=M.P([-120.6,47.4]);chip(wa[0],wa[1],`${ART.flagUS(.5)} WASHINGTON`,'padding:8px 20px 8px 10px');const bc=M.P([-121.3,50.6]);chip(bc[0],bc[1],`${ART.flagCA(.5)} CANADA`,'padding:8px 20px 8px 10px');
+  topUI('TODAY','This is | <span class="blue">Point Roberts</span>'.replace(' | ','<br>'));
+  sub('This is *Point *Roberts, Washington.',4);
+}
+if(V==='P3'){const M=map(...LOC);const pts=route(M,.55);const i=11;car(pts[i],angAt(pts,i),.9);
+  const x1=M.P(XING[0]);chip(x1[0]+150,x1[1]+10,'ENTERING CANADA',`color:${C_CA}`);
+  html(`<div class="abs" style="left:${x1[0]-22}px;top:${x1[1]-22}px;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 0 0 6px ${BLUE};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:24px;color:${BLUE}">1</div>`);
+  counter(1);topUI('TODAY','Follow | <span class="blue">the car</span>'.replace(' | ','<br>'));sub('First, you cross into *Canada.',5);
+}
+if(V==='P4'){const M=map(-123.06,48.99,.16,{cy:1080});const c=M.P([-123.058,48.982]);
+  const arr=(ang,len,col,op,x)=>`<g transform="translate(${c[0]} ${c[1]}) rotate(${ang})" opacity="${op}"><path d="M0 0 H${len}" stroke="${col}" stroke-width="16" stroke-linecap="round"/><path d="M${len-30} -26 L${len+6} 0 L${len-30} 26" fill="none" stroke="${col}" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>${x?`<g transform="translate(${len+60} 0) rotate(${-ang})"><circle r="30" fill="#fff"/><path d="M-12 -12 L12 12 M12 -12 L-12 12" stroke="#e5484d" stroke-width="7" stroke-linecap="round"/></g>`:''}</g>`;
+  html(`<svg class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920">${arr(180,250,'#8a90a6',.55,1)}${arr(90,250,'#8a90a6',.55,1)}${arr(0,250,'#8a90a6',.55,1)}${arr(-90,330,BLUE,1,0)}</svg>`);
+  chip(540,1520,'WATER ON THREE SIDES','color:#3a87c9');chip(c[0],c[1]-470,`LAND ROUTE: NORTH`,`background:${BLUE};color:#fff`);
+  topUI('TODAY','Why the | <span class="blue">detour?</span>'.replace(' | ','<br>'));sub('Water surrounds it on three *sides.',5);
+}
+if(V==='P5'){const M=map(-122.75,48.98,1.4,{hist:1,tint:.0,cy:1000});
+  // 49th parallel drawn east → west, stopping before Vancouver Island
+  const yy=M.P([0,49])[1],xs=M.P([-121.7,49])[0],xm=M.P([-123.13,49])[0];
+  html(`<svg class="abs" style="left:0;top:0" width="1080" height="1920"><path d="M${xs} ${yy} H${xm}" stroke="#7a2e1d" stroke-width="7" stroke-linecap="round" stroke-dasharray="22 12"/><circle cx="${xm}" cy="${yy}" r="10" fill="#7a2e1d"/></svg>`);
+  chip(540,yy-90,'49th PARALLEL','color:#7a2e1d;letter-spacing:.06em');
+  html(`<div class="abs" style="left:540px;top:1560px;transform:translate(-50%,-50%);display:flex;gap:16px"><span class="chip" style="position:static;transform:none;padding:8px 22px 8px 10px">${ART.flagUS(.5)} U.S.</span><span style="font-weight:900;font-size:36px;color:#7a2e1d;align-self:center">+</span><span class="chip" style="position:static;transform:none;padding:8px 22px 8px 10px">${ART.flagUK(.5)} BRITAIN</span></div>`);
+  topUI('1846','A line along | <span class="blue">the 49th</span>'.replace(' | ','<br>'));sub('The explanation goes back to *1846.',6);
+}
+if(V==='P6'){const M=map(-122.98,49.02,.42,{cy:1050});
+  const y=M.y49;html(`<svg class="abs" style="left:0;top:0" width="1080" height="1920"><path d="M0 ${y} H1080" stroke="#111218" stroke-width="5" stroke-dasharray="18 12" opacity=".75"/></svg>`);
+  const pr=M.P([-123.058,48.98]);chip(pr[0],pr[1]+90,`${ART.flagUS(.45)} U.S.`,'padding:8px 20px 8px 10px;font-size:24px');
+  const ts=M.P([-123.07,49.05]);chip(ts[0],ts[1],`${ART.flagCA(.45)} CANADA`,'padding:8px 20px 8px 10px;font-size:24px');
+  const wa=M.P([-122.78,48.9]);chip(Math.min(wa[0],860),wa[1],`${ART.flagUS(.45)} REST OF THE U.S.`,'padding:8px 20px 8px 10px;font-size:24px');
+  topUI('TODAY','One border. | <span class="blue">A big detour.</span>'.replace(' | ','<br>'));sub('Its southern tip became *American…',4);
+}
+if(V==='P7'){const M=map(...LOC);const pts=route(M,1);car(pts[pts.length-1],100,.9);
+  XING.forEach((q,k)=>{const x=M.P(q);html(`<div class="abs" style="left:${x[0]-22}px;top:${x[1]-22}px;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 0 0 6px ${BLUE};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:24px;color:${BLUE}">${k+1}</div>`)});
+  html(`<div class="abs" style="left:540px;top:1600px;transform:translate(-50%,-50%);display:flex;gap:16px"><span class="chip" style="position:static;transform:none">ONE WAY: <span class="blue">2</span></span><span class="chip" style="position:static;transform:none;background:${BLUE};color:#fff">ROUND TRIP: 4</span></div>`);
+  counter(4,540,1500);topUI('TODAY','A round trip? | <span class="blue">Four.</span>'.replace(' | ','<br>'));sub('That makes *four.',3);
+}
+if(V==='P8'){const M=map(-123.04,48.99,.2,{cy:1000});const pts=route(M,0,{w:20});const h=M.P([-123.07,48.978]);
+  at(h[0]-60,h[1]-110,ART.house(1));car([h[0]+90,h[1]-10],0,1.1);
+  html(`<div class="abs" style="left:540px;top:1560px;transform:translate(-50%,-50%);display:flex;gap:22px"><span class="chip" style="position:static;transform:none;font-size:40px;padding:14px 44px;background:${BLUE};color:#fff">YES</span><span class="chip" style="position:static;transform:none;font-size:40px;padding:14px 44px">NO</span></div>`);
+  html(`<div class="abs" style="left:800px;top:420px;width:180px;height:180px;border-radius:40px;background:#fff;box-shadow:0 30px 60px -30px rgba(10,20,40,.6);display:flex;align-items:center;justify-content:center"><svg width="96" height="96" viewBox="0 0 24 24"><path d="M2 10h4v12H2z M8 22h10.5a2 2 0 0 0 2-1.6l1.4-7A2 2 0 0 0 20 11h-6l1-5a2.2 2.2 0 0 0-4.2-1L8 10z" fill="${BLUE}"/></svg></div>`);
+  topUI('TODAY','Would you | <span class="blue">live here?</span>'.replace(' | ','<br>'));sub('Tell me *yes or *no in the comments.',4);
+}
+if(V==='P9'){const M=map(...LOC);const pts=route(M,0);const a=M.P(ROUTE[0]),b=M.P(ROUTE[ROUTE.length-1]);
+  at(a[0]-28,a[1]-64,ART.pin(BLUE,1));at(b[0]-28,b[1]-64,ART.pin(BLUE,1));car(pts[0],-80,.9);
+  topUI('TODAY','One line | <span class="blue">on a map</span>'.replace(' | ','<br>'));sub('That’s *why…',2);
+}
+document.fonts.ready.then(()=>{window.ready=true});
+</script>
+</body>
+</html>
