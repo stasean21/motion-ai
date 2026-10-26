@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Point Roberts — through Canada</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#0d2a3e}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#111218}
+.abs{position:absolute}
+.chip{position:absolute;display:inline-flex;align-items:center;gap:12px;white-space:nowrap;padding:10px 24px;border-radius:999px;background:#fff;font-weight:800;letter-spacing:.04em;font-size:28px;box-shadow:0 14px 28px -12px rgba(10,20,40,.55)}
+svg{display:block}
+#world *{vector-effect:non-scaling-stroke}
+</style>
+</head>
+<body>
+<div id="world" class="abs" style="left:0;top:0;transform-origin:0 0">
+ <img id="imR" class="abs" src="sat/region.jpg" style="transform-origin:0 0">
+ <img id="imL" class="abs" src="sat/local.jpg" style="transform-origin:0 0">
+ <svg id="geo" class="abs" style="overflow:visible"></svg>
+</div>
+<svg id="paper" class="abs" style="left:0;top:0;opacity:0" width="1080" height="1920"><filter id="pp"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="4"/><feColorMatrix values="0 0 0 0 .45  0 0 0 0 .36  0 0 0 0 .22  0 0 0 .35 0"/></filter><rect width="1080" height="1920" filter="url(#pp)"/></svg>
+<svg id="fx" class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"></svg>
+<div id="ui" class="abs" style="inset:0"></div>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/world10m.js"></script>
+<script src="lib/us10m.js"></script>
+<script src="geo_pr.js"></script>
+<script src="sat/sat.js"></script>
+<script src="pr_art.js"></script>
+<script src="voice_words.js"></script>
+<script>
+const FPS=60,SC=VOICE_SC,DUR=SC[8][1],NFR=Math.round(DUR*FPS),BLUE='#2f7bf5';
+const $=id=>document.getElementById(id);
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),seg=(t,a,b)=>clamp((t-a)/(b-a)),lerp=(a,b,t)=>a+(b-a)*t;
+const eo=p=>1-Math.pow(1-p,3),eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+const eb=p=>{const c1=1.7,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)};
+const S=(i,d=0)=>SC[i][0]+d,SE=(i,d=0)=>SC[i][1]+d;
+const mk=(parent,h)=>{const d=document.createElement('div');d.innerHTML=h.trim();const e=d.firstChild;$(parent).appendChild(e);return e};
+const vis=(el,o)=>{el.style.opacity=o;el.style.visibility=o<=.003?'hidden':'visible'};
+const popS=(t,t0,d=.45)=>{const p=seg(t,t0,t0+d);return {o:clamp(p*2.5),s:t<t0?0:.55+.45*eb(p)}};
+const fadeOut=(q,t,a,b)=>{q.o*=1-seg(t,a,b);return q};
+// ───────── words (measured from the ElevenLabs take)
+const norm=s=>s.toLowerCase().replace(/[^a-z0-9]/g,'');
+const W=VOICE_TXT.map((txt,i)=>({txt,si:VOICE_SI[i],t:VOICE_WORDS[i][0],end:VOICE_WORDS[i][1]}));
+const WT=(word,si,n=0)=>{const l=W.filter(w=>w.si===si&&norm(w.txt)===norm(word));if(!l.length)throw new Error('no word '+word+' in '+si);return (l[n]||l[0]).t};
+const KEY=new Set(['canada','pointroberts','point','roberts','washington','1846','britain','fortyninth','parallel','american','north','four','yes','no','twice']);
+W.forEach(w=>w.key=KEY.has(norm(w.txt)));
+const CH=[];{let cur=[];W.forEach((w,i)=>{cur.push(w);const nx=W[i+1];if(/[.?!,:…]$/.test(w.txt)||cur.length>=5||!nx||nx.si!==w.si){CH.push(cur);cur=[]}})}
+CH.forEach((c,i)=>{const nx=CH[i+1];c.t0=c[0].t;c.t1=nx&&nx[0].si===c[0].si?nx[0].t-.02:Math.min(c[c.length-1].end+.6,SE(c[0].si,-.05))});
+
+// ───────── world: Web-Mercator pixels at z12; camera = affine transform
+const W12=256*4096,wx=lon=>(lon+180)/360*W12,wy=lat=>{const f=lat*Math.PI/180;return (1-Math.log(Math.tan(f)+1/Math.cos(f))/Math.PI)/2*W12};
+const WP=p=>[wx(p[0]),wy(p[1])];
+{const L=SAT.local,R=SAT.region;$('imL').style.left=L.X0*256+'px';$('imL').style.top=L.Y0*256+'px';
+ const f=2**(12-R.z);$('imR').style.left=R.X0*256*f+'px';$('imR').style.top=R.Y0*256*f+'px';$('imR').style.transform=`scale(${f})`}
+const Y49=wy(49),OX=wx(-130),OY=wy(55);   // svg origin
+const pth=pts=>'M'+pts.map(q=>{const p=WP(q);return (p[0]-OX).toFixed(1)+','+(p[1]-OY).toFixed(1)}).join('L')+'Z';
+const CTRY=topojson.feature(WORLD10,WORLD10.objects.countries).features,STATES=topojson.feature(USA10,USA10.objects.states).features;
+const ringsOf=f=>(f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates).map(p=>p[0]).filter(r=>r.some(([x,y])=>x>-131&&x<-110&&y>42&&y<56));
+const pathR=rings=>rings.map(r=>pth(r)).join('');
+function regionLayer(id){const us=pathR(ringsOf(CTRY.find(c=>c.id==='840'))),ca=pathR(ringsOf(CTRY.find(c=>c.id==='124')));
+  return `<g id="${id}"><g class="tUS" fill="${C_US}" style="mix-blend-mode:color"><path d="${us}"/></g><g class="tCA" fill="${C_CA}" style="mix-blend-mode:color"><path d="${ca}"/></g><g class="coast" fill="none" stroke="#fff" stroke-width="1.4" stroke-opacity=".5"><path d="${us}"/><path d="${ca}"/></g></g>`}
+const WA_D=pathR(ringsOf(STATES.find(s=>s.id==='53')));
+function geoLayer(g,id){let us='',ca='',out='';g.land.forEach(p=>{const d=pth(p.pts);if(p.cc==='MIX'){us+=`<path d="${d}" clip-path="url(#cS)"/>`;ca+=`<path d="${d}" clip-path="url(#cN)"/>`}else if(p.cc==='US')us+=`<path d="${d}"/>`;else ca+=`<path d="${d}"/>`;out+=`<path d="${d}"/>`});
+  return `<g id="${id}"><g class="tUS" fill="${C_US}" style="mix-blend-mode:color">${us}</g><g class="tCA" fill="${C_CA}" style="mix-blend-mode:color">${ca}</g><g class="coast" fill="none" stroke="#fff" stroke-width="1.4" stroke-opacity=".5">${out}</g></g>`}
+// highlight shapes: mainland MIX polygon clipped to boxes (lon/lat) — Point Roberts, Tsawwassen side, rest of the U.S.
+const MIX=GEO.local.land.find(p=>p.cc==='MIX');
+const boxClip=(id,b)=>{const a=WP([b[0],b[3]]),c=WP([b[2],b[1]]);return `<clipPath id="${id}"><rect x="${a[0]-OX}" y="${a[1]-OY}" width="${c[0]-a[0]}" height="${c[1]-a[1]}"/></clipPath>`};
+const HL={PR:[-123.12,48.95,-122.99,49.0],TS:[-123.12,49.0,-123.0,49.036],REST:[-122.97,48.6,-122.0,49.0],WA:[-125,46.0,-116,49.0]};
+const hlShape=(id,col,clip,src=MIX)=>`<g id="${id}" opacity="0"><path d="${pth(src.pts)}" clip-path="url(#${clip})" fill="${col}" fill-opacity=".34" stroke="none"/>
+  <path d="${pth(src.pts)}" clip-path="url(#${clip})" fill="none" stroke="${col==='US'?C_US:col}" stroke-width="22" stroke-opacity=".35"/><path d="${pth(src.pts)}" clip-path="url(#${clip})" fill="none" stroke="${col}" stroke-width="12" stroke-opacity=".35"/>
+  <path d="${pth(src.pts)}" clip-path="url(#${clip})" fill="none" stroke="#fff" stroke-width="4.5"/></g>`;
+const MIXR=GEO.region.land.find(p=>p.cc==='MIX');
+{const a=WP([-130,55]);
+ $('geo').setAttribute('width',wx(-110)-OX);$('geo').setAttribute('height',wy(40)-OY);$('geo').style.left=OX+'px';$('geo').style.top=OY+'px';
+ $('geo').innerHTML=`<defs><clipPath id="cS"><rect x="-1e5" y="${Y49-OY}" width="1e7" height="1e7"/></clipPath><clipPath id="cN"><rect x="-1e5" y="-1e7" width="1e7" height="${1e7+Y49-OY}"/></clipPath>
+   ${boxClip('kPR',HL.PR)}${boxClip('kTS',HL.TS)}${boxClip('kREST',HL.REST)}${boxClip('kWA',HL.WA)}</defs>
+  ${regionLayer('gR')}${geoLayer(GEO.local,'gL')}
+  <g id="hWA" opacity="0"><path d="${WA_D}" fill="${C_US}" fill-opacity=".34"/><path d="${WA_D}" fill="none" stroke="${C_US}" stroke-width="22" stroke-opacity=".35"/><path d="${WA_D}" fill="none" stroke="#fff" stroke-width="4.5"/></g>${hlShape('hPR',C_US,'kPR')}${hlShape('hTS',C_CA,'kTS')}${hlShape('hREST',C_US,'kREST')}
+  <g id="bord" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round">${GEO.local.border.map(b=>`<path d="M${b.map(q=>{const p=WP(q);return (p[0]-OX).toFixed(1)+','+(p[1]-OY).toFixed(1)}).join('L')}"/>`).join('')}</g>
+  <path id="rAll" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" stroke-opacity=".9"/><path id="rDash" fill="none" stroke="#1f2a3d" stroke-width="4.5" stroke-dasharray="3 11" stroke-linecap="round" stroke-opacity=".5"/>
+  <path id="rDone" fill="none" stroke="${BLUE}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>`;
+ const rp=ROUTE.map(q=>{const p=WP(q);return (p[0]-OX).toFixed(1)+','+(p[1]-OY).toFixed(1)});$('rAll').setAttribute('d','M'+rp.join('L'));$('rDash').setAttribute('d','M'+rp.join('L'));}
+// route arc length
+const RW=ROUTE.map(WP),RL=[0];for(let i=1;i<RW.length;i++)RL.push(RL[i-1]+Math.hypot(RW[i][0]-RW[i-1][0],RW[i][1]-RW[i-1][1]));const RT=RL[RL.length-1];
+const uOf=q=>{const p=WP(q);let b=0,bd=1e18;RW.forEach((r,i)=>{const d=Math.hypot(r[0]-p[0],r[1]-p[1]);if(d<bd){bd=d;b=i}});return RL[b]/RT};
+const UX=XING.map(uOf);
+function along(u){u=clamp(u);const L=u*RT;let i=1;while(i<RL.length-1&&RL[i]<L)i++;const a=RW[i-1],b=RW[i],f=(L-RL[i-1])/(RL[i]-RL[i-1]||1);return {p:[lerp(a[0],b[0],f),lerp(a[1],b[1],f)],ang:Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI,i}}
+function partial(u){const L=clamp(u)*RT;const out=['M'+(RW[0][0]-OX).toFixed(1)+','+(RW[0][1]-OY).toFixed(1)];for(let i=1;i<RW.length;i++){if(RL[i]<=L)out.push((RW[i][0]-OX).toFixed(1)+','+(RW[i][1]-OY).toFixed(1));else{const f=(L-RL[i-1])/(RL[i]-RL[i-1]);out.push((lerp(RW[i-1][0],RW[i][0],f)-OX).toFixed(1)+','+(lerp(RW[i-1][1],RW[i][1],f)-OY).toFixed(1));break}}return out.join(' L')}
+
+// ───────── camera keyframes [t, lon, lat, width°]
+const OPEN=[-123.0655,48.989,.2],LOC=[-122.91,49.035,.48],REG=[-122.4,48.6,5.6],PRC=[-123.06,48.988,.2],HIST=[-122.8,48.95,1.25],P6=[-122.98,49.02,.42],P8=[-123.05,48.988,.2];
+const CAM=[[0,OPEN],[.6,OPEN],[3.8,LOC],[S(1,.3),LOC],[S(1,2.4),REG],[SE(1,-1.5),REG],[SE(1,.2),LOC],[S(3),LOC],[S(3,1.3),PRC],[S(4),PRC],[S(4,1.7),HIST],[S(5),HIST],[S(5,1.4),P6],[S(6),P6],[S(6,1.1),LOC],[S(7),LOC],[S(7,1.4),P8],[S(8,.3),P8],[SE(8,-.4),OPEN],[DUR,OPEN]];
+function camAt(t){let i=0;while(i<CAM.length-2&&t>=CAM[i+1][0])i++;const [ta,A]=CAM[i],[tb,B]=CAM[i+1];const p=eio(seg(t,ta,tb));
+  return [lerp(A[0],B[0],p),lerp(A[1],B[1],p),Math.exp(lerp(Math.log(A[2]),Math.log(B[2]),p))]}
+let CS=1,CTX=0,CTY=0;const scr=q=>{const p=WP(q);return [p[0]*CS+CTX,p[1]*CS+CTY]},scrW=p=>[p[0]*CS+CTX,p[1]*CS+CTY];
+
+// ───────── UI: year pill, phrase capsule, kinetic subtitle, chips
+const YR=mk('ui',`<div class="abs" style="left:540px;top:140px;transform:translate(-50%,-50%);height:70px;padding:0 34px;border-radius:999px;background:rgba(255,255,255,.95);box-shadow:0 14px 30px -14px rgba(10,20,40,.45);display:flex;align-items:center;font-weight:900;font-size:38px;color:${BLUE};overflow:hidden"><div id="yrIn" style="position:relative;height:46px;line-height:46px;overflow:hidden"></div></div>`);
+const YEARS=[[0,'TODAY'],[WT('1846',4)-.1,'1846'],[S(5,.2),'TODAY']];
+function renderYear(t){let i=0;while(i<YEARS.length-1&&t>=YEARS[i+1][0])i++;const p=eio(seg(t,YEARS[i][0],YEARS[i][0]+.45));const prev=i>0?YEARS[i-1][1]:null;
+  $('yrIn').innerHTML=prev&&p<1?`<div style="transform:translateY(${-46*p}px)"><div style="filter:blur(${p*6}px);opacity:${1-p}">${prev}</div><div style="filter:blur(${(1-p)*6}px);opacity:${p}">${YEARS[i][1]}</div></div>`:`<div>${YEARS[i][1]}</div>`;
+  $('yrIn').style.width=(YEARS[i][1].length*25+(prev&&p<1?20:0))+'px'}
+const CAPS=['U.S. <b>→</b> CANADA <b>→</b> U.S.','This is | <b>Point</b> <b>Roberts</b>','Follow | <b>the</b> <b>car</b>','Why the | <b>detour?</b>','A line along | <b>the</b> <b>49th</b>','One border. | <b>A</b> <b>big</b> <b>detour.</b>','A round trip? | <b>Four.</b>','Would you | <b>live</b> <b>here?</b>','One line | <b>on</b> <b>a</b> <b>map</b>'];
+const CAP=mk('ui',`<div class="abs" style="left:540px;top:215px;transform:translateX(-50%);padding:22px 44px 26px;border-radius:40px;background:rgba(255,255,255,.96);box-shadow:0 22px 46px -22px rgba(10,20,40,.55);font-weight:900;font-size:62px;letter-spacing:-.04em;line-height:1.02;text-align:center;white-space:nowrap"></div>`);
+function renderCap(t){let si=0;while(si<8&&t>=SC[si+1][0])si++;const [a,b]=SC[si];const ws=CAPS[si].split(' ');const out=si<8?seg(t,b-.3,b):seg(t,b-1.6,b-1.2);let mx=0;
+  CAP.innerHTML=ws.map((w,i)=>{if(w==='|')return '<br>';const st=a+.15+(si===0?.35:0)+i*.12,p=eo(seg(t,st,st+.3)),q=p*(1-out),bl=/<b>/.test(w);mx=Math.max(mx,q);
+    return `<span style="display:inline-block;margin:0 .12em;opacity:${q};filter:blur(${((1-p)*10+out*8).toFixed(2)}px);transform:translateY(${((1-p)*14).toFixed(1)}px);${bl?`color:${BLUE}`:''}">${w.replace(/<\/?b>/g,'')}</span>`}).join(' ');
+  vis(CAP,clamp(mx*1.4))}
+const SUB=mk('ui',`<div class="abs" style="left:540px;top:1770px;transform:translate(-50%,-50%);padding:16px 36px;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 16px 34px -16px rgba(10,20,40,.55);font-weight:700;font-size:40px;letter-spacing:-.01em;text-align:center;white-space:nowrap"></div>`);
+const lc=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t)),LB=[157,182,234],NV=[43,58,103],BK=[17,18,24],BLc=[47,123,245],GR=[150,156,170];
+function renderSub(t){const c=CH.find(c=>t>=c.t0-.01&&t<c.t1+.15);if(!c){vis(SUB,0);return}const ex=clamp((t-c.t1)/.15);vis(SUB,1-ex*.9);
+  SUB.innerHTML=c.filter(w=>t>=w.t).map(w=>{const p=clamp((t-w.t)/.28),q=clamp((t-w.t-.28)/.25);let col=w.key?lc(LB,BLc,p):p<1?lc(LB,NV,p):lc(NV,BK,q);if(ex>0)col=lc(col,GR,ex);const s=w.key?(.6+.4*eb(p))*1.1:1;
+    return `<span style="display:inline-block;margin:0 ${w.key?'.34em':'.1em'};color:rgb(${col});opacity:${Math.min(1,p*1.6)};filter:blur(${((1-p)*8+ex*5).toFixed(2)}px);transform:translateY(${((1-p)*18).toFixed(1)}px) scale(${s.toFixed(3)});${w.key?'font-weight:900':''}">${w.txt}</span>`}).join(' ')}
+const chip=(h,st='')=>mk('ui',`<div class="chip" style="${st}">${h}</div>`);
+const place=(el,x,y,q,anchor='-50%,-50%')=>{el.style.left=x+'px';el.style.top=y+'px';el.style.transform=`translate(${anchor}) scale(${q.s})`;vis(el,q.o)};
+const fl=(f,t)=>`${f(.5)} ${t}`,FS='padding:8px 20px 8px 10px';
+const cCA1=chip(fl(ART.flagCA,'CANADA'),FS),cPR=chip(`<span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.1"><span style="font-size:32px">POINT ROBERTS</span><span style="font-size:22px;color:#8a90a6;letter-spacing:.06em">WASHINGTON, USA</span></span>`,'padding:14px 26px'),
+  cWA=chip(fl(ART.flagUS,'WASHINGTON'),FS),cCA2=chip(fl(ART.flagCA,'CANADA'),FS),cEnt=chip('ENTERING CANADA',`color:${C_CA}`),cBack=chip('BACK IN THE U.S.',`color:${BLUE}`),
+  cWater=chip('WATER ON THREE SIDES','color:#3a87c9'),cNorth=chip('LAND ROUTE: NORTH',`background:${BLUE};color:#fff`),c49=chip('49th PARALLEL','color:#7a2e1d;letter-spacing:.06em'),
+  cUS5=chip(fl(ART.flagUS,'U.S.'),FS),cPlus=mk('ui',`<div class="abs" style="font-weight:900;font-size:36px;color:#7a2e1d">+</div>`),cUK=chip(fl(ART.flagUK,'BRITAIN'),FS),
+  cU6=chip(fl(ART.flagUS,'U.S.'),FS+';font-size:25px'),cC6=chip(fl(ART.flagCA,'CANADA'),FS+';font-size:25px'),cR6=chip(fl(ART.flagUS,'REST OF THE U.S.'),FS+';font-size:25px'),
+  cOne=chip(`ONE WAY: <span style="color:${BLUE}">2</span>`),cRound=chip('ROUND TRIP: 4',`background:${BLUE};color:#fff`),cYes=chip('YES',`font-size:40px;padding:14px 44px;background:${BLUE};color:#fff`),cNo=chip('NO','font-size:40px;padding:14px 44px'),
+  cCnt=chip(`BORDER CROSSINGS <span id="cntN" style="display:inline-flex;align-items:center;justify-content:center;min-width:46px;height:46px;border-radius:12px;background:${BLUE};color:#fff;font-size:30px">0</span>`,'font-size:25px;padding:8px 10px 8px 24px');
+const PIN1=mk('ui',`<div class="abs" style="transform-origin:28px 64px">${ART.pin(BLUE,1)}<div style="position:absolute;left:10px;top:-48px">${ART.flagUS(.6)}</div></div>`),PIN2=mk('ui',`<div class="abs" style="transform-origin:28px 64px">${ART.pin(BLUE,1)}<div style="position:absolute;left:10px;top:-48px">${ART.flagUS(.6)}</div></div>`);
+const X1=mk('ui',`<div class="abs" style="width:48px;height:48px;border-radius:50%;background:#fff;box-shadow:0 0 0 6px ${BLUE};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:26px;color:${BLUE}">1</div>`),X2=mk('ui',`<div class="abs" style="width:48px;height:48px;border-radius:50%;background:#fff;box-shadow:0 0 0 6px ${BLUE};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:26px;color:${BLUE}">2</div>`);
+const CAR=mk('ui',`<div class="abs" style="width:96px;height:52px;transform-origin:48px 26px">${ART.car(1)}</div>`),HOUSE=mk('ui',`<div class="abs" style="transform-origin:60px 104px">${ART.house(1)}</div>`);
+const LIKE=mk('ui',`<div class="abs" style="left:800px;top:420px;width:180px;height:180px;border-radius:40px;background:#fff;box-shadow:0 30px 60px -30px rgba(10,20,40,.6);display:flex;align-items:center;justify-content:center;transform-origin:50% 50%"><svg width="96" height="96" viewBox="0 0 24 24"><path d="M2 10h4v12H2z M8 22h10.5a2 2 0 0 0 2-1.6l1.4-7A2 2 0 0 0 20 11h-6l1-5a2.2 2.2 0 0 0-4.2-1L8 10z" fill="${BLUE}"/></svg></div>`);
+
+// ───────── timings from words
+const T={};
+T.rest=WT('rest',0);T.can0=WT('Canada',0);T.point=WT('Point',1);T.wash=WT('Washington',1);T.can1=WT('Canada',1);
+T.follow=WT('Follow',2);T.cross=WT('cross',2);T.back=WT('back',2);T.united=WT('United',2);
+T.water=WT('Water',3);T.three=WT('three',3);T.north=WT('north',3);
+T.y1846=WT('1846',4);T.brit=WT('Britain',4);T.draw=WT('draw',4);T.par=WT('parallel',4);T.forty=WT('forty-ninth',4);
+T.amer=WT('American…',5);T.can5=WT('Canada.',5);
+T.twice=WT('twice.',6);T.round=WT('round',6);T.four=WT('four.',6);
+T.yes=WT('yes',7);T.no=WT('no',7);T.like=WT('like',7);
+// car legs: [t0,t1,u0,u1]
+const legs=[[T.follow,T.cross+.15,0,UX[0]],[T.cross+.15,T.united,UX[0],UX[1]],[T.united,SE(2,-.4),UX[1],1],
+  [S(6,.8),T.twice+.1,0,1]];
+{const t0=T.round-.35,t1=t0+(T.four-t0)/(1-UX[0]);legs.push([t0,t1,1,0])}
+const crossT=(l,u)=>l[0]+(u-l[2])/(l[3]-l[2])*(l[1]-l[0]);
+const XS3=[crossT(legs[0],UX[0]),crossT(legs[1],UX[1])],XS7=[crossT(legs[3],UX[0]),crossT(legs[3],UX[1]),crossT(legs[4],UX[1]),crossT(legs[4],UX[0])];
+function carU(t){for(const l of legs)if(t>=l[0]&&t<=l[1])return lerp(l[2],l[3],seg(t,l[0],l[1]));
+  if(t<legs[0][0])return 0;if(t<S(3))return 1;if(t<S(6))return 1;if(t<legs[3][0])return 0;if(t<legs[4][0])return 1;return 0}
+
+function renderAt(t){
+  t=Math.min(t,DUR-1e-6);
+  const [clon,clat,cw]=camAt(t);CS=1080/(cw/360*W12);CTX=540-wx(clon)*CS;CTY=1000-wy(clat)*CS;
+  $('world').style.transform=`translate(${CTX}px,${CTY}px) scale(${CS})`;
+  // dataset crossfade by zoom; historic look in scene 5
+  const lo=1-seg(cw,1.6,2.6);vis($('imL'),lo);vis($('gL'),lo);vis($('gR'),1-lo*.999);
+  const h=t>=S(4)&&t<S(5,1)?seg(t,S(4,.1),S(4,1.1))*(1-seg(t,S(5),S(5,.9))):0;
+  const flt=`sepia(${.85*h}) saturate(${1.1-.45*h}) brightness(${1.18+.04*h}) contrast(${1.05-.12*h})`;$('imL').style.filter=flt;$('imR').style.filter=flt;$('paper').style.opacity=h;
+  document.querySelectorAll('.tUS,.tCA').forEach(g=>g.setAttribute('opacity',.3*(1-h)));document.querySelectorAll('.coast').forEach(g=>g.setAttribute('opacity',1-h));
+  $('bord').setAttribute('opacity',(1-h)*(t<S(4)||t>=S(5)?1:0));
+  // highlights (Brazil-style: tint + glow + white outline)
+  $('hWA').setAttribute('opacity',t>=S(1)&&t<S(2)?seg(t,T.point-.2,T.point+.4)*(1-seg(t,SE(1,-.8),SE(1,-.2))):0);
+  $('hPR').setAttribute('opacity',(t>=S(1)&&t<S(2)?seg(t,T.point-.2,T.point+.4)*(1-seg(t,SE(1,-.8),SE(1,-.2))):0)+(t>=S(5)&&t<S(6)?seg(t,T.amer-.1,T.amer+.4)*(1-seg(t,SE(5,-.4),SE(5))):0));
+  $('hTS').setAttribute('opacity',t>=S(5)&&t<S(6)?seg(t,T.can5-.1,T.can5+.4)*(1-seg(t,SE(5,-.4),SE(5))):0);
+  $('hREST').setAttribute('opacity',t>=S(5)&&t<S(6)?seg(t,T.can5+.8,T.can5+1.3)*(1-seg(t,SE(5,-.4),SE(5))):0);
+  // route
+  const routeOn=t<S(3)?seg(t,2.6,3.6)*(1-seg(t,SE(2,-.2),SE(2,.3))):t>=S(6)&&t<S(7,1.6)?seg(t,S(6),S(6,.5))*(1-seg(t,S(7,1),S(7,1.6))):0;
+  const u=carU(t);let done=0;if(t>=S(2)&&t<S(3))done=u;if(t>=S(6)&&t<S(7))done=t<legs[4][0]?u:1;
+  ['rAll','rDash'].forEach(id=>$(id).setAttribute('opacity',routeOn));$('rDone').setAttribute('opacity',routeOn);$('rDone').setAttribute('d',done>0?partial(done):'M0,0');
+  // car
+  let cp,ca;const al=along(u);cp=scrW(al.p);ca=al.ang+(t>=legs[4][0]&&t<=legs[4][1]?180:0);
+  if(t>=S(7)){const hp=scr([-123.068,48.979]),st=scrW(RW[0]),a0=along(0).ang;const k1=eio(seg(t,S(7,.4),S(7,2))),k2=eio(seg(t,S(8,.6),SE(8,-.5)));
+    cp=[lerp(lerp(st[0],hp[0]+70,k1),st[0],k2),lerp(lerp(st[1],hp[1]-8,k1),st[1],k2)];ca=lerp(lerp(a0,0,k1),a0,k2)}
+  const carOn=t<S(3)||t>=S(6)?1:1-seg(t,S(3,.2),S(3,.8));
+  CAR.style.left=cp[0]-48+'px';CAR.style.top=cp[1]-26+'px';CAR.style.transform=`rotate(${ca}deg) scale(${clamp(CS*W12/360/1080*.2*1.0,.55,1.15)})`;vis(CAR,carOn);
+  // pins
+  const p1=scrW(RW[0]),p2=scrW(RW[RW.length-1]);const pq1=fadeOut(popS(t,.4),t,SE(0,-.3),SE(0)),pq2=fadeOut(popS(t,T.rest),t,SE(0,-.3),SE(0));
+  PIN1.style.left=p1[0]-28+'px';PIN1.style.top=p1[1]-64+'px';PIN1.style.transform=`scale(${pq1.s})`;vis(PIN1,pq1.o);PIN2.style.left=p2[0]-28+'px';PIN2.style.top=p2[1]-64+'px';PIN2.style.transform=`scale(${pq2.s})`;vis(PIN2,pq2.o);
+  // scene chips
+  let q;const sp=p=>scr(p);
+  q=fadeOut(popS(t,T.can0),t,SE(0,-.3),SE(0));let s=sp([-122.93,49.13]);place(cCA1,s[0],s[1],q);
+  s=sp([-123.06,48.985]);q=t>=S(1)&&t<S(2)?fadeOut(popS(t,T.point),t,SE(1,-.6),SE(1,-.2)):{o:0,s:0};place(cPR,s[0]-40,s[1]-120,q);
+  s=sp([-120.6,47.4]);q=t>=S(1)&&t<S(2)?fadeOut(popS(t,T.wash),t,SE(1,-.6),SE(1,-.2)):{o:0,s:0};place(cWA,s[0],s[1],q);
+  s=sp([-121.3,50.4]);q=t>=S(1)&&t<S(2)?fadeOut(popS(t,T.can1),t,SE(1,-.6),SE(1,-.2)):{o:0,s:0};place(cCA2,s[0],s[1],q);
+  const x1=scr(XING[0]),x2=scr(XING[1]);
+  q=t>=S(2)&&t<S(3)?fadeOut(popS(t,XS3[0]),t,XS3[0]+2.2,XS3[0]+2.6):{o:0,s:0};place(cEnt,x1[0]+170,x1[1]+12,q);
+  q=t>=S(2)&&t<S(3)?fadeOut(popS(t,XS3[1]),t,SE(2,-.4),SE(2)):{o:0,s:0};place(cBack,x2[0]-150,x2[1]+80,q);
+  const xm=(el,pt,on)=>{el.style.left=pt[0]-24+'px';el.style.top=pt[1]-24+'px';el.style.transform=`scale(${on.s})`;vis(el,on.o)};
+  const xin=(tt,end)=>t>=tt&&t<end?popS(t,tt):{o:0,s:0};
+  xm(X1,x1,t<S(3)?fadeOut(xin(XS3[0],S(3)),t,SE(2,-.3),SE(2)):fadeOut(xin(XS7[0],S(7)),t,SE(6,-.3),SE(6)));
+  xm(X2,x2,t<S(3)?fadeOut(xin(XS3[1],S(3)),t,SE(2,-.3),SE(2)):fadeOut(xin(XS7[1],S(7)),t,SE(6,-.3),SE(6)));
+  // counter
+  let n=0,cOn=0;if(t>=S(2)&&t<S(3)){n=(t>=XS3[0])+(t>=XS3[1]);cOn=seg(t,T.follow,T.follow+.4)*(1-seg(t,SE(2,-.3),SE(2)))}
+  if(t>=S(6)&&t<S(7)){n=XS7.filter(x=>t>=x).length;cOn=seg(t,S(6,.3),S(6,.7))*(1-seg(t,SE(6,-.3),SE(6)))}
+  $('cntN').textContent=n;const lastX=[...XS3,...XS7].filter(x=>x<=t).pop()||-9;place(cCnt,540,1610,{o:cOn,s:1+.12*Math.sin(Math.PI*seg(t,lastX,lastX+.3))});
+  // scene 4 arrows
+  const c4=scr([-123.058,48.982]);let fx='';
+  if(t>=S(3)&&t<S(4)){const A=(ang,len,col,t0,dead)=>{const p=eo(seg(t,t0,t0+.45)),fade=dead?1-.55*seg(t,t0+.7,t0+1.1):1;const L=len*p;
+      return `<g transform="translate(${c4[0]} ${c4[1]}) rotate(${ang})" opacity="${clamp(p*3)*fade}"><path d="M0 0 H${L}" stroke="${col}" stroke-width="16" stroke-linecap="round"/><path d="M${L-30} -26 L${L+6} 0 L${L-30} 26" fill="none" stroke="${col}" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+      ${dead?`<g transform="translate(${len+60} 0) rotate(${-ang}) scale(${popS(t,t0+.6).s})" opacity="${popS(t,t0+.6).o}"><circle r="30" fill="#fff"/><path d="M-12 -12 L12 12 M12 -12 L-12 12" stroke="#e5484d" stroke-width="7" stroke-linecap="round"/></g>`:''}</g>`};
+    const off=1-seg(t,SE(3,-.4),SE(3));fx+=`<g opacity="${off}">${A(180,250,'#8a90a6',T.water,1)}${A(90,250,'#8a90a6',T.water+.3,1)}${A(0,250,'#8a90a6',T.water+.6,1)}${A(-90,330,BLUE,T.north-.35,0)}</g>`}
+  q=t>=S(3)&&t<S(4)?fadeOut(popS(t,T.three),t,SE(3,-.4),SE(3)):{o:0,s:0};place(cWater,540,1560,q);
+  q=t>=S(3)&&t<S(4)?fadeOut(popS(t,T.north),t,SE(3,-.4),SE(3)):{o:0,s:0};place(cNorth,c4[0],c4[1]-470,q);
+  // scene 5: 49th parallel east → west, stopping in the strait west of the peninsula
+  if(t>=S(4)&&t<S(5,.6)){const y=scr([0,49])[1],xs=1120,xe=scr([-123.13,49])[0],p=eio(seg(t,T.draw-.1,T.par+.5)),x=lerp(xs,xe,p),o=1-seg(t,S(5),S(5,.6));
+    fx+=`<g opacity="${o}"><path d="M${xs} ${y} H${x}" stroke="#7a2e1d" stroke-width="7" stroke-linecap="round" stroke-dasharray="22 12"/>${p>0?`<circle cx="${x}" cy="${y}" r="10" fill="#7a2e1d"/>`:''}</g>`;
+    q=fadeOut(popS(t,T.forty),t,SE(4,-.4),SE(4));place(c49,540,y-90,q)}else vis(c49,0);
+  // the 49° line stays as a guide through scene 6
+  if(t>=S(5)&&t<S(6)){const y=scr([0,49])[1];fx+=`<path d="M0 ${y} H1080" stroke="#111218" stroke-width="5" stroke-dasharray="18 12" opacity="${.75*seg(t,S(5),S(5,.6))*(1-seg(t,SE(5,-.4),SE(5)))}"/>`}
+  $('fx').innerHTML=fx;
+  q=t>=S(4)&&t<S(5)?fadeOut(popS(t,T.brit-.6),t,SE(4,-.4),SE(4)):{o:0,s:0};place(cUS5,380,1560,q);place(cUK,700,1560,t>=S(4)&&t<S(5)?fadeOut(popS(t,T.brit),t,SE(4,-.4),SE(4)):{o:0,s:0});place(cPlus,532,1540,{o:q.o,s:1},'0,0');
+  // scene 6 chips
+  s=sp([-123.058,48.98]);place(cU6,s[0],s[1]+95,t>=S(5)&&t<S(6)?fadeOut(popS(t,T.amer),t,SE(5,-.4),SE(5)):{o:0,s:0});
+  s=sp([-123.07,49.05]);place(cC6,s[0],s[1],t>=S(5)&&t<S(6)?fadeOut(popS(t,T.can5),t,SE(5,-.4),SE(5)):{o:0,s:0});
+  s=sp([-122.78,48.9]);place(cR6,Math.min(s[0],860),s[1],t>=S(5)&&t<S(6)?fadeOut(popS(t,T.can5+.8),t,SE(5,-.4),SE(5)):{o:0,s:0});
+  // scene 7
+  place(cOne,380,1500,t>=S(6)&&t<S(7)?fadeOut(popS(t,T.twice),t,SE(6,-.3),SE(6)):{o:0,s:0});place(cRound,700,1500,t>=S(6)&&t<S(7)?fadeOut(popS(t,T.four),t,SE(6,-.3),SE(6)):{o:0,s:0});
+  // scene 8
+  const hp=scr([-123.068,48.979]);q=t>=S(7)&&t<S(8)?fadeOut(popS(t,S(7,.6)),t,S(8,.1),S(8,.6)):{o:0,s:0};HOUSE.style.left=hp[0]-60+'px';HOUSE.style.top=hp[1]-104+'px';HOUSE.style.transform=`scale(${q.s})`;vis(HOUSE,q.o);
+  place(cYes,430,1560,t>=S(7)&&t<S(8)?fadeOut(popS(t,T.yes),t,S(8,.1),S(8,.6)):{o:0,s:0});place(cNo,650,1560,t>=S(7)&&t<S(8)?fadeOut(popS(t,T.no),t,S(8,.1),S(8,.6)):{o:0,s:0});
+  const lk=t>=S(7)&&t<S(8)?fadeOut(popS(t,T.like-.1),t,S(8,.1),S(8,.6)):{o:0,s:0};LIKE.style.transform=`scale(${lk.s*(1+.12*Math.sin(Math.PI*seg(t,T.like+.4,T.like+.75)))})`;vis(LIKE,lk.o);
+  renderYear(t);renderCap(t);renderSub(t);
+}
+// ───────── sound events
+const SFX=[];const sx=(t,type,g=1)=>SFX.push({t:+t.toFixed(4),f:Math.floor(t*FPS+.5),type,g});
+sx(.3,'nav',.7);sx(.4,'pop',.5);sx(T.rest,'pop',.5);sx(T.can0,'accent',.6);sx(S(1,.3),'whoosh',.6);sx(T.point,'click',.6);sx(T.wash,'pop',.45);sx(T.can1,'pop',.45);sx(SE(1,-1.5),'whoosh',.5);
+XS3.forEach(x=>sx(x,'beep',.7));sx(S(3),'whoosh',.5);sx(T.water,'mute',.45);sx(T.water+.3,'mute',.45);sx(T.water+.6,'mute',.45);sx(T.north-.35,'tone',.6);
+sx(S(4,.1),'paper',.6);sx(T.draw-.1,'scratch',.6);sx(S(5),'whoosh',.4);sx(T.amer,'accent',.5);sx(T.can5,'accent2',.5);
+XS7.forEach(x=>sx(x,'beep',.7));sx(S(7,.6),'pop',.5);sx(T.yes,'pop',.5);sx(T.no,'pop',.5);sx(T.like-.1,'pop',.55);
+window.SFX=SFX;window.SCN=SC.map(([a,b])=>({t0:a,t1:b}));window.renderAt=renderAt;window.DUR=DUR;
+Promise.all([...document.images].map(i=>i.complete?Promise.resolve():new Promise(r=>{i.onload=r;i.onerror=r}))).then(()=>document.fonts.ready).then(()=>{renderAt(0);window.ready=true});
+</script>
+</body>
+</html>
