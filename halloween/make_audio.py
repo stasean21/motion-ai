@@ -1,4 +1,4 @@
-"""Extend the reference track to 30.25 s on the bar grid and dip it under the 'one more guest' beat."""
+"""Extend the reference track to 32.85 s on the bar grid and dip it under the 'one more guest' beat."""
 import subprocess
 import sys
 
@@ -8,9 +8,9 @@ from scipy.signal import butter, sosfilt
 SR = 48000
 BAR = 2.516667          # 95.36 BPM, 4/4 (measured from the reference cuts)
 SRC, OUT = "assets/audio/reference_track.m4a", sys.argv[1] if len(sys.argv) > 1 else "build/soundtrack.wav"
-CUT_A, CUT_B = 17.6667, 10.1167      # splice: play 0..17.67, then repeat from 10.12 (same bar phase)
-GUEST = (17.6667, 21.442)            # 1.5 bars of tension
-END = 30.25
+CUT_A, CUT_B = 17.6667, 7.6         # splice on bar lines: play 0..17.67, then repeat 4 bars from 7.6
+GUEST = (22.068, 25.214)             # the "one more guest" scene
+END = 32.85
 
 raw = subprocess.run(["ffmpeg", "-v", "error", "-i", SRC, "-ac", "2", "-ar", str(SR), "-f", "f32le", "-"],
                      capture_output=True, check=True).stdout

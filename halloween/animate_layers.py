@@ -1,4 +1,4 @@
-"""Animation from the generated layers (scenes 00-02 for now), 1080x1920, 60 fps, synced to the track.
+"""Animation from the generated layers (all scenes), 1080x1920, 60 fps, synced to the track.
 
 Usage: python3 animate_layers.py [out.mp4] [--frames t1,t2,...]   (frames mode writes stills for review)
 """
@@ -12,7 +12,8 @@ import cv2
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_mockups import BR, HZ, P_SCALE, PUMPKINS, STARTS, US  # noqa: E402
+from build_mockups import (BATS, BR, FINAL_PUMPKINS, FLAMES, FLEE, HZ, P_SCALE, PUMPKINS, RING, SIX, STARTS,  # noqa: E402
+                           US)
 from compose import H, W, Layer, bezier, blur, compose, contact_shadow, save, tint, trails  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -20,9 +21,11 @@ FPS = 60
 BAR = 2.516667
 BEAT = BAR / 4
 T0 = 0.05
-SCENE_BEATS = 5                       # ~3.15 s per scene, cuts always on a beat
-CUTS = [0.0] + [T0 + SCENE_BEATS * BEAT * k for k in (1, 2, 3)]
 B = BEAT
+# beats per scene: intro, 6 countries, guests, earth, final (cuts always land on a beat)
+SCENE_BEATS = [5, 5, 5, 5, 5, 5, 5, 5, 8, 4]
+END = 32.83                            # = length of build/soundtrack.wav
+CUTS = [0.0] + [T0 + B * sum(SCENE_BEATS[:k + 1]) for k in range(len(SCENE_BEATS) - 1)] + [END]
 
 
 # ----------------------------------------------------------------- easing
@@ -314,14 +317,326 @@ def usa(lt, t):
     return compose("02_usa__bg", lays, hz, acc)
 
 
+def titled(prefix, lt, t, title_xy, title_scale, map_xy=None, map_scale=0.6, map_op=0.8, at=0.08, crop=None):
+    """Map flashes in, title pops with overshoot, both pulse on the beat."""
+    lays = []
+    if map_xy:
+        e = math.exp(-max(lt - at, 0) / 0.25)
+        lays.append(Layer(prefix + "__map", "screen", *map_xy, map_scale * (1 + 0.05 * e), anchor="content",
+                          op=clamp01((lt - at) / 0.08) * (map_op + 0.4 * e), glow=16 + 24 * e))
+    ts = pop(lt - at, 0.32)
+    if ts > 0:
+        lays.append(Layer(prefix + "__title", "key", *title_xy, title_scale * ts * (1 + 0.02 * beat_pulse(t)),
+                          anchor="content", crop_rows=crop, op=clamp01((lt - at) / 0.06), glow=24))
+    return lays
+
+
+def morph_scale(since, sx, sy):
+    """Elastic squash when a character switches form."""
+    m = damp(since, 3.2, 7) * 0.22
+    return sx * (1 + m), sy * (1 - m), jelly(damp(since, 3.2, 7) * 0.1, since * 12)
+
+
+def breathe(t):
+    sq = 0.03 * beat_pulse(t, 0.1) + 0.01 * math.sin(t * 4)
+    return 1 + sq, 1 - sq
+
+
+def state_at(lt, steps):
+    """steps: [(beat, name), ...] ascending -> (name, seconds since it started)."""
+    cur, since = steps[0][1], lt
+    for b, name in steps:
+        if lt >= b * B:
+            cur, since = name, lt - b * B
+    return cur, since
+
+
+def uk(lt, t, dur):
+    hz = HZ["03_uk"]
+    acc = (0.5, 0.85, 1.0)
+    lays = titled("03_uk", lt, t, (470, 430), 0.82, (800, 560), 0.5)
+    state, since = state_at(lt, [(0, "normal"), (1.2, "ghost"), (3.5, "ghost_boo")])
+    sx, sy = breathe(t)
+    warp = None
+    if state == "normal":
+        lays.append(contact_shadow(540, hz, 520))
+        lays.append(Layer("03_uk__char_normal", "sprite", 540, hz + 6, 0.56, 0, sx, sy, bottom_anchor=True, glow=50))
+        q = ease_io(lt / (1.2 * B))                         # sheet twirls down onto the ball
+        lays.append(Layer("03_uk__sheet", "sprite", 560 + 120 * math.sin(lt * 7) * (1 - q), -250 + (hz - 280 + 250) * q,
+                          0.42 + 0.18 * q, rot=200 * (1 - q) + 15 * math.sin(lt * 9), anchor="content"))
+    else:
+        sx, sy, warp = morph_scale(since if state == "ghost" else lt - 1.2 * B, sx, sy)
+        lift = 110 * ease_out_back((lt - 1.2 * B) / 0.5) + 22 * math.sin(t * 3.2)
+        sc = 0.6
+        y = hz - lift
+        if state == "ghost_boo":                         # lunges at the camera
+            k = ease_io(since / (dur - 3.5 * B))
+            sc *= 1 + 0.9 * k ** 1.6
+            y += 420 * k ** 1.6
+        lays.append(contact_shadow(540, hz, 330, 0.45))
+        lays.append(Layer("03_uk__char_" + state, "sprite", 540, y, sc, 3 * math.sin(t * 2), sx, sy,
+                          bottom_anchor=True, glow=60, warp=warp))
+    lays.append(sparks(t, acc, 0.6))
+    if lt < 0.35:                                        # out of the orange smoke
+        lays.append(flash((1 - lt / 0.35) ** 1.5 * 0.85, (1.0, 0.5, 0.12)))
+    if state == "ghost" and since < 0.15:
+        lays.append(flash((1 - since / 0.15) * 0.4))
+    if lt > dur - 0.35:                                  # white sheet fills the frame
+        lays.append(flash(ease_io((lt - (dur - 0.35)) / 0.35) * 0.9, (0.93, 0.97, 1.0)))
+    return compose("03_uk__bg", lays, hz, acc)
+
+
+def japan(lt, t, dur):
+    hz = HZ["04_japan"]
+    acc = (1.0, 0.2, 0.25)
+    lays = titled("04_japan", lt, t, (W / 2, 470), 0.88, (790, 560), 0.62)
+    state, since = state_at(lt, [(0, "normal"), (1.5, "mask_dark"), (2.5, "mask_glow"), (3.8, "mask_turn")])
+    if lt > 2.5 * B:                                     # blue spirit flames pop in
+        for k, (x, y, sc) in enumerate(FLAMES):
+            f = pop(lt - 2.5 * B - k * 0.06, 0.3)
+            if f > 0:
+                lays.append(Layer("04_japan__flame", "screen", x + 10 * math.sin(t * 3 + k), y - 14 * math.sin(t * 4 + k),
+                                  sc * f * (1 + 0.08 * math.sin(t * 11 + k)), rot=6 * math.sin(t * 5 + k),
+                                  anchor="content", glow=22))
+    sx, sy = breathe(t)
+    warp = None
+    sc = 0.58
+    y = hz + 6
+    if state != "normal":
+        sx, sy, warp = morph_scale(since, sx, sy)
+    if state == "mask_turn":                             # dive into the mask's eye
+        k = ease_io((lt - (dur - 0.5)) / 0.5) ** 2
+        sc *= 1 + 2.6 * k
+        y += 1100 * k
+    lays.append(contact_shadow(540, hz, 520))
+    lays.append(Layer("04_japan__char_" + state, "sprite", 540, y, sc, 2 * math.sin(t * 2.2), sx, sy,
+                      bottom_anchor=True, glow=50, warp=warp))
+    if state == "normal":                                # two halves of the mask fly in and click together
+        q = ease_io(lt / (1.5 * B))
+        for side, name in ((-1, "mask_left"), (1, "mask_right")):
+            x = 540 + side * (700 * (1 - q) + 120)
+            lays.append(Layer("04_japan__" + name, "sprite", x, hz - 300 + 200 * (1 - q) * math.sin(q * 3), 0.3,
+                              rot=side * 360 * (1 - q), anchor="content"))
+    lays.append(sparks(t, acc, 0.6))
+    if lt < 0.3:
+        lays.append(flash((1 - lt / 0.3) ** 1.5 * 0.85, (0.93, 0.97, 1.0)))
+    if state == "mask_dark" and since < 0.1:
+        lays.append(flash((1 - since / 0.1) * 0.5))
+    if state == "mask_glow" and since < 0.2:
+        lays.append(flash((1 - since / 0.2) * 0.4, (1, 0.1, 0.1)))
+    if lt > dur - 0.2:
+        lays.append(flash(ease_io((lt - (dur - 0.2)) / 0.2), (0, 0, 0)))
+    return compose("04_japan__bg", lays, hz, acc)
+
+
+def egypt(lt, t, dur):
+    hz = HZ["05_egypt"]
+    acc = (1.0, 0.8, 0.25)
+    lays = titled("05_egypt", lt, t, (W / 2, 470), 0.85, (790, 560), 0.62)
+    state, since = state_at(lt, [(0, "normal"), (2, "half"), (3, "mummy")])
+    roll = 0.45
+    sx, sy = breathe(t)
+    warp = None
+    if lt < roll:                                        # rolls in from the right
+        x = 1400 - (1400 - 540) * ease_out_cubic(lt / roll)
+        rot = (x - 540) / 290 * 57.3
+    else:
+        x = 540
+        spin = clamp01((lt - 1 * B) / (2 * B))           # spins on the spot while wrapping
+        rot = 14 * math.sin(spin * math.pi * 6) * (1 - spin) + damp(lt - roll, 2.2, 5) * 10
+    if state != "normal":
+        sx, sy, warp = morph_scale(since, sx, sy)
+    lays.append(contact_shadow(x, hz, 520))
+    lays.append(Layer("05_egypt__char_" + state, "sprite", x, hz + 6, 0.58, rot, sx, sy, bottom_anchor=True, glow=50,
+                      warp=warp))
+    if 1 * B < lt < 3.1 * B:                             # bandage whirls around the ball
+        a = (lt - 1 * B) * 9
+        lays.append(Layer("05_egypt__bandage", "sprite", 540 + 260 * math.cos(a), hz - 280 + 90 * math.sin(a), 0.55,
+                          rot=math.degrees(a) + 90, anchor="content", op=clamp01((lt - B) / 0.1)))
+    if state == "mummy" and since < 0.25:
+        lays.append(flash((1 - since / 0.25) * 0.45, (0.5, 1.0, 0.2)))
+    lays.append(sparks(t, acc, 0.6))
+    if lt < 0.3:                                         # out of the dark eye socket
+        lays.append(flash((1 - lt / 0.3), (0, 0, 0)))
+    if lt > dur - 0.45:                                  # loose end whips across, turns into the cape lining
+        q = ease_io((lt - (dur - 0.45)) / 0.45)
+        lays.append(Layer("05_egypt__bandage", "sprite", 1300 - 1500 * q, 900 - 200 * q, 0.9 + 1.8 * q,
+                          rot=-35 - 40 * q, anchor="content"))
+        lays.append(flash(smooth01((q - 0.6) / 0.4) * 0.9, (0.55, 0.03, 0.1)))
+    return compose("05_egypt__bg", lays, hz, acc)
+
+
+def romania(lt, t, dur):
+    hz = HZ["06_romania"]
+    acc = (0.75, 0.25, 1.0)
+    mr = ease_io(lt / (1.6 * B))
+    lays = [Layer("06_romania__moon", "screen", 280, 420 - 120 * mr, 0.36, anchor="content", glow=30, op=0.85 * mr)]
+    lays += titled("06_romania", lt, t, (W / 2, 420), 0.86, (790, 560), 0.62)
+    state, since = state_at(lt, [(0, "cocoon"), (1.5, "vampire"), (3.5, "open")])
+    sx, sy = breathe(t)
+    warp = None
+    lift = 0.0
+    if state != "cocoon":
+        sx, sy, warp = morph_scale(since, sx, sy)
+        lift = 70 * ease_out_back((lt - 1.5 * B) / 0.5) + 16 * math.sin(t * 3)
+    lays.append(contact_shadow(540, hz, 520 - lift))
+    lays.append(Layer("06_romania__char_" + state, "sprite", 540, hz + 6 - lift, 0.56, 2 * math.sin(t * 2), sx, sy,
+                      bottom_anchor=True, glow=50, warp=warp))
+    if state != "cocoon":                                # bats burst out of the cape
+        q = ease_out_cubic((lt - 1.5 * B) / 0.6)
+        for k, (x, y, sc, b, r) in enumerate(BATS):
+            bx = 540 + (x - 540) * q + 20 * math.sin(t * 3 + k)
+            by = hz - 250 + (y - hz + 250) * q + 25 * math.sin(t * 4.5 + k)
+            lays.append(Layer("06_romania__bat_" + b, "sprite", bx, by, sc * (0.4 + 0.6 * q), rot=r, sy=1 + 0.25 * math.sin(t * 22 + k),
+                              anchor="content"))
+    lays.append(sparks(t, acc, 0.6))
+    if lt < 0.35:                                        # the red lining opens up
+        lays.append(flash((1 - lt / 0.35) * 0.85, (0.55, 0.03, 0.1)))
+    if state == "vampire" and since < 0.2:
+        lays.append(flash((1 - since / 0.2) * 0.35, (0.8, 0.3, 1.0)))
+    if lt > dur - 0.45:                                  # last bat flies into the lens
+        q = ease_io((lt - (dur - 0.45)) / 0.45)
+        lays.append(Layer("06_romania__bat_2", "sprite", 700 - 160 * q, 1500 - 560 * q, 0.3 + 3.2 * q ** 2,
+                          rot=-12, sy=1 + 0.3 * math.sin(t * 25), anchor="content"))
+        lays.append(flash(smooth01((q - 0.75) / 0.25), (0.02, 0, 0.03)))
+    return compose("06_romania__bg", lays, hz, acc)
+
+
+def guests(lt, t, dur):
+    hz = HZ["07_guests"]
+    acc = (1.0, 0.15, 0.15)
+    lays = []
+    stop = 2 * B
+    scared = lt > 2.5 * B
+    if lt > 3 * B:
+        lays.append(Layer("07_guests__title", "key", W / 2, 520, 0.85 * pop(lt - 3 * B, 0.4), anchor="content",
+                          op=clamp01((lt - 3 * B) / 0.08), glow=26))
+    if lt > stop:                                        # a huge round shadow crosses the floor
+        q = ease_io((lt - stop) / (dur - stop))
+        cx = 1500 - 1100 * q
+
+        def shadow(c, cx=cx, q=q):
+            m = np.zeros(c.shape[:2], np.float32)
+            cv2.ellipse(m, (int(cx), 1500), (760, 300), 0, 0, 360, 1, -1)
+            cv2.circle(m, (int(cx + 60), 760), 520, 0.5, -1)
+            return c * (1 - cv2.GaussianBlur(m, (0, 0), 50)[..., None] * 0.75)
+        lays.append(Layer(kind="raw", fn=shadow))
+    for j in [2, 3, 1, 4, 0, 5]:
+        x, y, k = RING[j]
+        name = ("07_guests__scared_" if scared else "07_guests__happy_") + SIX[j]
+        if lt < stop:
+            lift, sx, sy, _ = hop_cycle(t, j / 6, period=B, height=55)
+        else:
+            lift, sx, sy = 0.0, 1.0, 1.0
+            if scared:
+                sx, sy, _ = morph_scale(lt - 2.5 * B, sx, sy)
+        jit = 2.5 * math.sin(t * 70 + j * 3) if scared else 0
+        lays.append(contact_shadow(x, y, 260 * k / 0.25, 0.6))
+        lays.append(Layer(name, "sprite", x + jit, y - lift, k, jit, sx, sy, bottom_anchor=True, glow=30))
+    lays.append(sparks(t, acc, 0.5))
+    if lt < 0.3:
+        lays.append(flash((1 - lt / 0.3), (0.02, 0, 0.03)))
+    if lt > dur - 0.3:
+        lays.append(flash(ease_io((lt - (dur - 0.3)) / 0.3), (0, 0, 0)))
+    return compose("07_guests__bg", lays, hz, acc)
+
+
+def earth(lt, t, dur):
+    hz = HZ["08_earth"]
+    acc = (0.55, 1.0, 0.2)
+    lays = []
+    state, since = state_at(lt, [(0, "friendly"), (3, "eyes"), (5, "grin")])
+    if lt > 3 * B:
+        lays.append(Layer("08_earth__title", "key", W / 2, 240, 0.9 * pop(lt - 3 * B, 0.35) * (1 + 0.02 * beat_pulse(t)),
+                          anchor="content", op=clamp01((lt - 3 * B) / 0.06), glow=30))
+    rise = ease_out_cubic(lt / (2.5 * B))
+    y = hz + 600 - (600 + 170) * rise
+    sx, sy = 1 + 0.01 * math.sin(t * 2), 1 + 0.01 * math.sin(t * 2)
+    warp = None
+    rot = 0.0
+    sc = 0.74
+    if state != "friendly":
+        sx, sy, warp = morph_scale(since, sx, sy)
+    if state == "grin":                                  # leans in, then a sharp pull back
+        lean = ease_io(since / (1.5 * B))
+        rot = 6 * lean
+        sc *= 1 + 0.12 * lean
+        y += 60 * lean
+    lays.append(Layer("08_earth__char_" + state, "sprite", 540, y, sc, rot, sx, sy, bottom_anchor=True, glow=90,
+                      warp=warp))
+    if lt > 5.5 * B:
+        lays.append(Layer("08_earth__subtitle", "key", 470, 430, 0.6 * pop(lt - 5.5 * B, 0.35), rot=-4,
+                          anchor="content", op=clamp01((lt - 5.5 * B) / 0.06), glow=16))
+    xs = [120, 285, 450, 615, 780, 945]
+    shake = 2 + (6 if state != "friendly" else 0)
+    for i, n in enumerate(SIX):
+        name = ("07_guests__scared_" if state != "friendly" else "07_guests__happy_") + n
+        jit = shake * math.sin(t * 75 + i * 2.3) if state != "friendly" else 0
+        lays.append(contact_shadow(xs[i] + jit, hz + 20, 170, 0.6))
+        lays.append(Layer(name, "sprite", xs[i] + jit, hz + 20, 0.155, jit, bottom_anchor=True, glow=24))
+    lays.append(sparks(t, acc, 0.4))
+    if state == "friendly":
+        lays.append(tint((0, 0, 0), 0.55 * (1 - ease_io(lt / (3 * B)) * 0.4)))
+    if state == "eyes" and since < 0.25:
+        lays.append(flash((1 - since / 0.25) * 0.6, (0.45, 1.0, 0.2)))
+    if state == "grin" and since < 0.2:
+        lays.append(flash((1 - since / 0.2) * 0.45, (1.0, 0.15, 0.1)))
+    return compose("08_earth__bg", lays, hz, acc)
+
+
+def final(lt, t, dur):
+    hz = HZ["09_final"]
+    acc = (0.7, 0.4, 1.0)
+    lays = []
+    if lt > 1 * B:
+        lays.append(Layer("09_final__title", "key", W / 2, 230, pop(lt - B, 0.35) * (1 + 0.02 * beat_pulse(t)),
+                          anchor="content", op=clamp01((lt - B) / 0.06), glow=30))
+    lays.append(Layer("08_earth__char_wink", "sprite", 540, 900, 0.5 * (1 + 0.03 * beat_pulse(t)), -6 + 3 * math.sin(t * 2),
+                      bottom_anchor=True, glow=60))
+    q = ease_out_cubic(lt / 1.1)
+    cols = {"red": (1, 0.2, 0.15), "blue": (0.3, 0.8, 1), "green": (0.5, 1, 0.2), "yellow": (1, 0.85, 0.2),
+            "purple": (0.7, 0.3, 1), "orange": (1, 0.5, 0.1)}
+    paths, pcols, chars = [], [], []
+    for k, ((fx, fy, sc), n, (pn, (px, py))) in enumerate(zip(FLEE, SIX, FINAL_PUMPKINS)):
+        x, y = 540 + (fx - 540) * q, 1500 + (fy - 1500) * q
+        lift, sx, sy, _ = hop_cycle(t, k / 6, period=B, height=30)
+        chars.append(Layer("09_final__flee_" + n, "sprite", x, y - lift, sc, 5 * math.sin(t * 6 + k), sx, sy,
+                           bottom_anchor=True, glow=30))
+        path = bezier((fx, fy - 60), ((fx + px) / 2, min(fy, py) - 220), (px, py), 60)
+        tq = ease_out_cubic((lt - 0.4) / 0.9)
+        if tq > 0:                                       # their trails turn into the intro pumpkins
+            paths.append(path[:max(2, int(tq * 59) + 1)])
+            pcols.append(cols[pn])
+            f = pop(lt - 0.4 - 0.9 + 0.1, 0.3)
+            if f > 0:
+                chars.append(pumpkin_layer(pn, (px, py + 70), 0.15 * f, 8 * math.sin(t * 3 + k)))
+    lays.append(trails(paths, pcols, 3, 34))
+    lays += chars
+    lays.append(sparks(t, acc, 0.6))
+    if lt < 0.25:
+        lays.append(flash((1 - lt / 0.25) ** 2 * 0.8, (1.0, 0.85, 0.6)))
+    if lt > dur - 0.35:                                  # whoosh back to the opening (seamless loop)
+        lays.append(flash(ease_io((lt - (dur - 0.35)) / 0.35) * 0.9, (0.04, 0.0, 0.06)))
+    return compose("09_final__bg", lays, hz, acc)
+
+
 # ------------------------------------------------------------------ camera
 def camera(img, t, i, lt, dur):
     bp = beat_pulse(t, 0.1)
     z = (1 + 0.035 * lt / dur) * (1 + 0.012 * bp)
     if i > 0:
         z *= 1 + 0.08 * (1 - ease_out_back(lt / 0.4))
+    if i == 8:                                   # earth: push in on the grin, then a short sharp pull back
+        z *= 1 + 0.08 * ease_io((lt - 5 * B) / (1.5 * B)) - 0.14 * ease_io((lt - 7 * B) / 0.18)
+        if 3 * B < lt < 3 * B + 0.35:            # shake when the eyes open
+            m_shake = (lt - 3 * B) / 0.35
+            return _shift(img, z, t, 18 * (1 - m_shake) * math.sin(lt * 90), 12 * (1 - m_shake) * math.cos(lt * 77))
+    return _shift(img, z, t)
+
+
+def _shift(img, z, t, dx=0.0, dy=0.0):
     m = cv2.getRotationMatrix2D((W / 2, H * 0.52), 0, z)
-    m[:, 2] += (5 * math.sin(t * 0.9), 6 * math.sin(t * 0.7))
+    m[:, 2] += (5 * math.sin(t * 0.9) + dx, 6 * math.sin(t * 0.7) + dy)
     return cv2.warpAffine(img, m, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
 
 
@@ -335,7 +650,10 @@ def _noise(seed, scale):
 
 NX, NY = _noise(51, 120), _noise(52, 120)
 MORPH = 0.3          # seconds of liquid morph on each side of a country cut
-MORPH_CENTRE = {1: (BR["x"], HZ["01_brazil"] - 260), 2: (US["x"], HZ["02_usa"] - 280)}
+MORPH_CENTRE = {1: (BR["x"], HZ["01_brazil"] - 260), 2: (US["x"], HZ["02_usa"] - 280),
+                3: (540, HZ["03_uk"] - 330), 4: (540, HZ["04_japan"] - 280), 5: (540, HZ["05_egypt"] - 280),
+                6: (540, HZ["06_romania"] - 300)}
+MORPH_CUTS = {1, 2, 3, 4, 5}   # country -> country cuts (scene i -> i+1) that use the liquid morph
 
 
 def liquid(img, s, cx, cy):
@@ -361,7 +679,10 @@ def liquid(img, s, cx, cy):
 
 def scene_img(i, t):
     lt, dur = t - CUTS[i], CUTS[i + 1] - CUTS[i]
-    img = [lambda: intro(t), lambda: brazil(lt, t), lambda: usa(lt, t)][i]()
+    fns = [lambda: intro(t), lambda: brazil(lt, t), lambda: usa(lt, t), lambda: uk(lt, t, dur),
+           lambda: japan(lt, t, dur), lambda: egypt(lt, t, dur), lambda: romania(lt, t, dur),
+           lambda: guests(lt, t, dur), lambda: earth(lt, t, dur), lambda: final(lt, t, dur)]
+    img = fns[i]()
     return camera(img, t, i, lt, dur)
 
 
@@ -370,14 +691,14 @@ def frame(t):
     img = scene_img(i, t)
     # country -> country cuts (not the intro dive): liquid morph across the cut
     nxt, prv = CUTS[i + 1] - t, t - CUTS[i]
-    if i >= 1 and nxt < MORPH and i + 1 < len(CUTS) - 1:
+    if i in MORPH_CUTS and nxt < MORPH:
         s = ease_io(1 - nxt / MORPH) ** 1.5
         img = liquid(img, s, *MORPH_CENTRE[i])
         if nxt < 0.07:                      # dissolve into the (equally twisted) next scene
             b = liquid(scene_img(i + 1, CUTS[i + 1] + 0.001), 1.0, *MORPH_CENTRE[i + 1])
             k = ease_io(1 - nxt / 0.07) * 0.5
             img = img * (1 - k) + b * k
-    elif i >= 2 and prv < MORPH:
+    elif i - 1 in MORPH_CUTS and prv < MORPH:
         s = ease_io(1 - prv / MORPH) ** 1.5
         img = liquid(img, s, *MORPH_CENTRE[i])
         if prv < 0.07:
@@ -401,7 +722,7 @@ def main():
         for t in map(float, args[1].split(",")):
             save(frame(t), os.path.join(out, f"{t:05.2f}.jpg"))
         return
-    out = args[0] if args else os.path.join(HERE, "out", "test_00-02_v2.mp4")
+    out = args[0] if args else os.path.join(HERE, "out", "halloween_form_full.mp4")
     end = CUTS[-1]
     audio = os.path.join(HERE, "build", "soundtrack.wav")
     n = int(round(end * FPS))
