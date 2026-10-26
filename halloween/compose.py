@@ -102,6 +102,13 @@ def sprite_bottom_anchor(img):
     return (xs.min() + xs.max()) / 2, ys.max()
 
 
+@lru_cache(maxsize=1)
+def _vignette():
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    v = (xx / W - 0.5) ** 2 * 1.4 + (yy / H - 0.5) ** 2 * 1.1
+    return (1 - smooth(0.15, 0.65, v) * 0.4)[..., None]
+
+
 def compose(bg, layers, horizon, accent=(1, 1, 1), refl_k=0.5, bloom_k=0.45, vignette=True, post=None):
     """horizon: floor line in output px. Returns float RGB canvas."""
     acc = np.asarray(accent, np.float32)
@@ -169,9 +176,7 @@ def compose(bg, layers, horizon, accent=(1, 1, 1), refl_k=0.5, bloom_k=0.45, vig
         b = cv2.GaussianBlur(b, (0, 0), 5) + cv2.GaussianBlur(b, (0, 0), 18) * 0.8
         c = c + cv2.resize(b, (W, H)) * bloom_k
     if vignette:
-        yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-        v = (xx / W - 0.5) ** 2 * 1.4 + (yy / H - 0.5) ** 2 * 1.1
-        c = c * (1 - smooth(0.15, 0.65, v) * 0.4)[..., None]
+        c = c * _vignette()
     return np.clip(c, 0, 1)
 
 
