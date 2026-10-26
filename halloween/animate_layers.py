@@ -20,7 +20,9 @@ FPS = 60
 BAR = 2.516667
 BEAT = BAR / 4
 T0 = 0.05
-CUTS = [0.0, 2.5667, 5.0833, 7.6]
+SCENE_BEATS = 5                       # ~3.15 s per scene, cuts always on a beat
+CUTS = [0.0] + [T0 + SCENE_BEATS * BEAT * k for k in (1, 2, 3)]
+B = BEAT
 
 
 # ----------------------------------------------------------------- easing
@@ -102,51 +104,88 @@ def flash(k, col=(1, 1, 1)):
 
 
 # ------------------------------------------------------------------ scenes
-def pumpkin_layer(name, xy, scale, rot, op=1.0):
-    return Layer("00_intro__pumpkin_" + name, "sprite", xy[0], xy[1], scale, rot, anchor="content", glow=40, op=op)
+def pumpkin_layer(name, xy, scale, rot, op=1.0, sx=1.0, sy=1.0, warp=None):
+    return Layer("00_intro__pumpkin_" + name, "sprite", xy[0], xy[1], scale, rot, sx, sy, glow=40, op=op,
+                 bottom_anchor=True, warp=warp)
+
+
+def jelly(amp, phase, lean=0.0):
+    """Elastic morph of a sprite: rows bulge/pinch in a travelling wave, top leans sideways."""
+    if abs(amp) < 1e-3 and abs(lean) < 1e-3:
+        return None
+
+    def w(src):
+        h, wd = src.shape[:2]
+        yy, xx = np.mgrid[0:h, 0:wd].astype(np.float32)
+        a = src[..., 3]
+        ys = np.where(a.max(1) > 0.5)[0]
+        top, bot = (ys.min(), ys.max()) if len(ys) else (0, h)
+        v = np.clip((yy - top) / max(bot - top, 1), 0, 1)          # 0 top .. 1 bottom
+        k = 1 + amp * np.sin(v * math.pi * 1.6 + phase)
+        cx = wd / 2 + lean * (1 - v) * (bot - top) * 0.25
+        mx = cx + (xx - cx) / k - lean * (1 - v) * (bot - top) * 0.25
+        return cv2.remap(src, mx.astype(np.float32), yy, cv2.INTER_LINEAR, borderValue=0)
+    return w
+
+
+def hop_cycle(t, offset, period=2 * B, height=80.0):
+    """Hop in place: stretched in the air, squashed on contact. Returns (lift_px, sx, sy, since_landing)."""
+    u = ((t - T0) / period + offset) % 1.0
+    air = 0.72
+    if u < air:
+        a = u / air
+        lift = 4 * a * (1 - a) * height
+        v = abs(1 - 2 * a)                       # speed: max at take-off and landing
+        return lift, 1 - 0.14 * v, 1 + 0.24 * v, None
+    c = (u - air) / (1 - air)
+    sq = math.sin(math.pi * c) * 0.3
+    return 0.0, 1 + sq * 0.9, 1 - sq, c * (1 - air) * period
 
 
 def intro(t):
     dur = CUTS[1]
     paths, cols, plays = [], [], []
-    dive = clamp01((t - 2.1) / (dur - 2.1))
+    dive = clamp01((t - (dur - 0.5)) / 0.5)
     green = None
+    half_h = 115
     for k, ((n, xy, col), st) in enumerate(zip(PUMPKINS, STARTS)):
-        s0 = 0.04 + 0.07 * k
-        p = ease_out_cubic((t - s0) / 0.85)
+        s0 = 0.04 + 0.09 * k
+        fly = 1.0
+        p = ease_out_cubic((t - s0) / fly)
         ctrl = ((st[0] + xy[0]) / 2 + (xy[1] - st[1]) * 0.35, (st[1] + xy[1]) / 2 - (xy[0] - st[0]) * 0.2)
         path = bezier(st, ctrl, xy, 80)
         i1 = max(2, int(p * 79) + 1)
         i0 = max(0, int((p - 0.45) * 79))
-        land = s0 + 0.85
-        fade = 1 - smooth01((t - land) / 0.7)
+        land = s0 + fly * 0.85
+        fade = 1 - smooth01((t - land) / 0.8)
         if p > 0 and fade > 0:
             paths.append(path[i0:i1])
             cols.append(tuple(np.array(col) * fade))
         x, y = path[i1 - 1]
         spin = (1 - p) * 420 * (1 if k % 2 else -1)
-        bob = 0.0
-        if t > land:
-            bob = 9 * math.sin((t - land) * 4.2 + k) * smooth01((t - land) / 0.3) - 16 * beat_pulse(t, 0.1)
-        sc = P_SCALE * (0.45 + 0.55 * p) * (1 + 0.05 * beat_pulse(t, 0.1))
-        rot = spin + 6 * math.sin(t * 2.6 + k)
+        on = smooth01((t - land) / 0.25)
+        lift, sx, sy, since = hop_cycle(t, k / 6)
+        sx, sy = 1 + (sx - 1) * on, 1 + (sy - 1) * on
+        wob = damp(since, 3.0, 6.0) * 0.16 * on if since is not None else 0.04 * on * math.sin(t * 9 + k)
+        sc = P_SCALE * (0.45 + 0.55 * p)
+        rot = spin + 7 * math.sin(t * 2.6 + k) * on
         name = n
-        if n == "purple" and 1.55 < t < 1.9:
+        if n == "purple" and 2 * B + 0.05 < t < 2 * B + 0.4:
             name = "purple_eye"
+        foot = y + half_h - lift * on
+        warp = jelly(wob, t * 14 + k, lean=0.25 * math.sin(t * 3 + k) * on)
         if n == "green" and dive > 0:
             q = dive ** 2.1
-            x, y = x + (540 - x) * ease_io(dive), y + (900 - y) * ease_io(dive)
-            sc *= 1 + 9 * q
-            rot = -10 * dive
-            green = pumpkin_layer(name, (x, y + bob), sc, rot)
+            gx, gy = x + (540 - x) * ease_io(dive), foot + (1150 - foot) * ease_io(dive)
+            green = pumpkin_layer(name, (gx, gy), sc * (1 + 9 * q), -10 * dive, sx=sx, sy=sy)
             continue
         if p > 0:
-            plays.append(pumpkin_layer(name, (x, y + bob), sc, rot))
-    ts = pop(t - 1.0, 0.36)
+            plays.append(pumpkin_layer(name, (x, foot), sc, rot, sx=sx, sy=sy, warp=warp))
+    ts = pop(t - 2 * B, 0.36)
     lays = [trails(paths, cols, 3, 40)]
     if ts > 0:
         lays.append(Layer("00_intro__title", "key", W / 2, 820, max(ts, 0.01) * (1 + 0.025 * beat_pulse(t)),
-                          anchor="content", op=clamp01((t - 1.0) / 0.08), glow=24))
+                          anchor="content", op=clamp01((t - 2 * B) / 0.08), glow=24))
     lays += plays
     if green is not None:
         lays.append(green)
@@ -167,7 +206,7 @@ def brazil(lt, t):
     land = 0.2
     lays = []
     # moon rises behind the title
-    mr = ease_io((lt - 0.5) / 0.7)
+    mr = ease_io((lt - 0.5) / 0.9)
     if mr > 0:
         lays.append(Layer("01_brazil__moon", "screen", BR["moon"][0], BR["moon"][1] + 260 * (1 - mr), 0.34,
                           anchor="content", glow=30, op=0.85 * mr))
@@ -182,12 +221,12 @@ def brazil(lt, t):
         lays.append(Layer("01_brazil__title", "key", W / 2, 500, 0.9 * ts * (1 + 0.02 * beat_pulse(t)),
                           anchor="content", op=clamp01((lt - land) / 0.06), glow=26))
     # character: drop, squash, transform, howl
-    if lt < 1.26:
+    if lt < 2 * B:
         state, since = "normal", lt
-    elif lt < 1.89:
-        state, since = "wolf", lt - 1.26
+    elif lt < 4 * B:
+        state, since = "wolf", lt - 2 * B
     else:
-        state, since = "howl", lt - 1.89
+        state, since = "howl", lt - 4 * B
     y = hz + 6
     sx = sy = 1.0
     if lt < land:
@@ -199,14 +238,17 @@ def brazil(lt, t):
         sx, sy = 1 + sq, 1 - sq
     rot = 1.5 * math.sin(t * 2.3)
     sc = BR["ball"]
-    if state != "normal":
-        sc *= 1 + damp(since, 3.5, 9) * 0.12
+    if state != "normal":                       # elastic morph into the new form
+        m = damp(since, 3.2, 7) * 0.22
+        sx, sy = sx * (1 + m), sy * (1 - m)
+    warp = jelly(damp(lt - land, 3.0, 5) * 0.08 + (damp(since, 3.2, 7) * 0.1 if state != "normal" else 0), t * 12)
     if state == "howl":
         rot += -9 * ease_io(since / 0.18)
         sy *= 1 + 0.04 * ease_io(since / 0.18)
     shadow_w = 520 * (1 - 0.6 * clamp01((hz + 6 - y) / 800))
     lays.append(contact_shadow(BR["x"], hz, shadow_w))
-    lays.append(Layer("01_brazil__char_" + state, "sprite", BR["x"], y, sc, rot, sx, sy, bottom_anchor=True, glow=50))
+    lays.append(Layer("01_brazil__char_" + state, "sprite", BR["x"], y, sc, rot, sx, sy, bottom_anchor=True, glow=50,
+                      warp=warp))
     lays.append(sparks(t, acc, 0.6))
     if lt < 0.28:
         lays.append(flash((1 - lt / 0.28) ** 2 * 0.9, (0.45, 1.0, 0.25)))
@@ -229,14 +271,14 @@ def usa(lt, t):
     if ts > 0:
         lays.append(Layer("02_usa__title", "key", W / 2, 430, 0.82 * ts * (1 + 0.02 * beat_pulse(t)),
                           anchor="content", crop_rows=566, op=clamp01((lt - 0.08) / 0.06), glow=24))
-    if lt < 0.63:
+    if lt < 1 * B:
         state, since = "blink", lt
-    elif lt < 1.26:
-        state, since = "pumpkin_off", lt - 0.63
-    elif lt < 1.89:
-        state, since = "normal", lt - 1.26
+    elif lt < 2 * B:
+        state, since = "pumpkin_off", lt - 1 * B
+    elif lt < 3 * B:
+        state, since = "normal", lt - 2 * B
     else:
-        state, since = "pumpkin_wink", lt - 1.89
+        state, since = "pumpkin_wink", lt - 3 * B
     brake = 0.42
     radius = 300
     if lt < brake:
@@ -249,10 +291,14 @@ def usa(lt, t):
         sq = 0.03 * beat_pulse(t, 0.1) + 0.01 * math.sin(t * 4)
         sx, sy = 1 + sq, 1 - sq
     sc = US["ball"]
-    if state != "blink":
-        sc *= 1 + damp(since, 3.5, 9) * 0.12
+    warp = None
+    if state != "blink":                        # elastic morph into the new form
+        m = damp(since, 3.2, 7) * 0.22
+        sx, sy = sx * (1 + m), sy * (1 - m)
+        warp = jelly(damp(since, 3.2, 7) * 0.1, t * 12)
     lays.append(contact_shadow(x, hz, 560))
-    lays.append(Layer("02_usa__char_" + state, "sprite", x, hz + 6, sc, rot, sx, sy, bottom_anchor=True, glow=50))
+    lays.append(Layer("02_usa__char_" + state, "sprite", x, hz + 6, sc, rot, sx, sy, bottom_anchor=True, glow=50,
+                      warp=warp))
     lays.append(sparks(t, acc, 0.6))
     if lt < 0.3:
         lays.append(claws(1.0, fade=1 - lt / 0.3))
@@ -260,8 +306,8 @@ def usa(lt, t):
         lays.append(flash((1 - since / 0.25) * 0.45, (1.0, 0.7, 0.2)))
     if state == "pumpkin_off" and since < 0.12:
         lays.append(flash((1 - since / 0.12) * 0.3))
-    if lt > dur - 0.5:
-        q = clamp01((lt - (dur - 0.5)) / 0.5)
+    if lt > dur - 0.55:
+        q = clamp01((lt - (dur - 0.55)) / 0.55)
         lays.append(Layer("02_usa__smoke", "screen", x + 30, hz - 330 - 260 * q, 0.35 + 1.6 * q ** 1.4,
                           anchor="content", op=clamp01(q * 2.5)))
         lays.append(flash(smooth01((q - 0.55) / 0.45) * 0.92, (1.0, 0.5, 0.12)))
@@ -279,11 +325,65 @@ def camera(img, t, i, lt, dur):
     return cv2.warpAffine(img, m, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
 
 
-def frame(t):
-    i = next(k for k in range(len(CUTS) - 1) if t < CUTS[k + 1] or k == len(CUTS) - 2)
+GY, GX = np.mgrid[0:H, 0:W].astype(np.float32)
+
+
+def _noise(seed, scale):
+    r = np.random.default_rng(seed).random((H // scale + 2, W // scale + 2)).astype(np.float32) - 0.5
+    return cv2.resize(cv2.GaussianBlur(r, (0, 0), 1.0), (W, H), interpolation=cv2.INTER_CUBIC) * 2
+
+
+NX, NY = _noise(51, 120), _noise(52, 120)
+MORPH = 0.3          # seconds of liquid morph on each side of a country cut
+MORPH_CENTRE = {1: (BR["x"], HZ["01_brazil"] - 260), 2: (US["x"], HZ["02_usa"] - 280)}
+
+
+def liquid(img, s, cx, cy):
+    """Liquid twirl morph: swirl around the character, bulge zoom and wobbling displacement."""
+    if s <= 0:
+        return img
+    dx, dy = GX - cx, GY - cy
+    r = np.sqrt(dx * dx + dy * dy)
+    ang = s * 3.4 * np.clip(1 - r / 1250, 0, 1) ** 2
+    zoom = 1 + 0.3 * s
+    ca, sa = np.cos(ang), np.sin(ang)
+    mx = cx + (dx * ca - dy * sa) / zoom + NX * 60 * s
+    my = cy + (dx * sa + dy * ca) / zoom + NY * 60 * s
+    out = cv2.remap(img, mx.astype(np.float32), my.astype(np.float32), cv2.INTER_LINEAR,
+                    borderMode=cv2.BORDER_REFLECT)
+    # chromatic split grows with the morph
+    shift = int(14 * s)
+    if shift:
+        out[..., 0] = np.roll(out[..., 0], shift, 1)
+        out[..., 2] = np.roll(out[..., 2], -shift, 1)
+    return out
+
+
+def scene_img(i, t):
     lt, dur = t - CUTS[i], CUTS[i + 1] - CUTS[i]
     img = [lambda: intro(t), lambda: brazil(lt, t), lambda: usa(lt, t)][i]()
-    img = camera(img, t, i, lt, dur)
+    return camera(img, t, i, lt, dur)
+
+
+def frame(t):
+    i = next(k for k in range(len(CUTS) - 1) if t < CUTS[k + 1] or k == len(CUTS) - 2)
+    img = scene_img(i, t)
+    # country -> country cuts (not the intro dive): liquid morph across the cut
+    nxt, prv = CUTS[i + 1] - t, t - CUTS[i]
+    if i >= 1 and nxt < MORPH and i + 1 < len(CUTS) - 1:
+        s = ease_io(1 - nxt / MORPH) ** 1.5
+        img = liquid(img, s, *MORPH_CENTRE[i])
+        if nxt < 0.07:                      # dissolve into the (equally twisted) next scene
+            b = liquid(scene_img(i + 1, CUTS[i + 1] + 0.001), 1.0, *MORPH_CENTRE[i + 1])
+            k = ease_io(1 - nxt / 0.07) * 0.5
+            img = img * (1 - k) + b * k
+    elif i >= 2 and prv < MORPH:
+        s = ease_io(1 - prv / MORPH) ** 1.5
+        img = liquid(img, s, *MORPH_CENTRE[i])
+        if prv < 0.07:
+            a = liquid(scene_img(i - 1, CUTS[i] - 0.001), 1.0, *MORPH_CENTRE[i - 1])
+            k = (1 - ease_io(prv / 0.07)) * 0.5
+            img = img * (1 - k) + a * k
     g = (np.random.default_rng(int(t * FPS)).random((H // 3, W // 3)).astype(np.float32) - 0.5) * 0.025
     img = img + cv2.resize(g, (W, H))[..., None]
     return np.clip(img, 0, 1)
@@ -301,7 +401,7 @@ def main():
         for t in map(float, args[1].split(",")):
             save(frame(t), os.path.join(out, f"{t:05.2f}.jpg"))
         return
-    out = args[0] if args else os.path.join(HERE, "out", "test_00-02.mp4")
+    out = args[0] if args else os.path.join(HERE, "out", "test_00-02_v2.mp4")
     end = CUTS[-1]
     audio = os.path.join(HERE, "build", "soundtrack.wav")
     n = int(round(end * FPS))

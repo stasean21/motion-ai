@@ -83,7 +83,7 @@ class Layer:
     """kind: 'screen' (image on black) or 'sprite' (transparent PNG) or 'raw' (callable(canvas) -> canvas)."""
 
     def __init__(self, name=None, kind="screen", cx=W / 2, cy=H / 2, scale=1.0, rot=0.0, sx=1.0, sy=1.0, op=1.0,
-                 anchor=None, crop_rows=None, reflect=True, glow=None, fn=None, bottom_anchor=False):
+                 anchor=None, crop_rows=None, reflect=True, glow=None, fn=None, bottom_anchor=False, warp=None):
         self.__dict__.update(locals())
         del self.__dict__["self"]
 
@@ -120,6 +120,8 @@ def compose(bg, layers, horizon, accent=(1, 1, 1), refl_k=0.5, bloom_k=0.45, vig
             c = L.fn(c)
             continue
         src = load(L.name, L.crop_rows)
+        if L.warp is not None:
+            src = L.warp(src)
         anchor = L.anchor
         if L.bottom_anchor and L.kind == "sprite":
             anchor = sprite_bottom_anchor(src)
