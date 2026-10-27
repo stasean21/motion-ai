@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="16 4 584 362" width="584" height="362">
+  <title>AC</title>
+  <defs>
+    <mask id="lma" maskUnits="userSpaceOnUse" x="0" y="0" width="640" height="380">
+      <rect x="0" y="0" width="640" height="380" fill="#fff"/>
+      <path d="M563 92 A148 148 0 1 0 563 278" fill="none" stroke="#000" stroke-width="52"/>
+      <path d="M0 -48 Q7 -7 44 0 Q7 7 0 48 Q-7 7 -44 0 Q-7 -7 0 -48Z" transform="translate(300 186) scale(1.55)" fill="#000"/>
+    </mask>
+    <mask id="lmc" maskUnits="userSpaceOnUse" x="0" y="0" width="640" height="380">
+      <rect x="0" y="0" width="640" height="380" fill="#fff"/>
+      <path d="M0 -48 Q7 -7 44 0 Q7 7 0 48 Q-7 7 -44 0 Q-7 -7 0 -48Z" transform="translate(300 186) scale(1.55)" fill="#000"/>
+    </mask></defs>
+  <g fill="none" stroke="#FFFFFF" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+    <g mask="url(#lma)"><path d="M44 334 L210 44 Q222 24 234 44 L352 334"/><path d="M112 228 L246 228"/></g>
+    <path d="M563 92 A148 148 0 1 0 563 278" mask="url(#lmc)"/>
+  </g>
+  <path d="M0 -48 Q7 -7 44 0 Q7 7 0 48 Q-7 7 -44 0 Q-7 -7 0 -48Z" transform="translate(300 186)" fill="#E2C27A"/>
+  <path d="M0 -9 Q1.4 -1.4 8 0 Q1.4 1.4 0 9 Q-1.4 1.4 -8 0 Q-1.4 -1.4 0 -9Z" transform="translate(300 186)" fill="#FFF6DC" opacity=".9"/>
+</svg>
