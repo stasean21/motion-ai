@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Guess the Country — 73 s</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#0d2a3e}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#111218}
+.abs{position:absolute}
+.pill{position:absolute;display:flex;align-items:center;justify-content:center;white-space:nowrap;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 14px 30px -14px rgba(10,20,40,.5)}
+svg{display:block}
+</style>
+</head>
+<body>
+<div id="map" class="abs" style="inset:0;overflow:hidden"></div>
+<div id="ui" class="abs" style="inset:0"></div>
+<script src="lib/d3-array.min.js"></script>
+<script src="lib/d3-geo.min.js"></script>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/world10m.js"></script>
+<script src="sat/sat.js"></script>
+<script src="views.js"></script>
+<script>
+const FPS=60,NFR=4380,DUR=73,BLUE='#2f7bf5';
+const $=id=>document.getElementById(id);
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),seg=(t,a,b)=>clamp((t-a)/(b-a)),lerp=(a,b,t)=>a+(b-a)*t;
+const eo=p=>1-Math.pow(1-p,3),eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+const mk=(parent,h)=>{const d=document.createElement('div');d.innerHTML=h.trim();const e=d.firstChild;$(parent).appendChild(e);return e};
+const vis=(el,o)=>{el.style.opacity=o;el.style.visibility=o<=.003?'hidden':'visible'};
+const F=f=>(f-1)/FPS;                      // brief frame number (1-based) → seconds
+
+// ───────── edit plan (seconds; [start,end) ) — straight from the brief
+const MAPS=[['italy',0,9],['japan',9,15],['egypt',15,21],['greece',21,30],['vietnam',30,36],['thailand',36,42],['mongolia',42,50],['kyrgyzstan',50,60],['romania',60,73]];
+const THINK=[[3,'italy'],[9,'japan'],[15,'egypt'],[24,'greece'],[30,'vietnam'],[36,'thailand'],[44,'mongolia'],[50,'kyrgyzstan'],[62,'romania']];
+const REVEAL=[[8,1,'ITALY'],[14,1,'JAPAN'],[20,1,'EGYPT'],[29,1,'GREECE'],[35,1,'VIETNAM'],[41,1,'THAILAND'],[49,1,'MONGOLIA'],[55,2,'KYRGYZSTAN']];
+const COUNT=[[0,1],[9,2],[15,3],[21,4],[30,5],[36,6],[42,7],[50,8],[60,9]];
+const LEVELS=[[0,'LEVEL 1 · EASY'],[F(1393),'LEVEL 2 · MEDIUM'],[42,'LEVEL 3 · HARD'],[60,'LEVEL 4 · FINAL ROUND']];
+const VO=[[.2,2.7,'Looks easy? Each level gets harder.'],[21.15,23.55,'Those were just the warm-up. Try these.'],[42.1,43.65,'Now for the hard ones.'],
+  [57.15,59.5,'Eight countries down. One to go.'],[60.1,61.75,'What’s this last country?'],[67.2,72.3,'Think you know it? Leave the country’s name in the comments.']];
+
+// ───────── map scenes: satellite (NASA Blue Marble) + borders without names + Brazil-style highlight
+const CTRY=topojson.feature(WORLD10,WORLD10.objects.countries).features.filter(c=>c.id!=='010');
+const MAPEL={};
+function buildMap(k){const v=VIEWS[k],R=SAT[k],kk=1080/(v.w*Math.PI/180);
+  const pr=d3.geoMercator().scale(kk).translate([0,0]);const c=pr([v.cx,v.cy]);pr.translate([540-c[0],855-c[1]]);const path=d3.geoPath(pr);
+  const Wz=256*2**R.z,sc=2*Math.PI*kk/Wz,tr=pr.translate(),ix=tr[0]-kk*Math.PI+R.X0*256*sc,iy=tr[1]-kk*Math.PI+R.Y0*256*sc;
+  const f=CTRY.find(c=>c.id===v.id),d=path(f);
+  const box=d3.geoBounds(f),near=CTRY.filter(c=>{const b=d3.geoBounds(c);return b[1][0]>v.cx-v.w&&b[0][0]<v.cx+v.w&&b[1][1]>v.cy-v.w*1.2&&b[0][1]<v.cy+v.w*1.2});
+  const el=mk('map',`<div class="abs" style="inset:0;visibility:hidden">
+   <img src="sat/${k}.jpg" class="abs" style="left:0;top:0;transform-origin:0 0;transform:translate(${ix}px,${iy}px) scale(${sc});filter:brightness(1.08) saturate(1.08)">
+   <svg class="abs" style="left:0;top:0" width="1080" height="1920">
+    <g fill="none" stroke="#fff" stroke-width="1.6" stroke-opacity=".55" stroke-linejoin="round">${near.filter(c=>c.id!==v.id).map(c=>`<path d="${path(c)}"/>`).join('')}</g>
+    <path d="${d}" fill="${BLUE}" fill-opacity=".34"/>
+    <path d="${d}" fill="none" stroke="#7fb2ff" stroke-width="16" stroke-opacity=".45" stroke-linejoin="round" style="filter:blur(6px)"/>
+    <path d="${d}" fill="none" stroke="#fff" stroke-width="4.5" stroke-linejoin="round"/>
+   </svg></div>`);
+  MAPEL[k]=el}
+Object.keys(VIEWS).forEach(buildMap);
+
+// ───────── UI
+const TITLE=mk('ui',`<div class="pill" style="left:540px;top:230px;height:104px;padding:0 50px;border-radius:36px;font-weight:900;font-size:64px;letter-spacing:-.03em">GUESS THE <span style="color:${BLUE};margin-left:.28em">COUNTRY</span></div>`);
+const LEVEL=mk('ui',`<div class="pill" style="left:540px;top:325px;height:62px;padding:0 28px;font-weight:800;font-size:28px;letter-spacing:.06em"></div>`);
+const COUNTER=mk('ui',`<div class="pill" style="left:900px;top:325px;height:62px;padding:0 22px;font-weight:900;font-size:30px;color:${BLUE}"></div>`);
+const TIMER=mk('ui',`<div class="abs" style="left:150px;top:1420px;width:124px;height:124px;transform:translate(-50%,-50%)"><svg width="124" height="124" viewBox="-62 -62 124 124"><circle r="56" fill="#fff"/><circle r="47" fill="none" stroke="#e7eaf1" stroke-width="10"/><path id="arc" fill="none" stroke-width="10" stroke-linecap="round"/></svg><div id="tnum" class="abs" style="inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:56px"></div></div>`);
+const ANS=mk('ui',`<div class="pill" style="left:540px;top:1420px;height:118px;padding:0 54px;border-radius:40px;font-weight:900;font-size:72px;letter-spacing:.01em;transform-origin:50% 50%"></div>`);
+const CTA=mk('ui',`<div class="pill" style="left:540px;top:1510px;height:110px;padding:0 48px;border-radius:40px;font-weight:900;font-size:64px;letter-spacing:-.01em;gap:.3em">YOUR ANSWER? <span id="arw" style="display:inline-block;color:${BLUE}">↓</span></div>`);
+const SUB=mk('ui',`<div class="abs" style="left:540px;top:1660px;transform:translate(-50%,-50%);padding:16px 36px;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 16px 34px -16px rgba(10,20,40,.55);font-weight:700;font-size:40px;text-align:center;white-space:nowrap"></div>`);
+const pillT=(el,x,y,o,s=1,dy=0)=>{el.style.transform=`translate(-50%,-50%) translateY(${dy}px) scale(${s})`;vis(el,o)};
+// kinetic subtitles: words spread over each VO window by length (replaced by measured timings once the voice is recorded)
+const WORDS=[];VO.forEach(([a,b,txt],li)=>{const ws=txt.split(' '),wt=ws.map(w=>w.length+3),T=wt.reduce((s,v)=>s+v,0);let t=a;ws.forEach((w,i)=>{WORDS.push({txt:w,t,li,key:/^(easy|harder|warm-up|hard|one|last|comments\.)/i.test(w)});t+=(b-a)*wt[i]/T})});
+const CH=[];{let cur=[];WORDS.forEach((w,i)=>{cur.push(w);const nx=WORDS[i+1];if(/[.?!,]$/.test(w.txt)||cur.length>=5||!nx||nx.li!==w.li){CH.push(cur);cur=[]}})}
+CH.forEach((c,i)=>{const nx=CH[i+1];c.t0=c[0].t;c.t1=nx&&nx[0].li===c[0].li?nx[0].t-.02:VO[c[0].li][1]+.35});
+const lc=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t)),LB=[157,182,234],NV=[43,58,103],BK=[17,18,24],BLc=[47,123,245],GR=[150,156,170];
+const eb=p=>{const c1=1.7,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)};
+function renderSub(t){const c=CH.find(c=>t>=c.t0-.01&&t<c.t1+.15);if(!c){vis(SUB,0);return}const ex=clamp((t-c.t1)/.15);vis(SUB,1-ex*.9);
+  SUB.innerHTML=c.filter(w=>t>=w.t).map(w=>{const p=clamp((t-w.t)/.28),q=clamp((t-w.t-.28)/.25);let col=w.key?lc(LB,BLc,p):p<1?lc(LB,NV,p):lc(NV,BK,q);if(ex>0)col=lc(col,GR,ex);const s=w.key?(.6+.4*eb(p))*1.08:1;
+    return `<span style="display:inline-block;margin:0 ${w.key?'.3em':'.1em'};color:rgb(${col});opacity:${Math.min(1,p*1.6)};filter:blur(${((1-p)*8+ex*5).toFixed(2)}px);transform:translateY(${((1-p)*18).toFixed(1)}px) scale(${s.toFixed(3)});${w.key?'font-weight:900':''}">${w.txt}</span>`}).join(' ')}
+// 8-frame text-in (opacity 0→1, scale .96→1, ease-out), last 12 frames out
+const textIn=(t,t0,dur)=>{if(t<t0||t>=t0+dur)return {o:0,s:1};const a=eo(seg(t,t0,t0+8/FPS)),b=1-seg(t,t0+dur-12/FPS,t0+dur);return {o:a*b,s:.96+.04*a}};
+
+let curMap=null;
+function renderAt(t){
+  t=Math.min(t,DUR-1e-6);
+  // map: hard cut on scene boundaries, static otherwise
+  const m=MAPS.find(([k,a,b])=>t>=a&&t<b)[0];if(m!==curMap){if(curMap)MAPEL[curMap].style.visibility='hidden';MAPEL[m].style.visibility='visible';curMap=m}
+  // title: rises 24 px in 12 frames on the very first frames, then fixed
+  const ti=eo(seg(t,0,12/FPS));pillT(TITLE,0,0,ti,1,(1-ti)*24);
+  // level pill: EASY fades out 21.00–21.10, MEDIUM in at 23.2, HARD/FINAL rise 16 px in 12 frames
+  let li=0;while(li<LEVELS.length-1&&t>=LEVELS[li+1][0])li++;const L=LEVELS[li];
+  LEVEL.innerHTML=L[1].replace(/· (.*)$/,`· <span style="color:${BLUE};margin-left:.3em">$1</span>`);
+  let lo=1,ldy=0;if(li===0&&t>=21)lo=1-seg(t,21,21+6/FPS);if(li>0){const p=eo(seg(t,L[0],L[0]+12/FPS));lo=p;ldy=(1-p)*16}
+  pillT(LEVEL,0,0,lo,1,ldy);
+  let ci=0;while(ci<COUNT.length-1&&t>=COUNT[ci+1][0])ci++;COUNTER.textContent=COUNT[ci][1]+'/9';pillT(COUNTER,0,0,1);
+  // timer: 5 → 1, one second each, arc shrinks evenly over 300 frames
+  const th=THINK.find(([a])=>t>=a&&t<a+5);
+  if(th){const e=t-th[0],n=5-Math.floor(e),col=n>=4?'#30c060':n>=2?'#f2b705':'#ff3b30',fr=1-e/5,r=47;
+    const a1=-Math.PI/2,a2=a1+fr*2*Math.PI,large=fr>.5?1:0;$('arc').setAttribute('d',fr>.999?`M0 ${-r} A${r} ${r} 0 1 1 -0.01 ${-r}`:`M0 ${-r} A${r} ${r} 0 ${large} 1 ${(r*Math.cos(a2)).toFixed(2)} ${(r*Math.sin(a2)).toFixed(2)}`);
+    $('arc').setAttribute('stroke',col);$('tnum').textContent=n;$('tnum').style.color=col==='#f2b705'?'#c99400':col;vis(TIMER,1)}else vis(TIMER,0);
+  // answers / transition texts (same slot)
+  let txt='',q={o:0,s:1};
+  for(const [a,d,name] of REVEAL)if(t>=a&&t<a+d){txt=name;q=textIn(t,a,d)}
+  if(t>=F(1273)&&t<F(1405)){txt='WARM-UP OVER';q=textIn(t,F(1273),F(1405)-F(1273))}
+  if(t>=57&&t<60){txt='8 DOWN. <span style="color:'+BLUE+';margin-left:.3em">1 TO GO.</span>';q=textIn(t,57,3)}
+  if(txt){ANS.innerHTML=txt;pillT(ANS,0,0,q.o,q.s)}else vis(ANS,0);
+  // CTA
+  if(t>=67){const p=eo(seg(t,67,67+12/FPS));pillT(CTA,0,0,p,1,(1-p)*16);const b=seg(t,67.2,67.6);$('arw').style.transform=`translateY(${Math.sin(Math.PI*b)*6}px)`}else vis(CTA,0);
+  renderSub(t);
+}
+// ───────── sound events (frame-exact)
+const SFX=[];const sx=(t,type,g=1)=>SFX.push({t:+t.toFixed(4),f:Math.round(t*FPS),type,g});
+sx(0,'impact',.8);THINK.forEach(([a],k)=>{for(let i=0;i<5;i++)sx(a+i,'tick',k===8&&i===4?.55:.6,)});REVEAL.forEach(([a])=>sx(a-.07,'ding',.6));
+[9,15,30,36,50].forEach(a=>sx(a,'whoosh',.5));sx(21,'tapestop',.7);sx(21,'whoosh',.2);sx(F(1393),'impact',.55);sx(41,'riser',.5);sx(42,'impact',.7);sx(42,'whoosh',.2);sx(60,'impact',.75);sx(60,'whoosh',.2);sx(67,'pop',.6);
+window.SFX=SFX;window.SCN=MAPS;window.VO=VO;window.renderAt=renderAt;window.DUR=DUR;
+Promise.all([...document.images].map(i=>i.complete?Promise.resolve():new Promise(r=>{i.onload=r;i.onerror=r}))).then(()=>document.fonts.ready).then(()=>{renderAt(0);window.ready=true});
+</script>
+</body>
+</html>
