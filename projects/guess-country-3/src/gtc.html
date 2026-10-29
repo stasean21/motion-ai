@@ -28,22 +28,31 @@ svg{display:block}
 <script src="sat/sat.js"></script>
 <script src="views.js"></script>
 <script>
-const FPS=60,NFR=4380,DUR=73,BLUE='#2f7bf5';
+const FPS=60,BLUE='#2f7bf5';
 const $=id=>document.getElementById(id);
 const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),seg=(t,a,b)=>clamp((t-a)/(b-a)),lerp=(a,b,t)=>a+(b-a)*t;
 const eo=p=>1-Math.pow(1-p,3),eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
 const mk=(parent,h)=>{const d=document.createElement('div');d.innerHTML=h.trim();const e=d.firstChild;$(parent).appendChild(e);return e};
 const vis=(el,o)=>{el.style.opacity=o;el.style.visibility=o<=.003?'hidden':'visible'};
-const F=f=>(f-1)/FPS;                      // brief frame number (1-based) → seconds
 
-// ───────── edit plan (seconds; [start,end) ) — straight from the brief
-const MAPS=[['canada',0,9],['usa',9,15],['france',15,22],['spain',22,30],['sweden',30,36],['indonesia',36,43],['azerbaijan',43,51],['peru',51,60],['bulgaria',60,73]];
-const THINK=[[3,'canada'],[9,'usa'],[15,'france'],[24,'spain'],[30,'sweden'],[36,'indonesia'],[44,'azerbaijan'],[51,'peru'],[62,'bulgaria']];
-const REVEAL=[[8,1,'CANADA'],[14,1,'USA'],[20,2,'FRANCE'],[29,1,'SPAIN'],[35,1,'SWEDEN'],[41,2,'INDONESIA'],[49,2,'AZERBAIJAN'],[56,1,'PERU']];
-const COUNT=[[0,1],[9,2],[15,3],[22,4],[30,5],[36,6],[43,7],[51,8],[60,9]];
-const LEVELS=[[0,'LEVEL 1 · EASY'],[F(1381),'LEVEL 2 · MEDIUM'],[43,'LEVEL 3 · HARD'],[60,'LEVEL 4 · FINAL ROUND']];
-const VO=[[.15,2.85,'Nine countries. Five seconds each. Ready?'],[22.05,23.9,'Now it gets harder.'],[43.05,43.85,'Level three.'],
-  [57.15,59.5,'Eight countries down. One to go.'],[60.1,61.85,'Can you name this country?'],[67.15,72.5,'What’s your guess? Drop the country’s name in the comments.']];
+// ───────── edit plan, built from the brief's segments; a slow 2 s globe hop sits between every pair of countries
+// (5 s thinking windows and the reveal lengths are untouched; the hops only add running time)
+const HOP=2.0;
+const PLAN=[['canada','CANADA',1,{pre:'hook',dur:3}],['usa','USA',1],['france','FRANCE',2],['spain','SPAIN',1,{pre:'warm',dur:2}],['sweden','SWEDEN',1],
+  ['indonesia','INDONESIA',2],['azerbaijan','AZERBAIJAN',2,{pre:'hard',dur:1}],['peru','PERU',1,{post:'result',dur:3}],['bulgaria',null,0,{pre:'final',dur:2,post:'cta',dur2:6}]];
+const SCHED={think:[],reveal:[],hops:[],maps:[]};{let t=0;
+  PLAN.forEach(([k,name,rd,x={}],i)=>{if(i>0){SCHED.hops.push({t0:t,t1:t+HOP,from:PLAN[i-1][0],to:k});t+=HOP}
+    SCHED.maps.push([k,t]);if(x.pre){SCHED[x.pre]=[t,t+x.dur];t+=x.dur}
+    SCHED.think.push([t,k]);t+=5;if(name){SCHED.reveal.push([t,rd,name]);t+=rd}
+    if(x.post==='result'){SCHED.result=[t,t+x.dur];t+=x.dur}if(x.post==='cta'){SCHED.cta=[t,t+x.dur2];t+=x.dur2}});
+  SCHED.dur=t;SCHED.maps.forEach((m,i)=>m.push(i<SCHED.maps.length-1?SCHED.maps[i+1][1]:t))}
+const DUR=SCHED.dur,NFR=Math.round(DUR*FPS);
+const MAPS=SCHED.maps,THINK=SCHED.think,REVEAL=SCHED.reveal,WS=SCHED.warm[0],HS=SCHED.hard[0],RS=SCHED.result[0],FSq=SCHED.final[0],CS=SCHED.cta[0];
+const COUNT=MAPS.map(([k,a],i)=>[a,i+1]);
+const LEVELS=[[0,'LEVEL 1 · EASY'],[WS+1,'LEVEL 2 · MEDIUM'],[HS,'LEVEL 3 · HARD'],[FSq,'LEVEL 4 · FINAL ROUND']];
+const VO=[[.15,2.85,'Nine countries. Five seconds each. Ready?'],[WS+.05,WS+1.9,'Now it gets harder.'],[HS+.05,HS+.85,'Level three.'],
+  [RS+.15,RS+2.5,'Eight countries down. One to go.'],[FSq+.1,FSq+1.85,'Can you name this country?'],[CS+.15,CS+5.5,'What’s your guess? Drop the country’s name in the comments.']];
+SCHED.vo=VO.map(v=>[v[0],v[1]]).concat(REVEAL.map(([a,d])=>[a+.05,a+(d>1?1.55:.85)]));
 
 // ───────── map scenes: satellite (NASA Blue Marble) + borders without names + Brazil-style highlight
 const CTRY=topojson.feature(WORLD10,WORLD10.objects.countries).features.filter(c=>c.id!=='010');
@@ -118,28 +127,28 @@ const VIEWPT=k=>{const v=VIEWS[k];const kk=1080/(v.w*Math.PI/180),my=Math.log(Ma
 function slerp(a,b,u){const r=Math.PI/180,va=[Math.cos(a[1]*r)*Math.cos(a[0]*r),Math.cos(a[1]*r)*Math.sin(a[0]*r),Math.sin(a[1]*r)],vb=[Math.cos(b[1]*r)*Math.cos(b[0]*r),Math.cos(b[1]*r)*Math.sin(b[0]*r),Math.sin(b[1]*r)];
   const d=Math.acos(clamp(va[0]*vb[0]+va[1]*vb[1]+va[2]*vb[2],-1,1));if(d<1e-6)return a;const s1=Math.sin((1-u)*d)/Math.sin(d),s2=Math.sin(u*d)/Math.sin(d);
   const v=va.map((x,i)=>x*s1+vb[i]*s2);return [Math.atan2(v[1],v[0])/r,Math.asin(clamp(v[2],-1,1))/r]}
-const TR=.55,CUTS=MAPS.slice(1).map(([k,a],i)=>({t:a,from:MAPS[i][0],to:k}));   // every map change: 33-frame globe hop ending on the cut
+const CUTS=SCHED.hops.map(h=>({t:h.t1,from:h.from,to:h.to}));   // every map change: slow 2 s globe hop ending on the new map
 const INTRO=2.4;   // opening: globe swings round and dives into Canada
 let curMap=null;
 function renderAt(t){
   t=Math.min(t,DUR-1e-6);
   // map: hard cut on scene boundaries, static otherwise
   const m=MAPS.find(([k,a,b])=>t>=a&&t<b)[0];if(m!==curMap){if(curMap)MAPEL[curMap].style.visibility='hidden';MAPEL[m].style.visibility='visible';curMap=m}
-  let gO=0;const cut=CUTS.find(c=>t>=c.t-TR&&t<c.t);
+  let gO=0;const cut=CUTS.find(c=>t>=c.t-HOP&&t<c.t);
   if(t<INTRO+.25){   // intro: wide globe → Canada
     const p=eio(seg(t,.35,INTRO)),A=[-40,22],B=VIEWPT('canada'),c=slerp(A,B,p),Rs=430,Re=R0('canada');
     drawGlobe(c[0]-14*(1-seg(t,0,.35)),c[1],Math.exp(lerp(Math.log(Rs),Math.log(Re),Math.pow(p,1.6))),[{k:'canada',o:eo(seg(t,.2,.9))}]);gO=1-seg(t,INTRO,INTRO+.25)}
-  else if(cut){const u=seg(t,cut.t-TR,cut.t),e=eio(u),a=VIEWPT(cut.from),b=VIEWPT(cut.to),c=slerp(a,b,e);
-    const la=Math.log(R0(cut.from)),lb=Math.log(R0(cut.to)),dip=Math.max(0,(la+lb)/2-Math.log(520));
-    drawGlobe(c[0],c[1],Math.exp(lerp(la,lb,e)-dip*Math.sin(Math.PI*e)),[{k:cut.from,o:1-seg(u,.15,.45)},{k:cut.to,o:seg(u,.55,.85)}]);
-    gO=Math.min(seg(u,0,.14),1-seg(u,.86,1))*1.0;if(u>.14&&u<.86)gO=1}
+  else if(cut){const u=seg(t,cut.t-HOP,cut.t),e=eio(u),a=VIEWPT(cut.from),b=VIEWPT(cut.to),c=slerp(a,b,e);
+    const la=Math.log(R0(cut.from)),lb=Math.log(R0(cut.to)),dip=Math.max(0,(la+lb)/2-Math.log(470));
+    drawGlobe(c[0],c[1],Math.exp(lerp(la,lb,e)-dip*Math.sin(Math.PI*e)),[{k:cut.from,o:1-seg(u,.1,.35)},{k:cut.to,o:seg(u,.62,.88)}]);
+    gO=Math.min(seg(u,0,.1),1-seg(u,.9,1))}
   vis($('glw'),gO);
   // title: rises 24 px in 12 frames on the very first frames, then fixed
   const ti=eo(seg(t,0,12/FPS));pillT(TITLE,0,0,ti,1,(1-ti)*24);
   // level pill: EASY fades out 21.00–21.10, MEDIUM in at 23.2, HARD/FINAL rise 16 px in 12 frames
   let li=0;while(li<LEVELS.length-1&&t>=LEVELS[li+1][0])li++;const L=LEVELS[li];
   LEVEL.innerHTML=L[1].replace(/· (.*)$/,`· <span style="color:${BLUE};margin-left:.3em">$1</span>`);
-  let lo=1,ldy=0;if(li===0&&t>=22)lo=1-seg(t,22,22+6/FPS);if(li>0){const nf=li===2?8:12;const p=eo(seg(t,L[0],L[0]+nf/FPS));lo=p;ldy=li===2?0:(1-p)*16}
+  let lo=1,ldy=0;if(li===0&&t>=WS)lo=1-seg(t,WS,WS+6/FPS);if(li>0){const nf=li===2?8:12;const p=eo(seg(t,L[0],L[0]+nf/FPS));lo=p;ldy=li===2?0:(1-p)*16}
   pillT(LEVEL,0,0,lo,1,ldy);
   let ci=0;while(ci<COUNT.length-1&&t>=COUNT[ci+1][0])ci++;COUNTER.textContent=COUNT[ci][1]+'/9';pillT(COUNTER,0,0,1);
   // timer: 5 → 1, one second each, arc shrinks evenly over 300 frames
@@ -150,18 +159,18 @@ function renderAt(t){
   // answers / transition texts (same slot)
   let txt='',q={o:0,s:1};
   for(const [a,d,name] of REVEAL)if(t>=a&&t<a+d){txt=name;q=textIn(t,a,d)}
-  if(t>=F(1321)&&t<24){txt='WARM-UP OVER';q=textIn(t,F(1321),24-F(1321))}
-  if(t>=57&&t<60){txt='8 DOWN. <span style="color:'+BLUE+';margin-left:.3em">1 TO GO.</span>';q=textIn(t,57,3)}
+  if(t>=WS&&t<WS+2){txt='WARM-UP OVER';q=textIn(t,WS,2)}
+  if(t>=RS&&t<RS+3){txt='8 DOWN. <span style="color:'+BLUE+';margin-left:.3em">1 TO GO.</span>';q=textIn(t,RS,3)}
   if(txt){ANS.innerHTML=txt;pillT(ANS,0,0,q.o,q.s)}else vis(ANS,0);
   // CTA
-  if(t>=67){const p=eo(seg(t,67,67+12/FPS));pillT(CTA,0,0,p,1,(1-p)*16);const b=seg(t,67.2,67.6);$('arw').style.transform=`translateY(${Math.sin(Math.PI*b)*6}px)`}else vis(CTA,0);
+  if(t>=CS){const p=eo(seg(t,CS,CS+12/FPS));pillT(CTA,0,0,p,1,(1-p)*16);const b=seg(t,CS+.2,CS+.6);$('arw').style.transform=`translateY(${Math.sin(Math.PI*b)*6}px)`}else vis(CTA,0);
   renderSub(t);
 }
 // ───────── sound events (frame-exact)
 const SFX=[];const sx=(t,type,g=1)=>SFX.push({t:+t.toFixed(4),f:Math.round(t*FPS),type,g});
 sx(0,'impact',.8);THINK.forEach(([a],k)=>{for(let i=0;i<5;i++)sx(a+i,'tick',k===8&&i===4?.55:.6,)});REVEAL.forEach(([a])=>sx(a-.07,'ding',.6));
-[9,15,30,36,51].forEach(a=>sx(a-TR,'hop',.5));[22,43,60].forEach(a=>sx(a-TR,'hop',.25));sx(.3,'hop',.45);sx(22,'tapestop',.7);sx(42.4,'riser',.4);sx(43,'impact',.7);sx(60,'impact',.6);sx(67,'pop',.6);
-window.SFX=SFX;window.SCN=MAPS;window.VO=VO;window.renderAt=renderAt;window.DUR=DUR;
+SCHED.hops.forEach(h=>sx(h.t0,'hop',.5));sx(.3,'hop',.45);sx(WS,'tapestop',.7);sx(HS-.6,'riser',.4);sx(HS,'impact',.7);sx(FSq,'impact',.6);sx(CS,'pop',.6);
+window.SFX=SFX;window.SCN=SCHED;window.VO=VO;window.renderAt=renderAt;window.DUR=DUR;
 (TEX.complete?Promise.resolve():new Promise(r=>TEX.addEventListener('load',r))).then(()=>Promise.all([...document.images].map(i=>i.complete?Promise.resolve():new Promise(r=>{i.onload=r;i.onerror=r}))).then(()=>document.fonts.ready)).then(()=>{renderAt(0);window.ready=true});
 </script>
 </body>
