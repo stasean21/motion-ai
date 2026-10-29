@@ -17,7 +17,7 @@ async function page(browser) {
     if (process.argv[5] === 'meta') fs.writeFileSync(dir + '/meta.json', JSON.stringify(await p.evaluate(() => ({ SFX, SCN })), null, 1));
     await browser.close(); return;
   }
-  const out = process.argv[2], start = +(process.argv[3] || 0), end = +(process.argv[4] || 73), W = +(process.argv[5] || 4);
+  const out = process.argv[2], start = +(process.argv[3] || 0), end = +(process.argv[4] || 89), W = +(process.argv[5] || 4);
   const f0 = Math.round(start * FPS), f1 = Math.round(end * FPS), n = f1 - f0, per = Math.ceil(n / W);
   const t0 = Date.now(); const parts = [];
   await Promise.all([...Array(W)].map(async (_, k) => {
