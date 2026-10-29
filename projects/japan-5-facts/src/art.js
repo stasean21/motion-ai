@@ -53,7 +53,7 @@ ART.aogashima = (o = {}) => {
   <g transform="translate(${g2} 0)" stroke-linecap="round">
    ${out > 0 ? draw(rimIn.map(([x, y]) => [x, y - 2]), out, `stroke="#fff" stroke-width="5"`) : ''}
    ${inn > 0 ? draw(cone.map(([x, y]) => [(x - 388) * 1.12 + 388, (y - 372) * 1.18 + 372]), inn, `stroke="#ffd34d" stroke-width="5"`) : ''}
-   ${lab > 0 ? `<g opacity="${lab}" font-family="Inter Display,Inter" font-weight="800" font-size="20" letter-spacing=".06em">
+   ${lab > 0 ? `<g opacity="${cl01(lab * 2)}" transform="translate(0 ${((1 - lab) * 14).toFixed(1)})" font-family="Inter Display,Inter" font-weight="800" font-size="20" letter-spacing=".06em">
      <rect x="640" y="226" width="196" height="38" rx="19" fill="#fff"/><text x="738" y="252" text-anchor="middle" fill="#111218">BIG CALDERA</text>
      <rect x="200" y="452" width="190" height="38" rx="19" fill="#fff"/><text x="295" y="478" text-anchor="middle" fill="#111218">INNER CONE</text></g>` : ''}
   </g>`
@@ -62,7 +62,7 @@ ART.aogashima = (o = {}) => {
 // ── 3. Kishi station + Tama: cat-ear roof station, local train behind, calico cat, the stationmaster cap drops onto her head
 ART.tama = (o = {}) => {
   const cap = o.cap ?? 1, blink = o.blink || 0, tr = o.train ?? -2, pass = o.pass || 0, tilt = o.tilt || 0;
-  const tx = -760 + tr * 1100;
+  const tx = -760 + tr * 1100, y07 = o.y07 || 0, ys = y07 < 1 ? .4 + .6 * (1 + 2.7 * Math.pow(y07 - 1, 3) + 1.7 * Math.pow(y07 - 1, 2)) : 1;
   let pol = ''; for (let i = 0; i < 4; i++) { const x = 60 + i * 260; pol += `<rect x="${x}" y="90" width="8" height="260" fill="#8b8f99"/><rect x="${x - 40}" y="96" width="88" height="5" fill="#8b8f99"/>` }
   const eyeH = 1 - blink;
   const capY = -260 * Math.pow(1 - cap, 2) + (cap > .85 ? Math.sin((cap - .85) / .15 * Math.PI) * -6 : 0);
@@ -119,7 +119,8 @@ ART.tama = (o = {}) => {
      <rect x="270" y="256" width="120" height="16" rx="3" fill="#d9a62e"/>
      <path d="M262 272 Q330 300 398 272 L392 284 Q330 306 268 284Z" fill="#111a33"/>
      <circle cx="330" cy="240" r="11" fill="#d9a62e"/><circle cx="330" cy="240" r="5" fill="#1f2d5a"/></g>` : ''}
-  </g>`
+  </g>
+  ${y07 > 0 ? `<g transform="translate(110 92) rotate(-8) scale(${ys.toFixed(3)})" opacity="${cl01(y07 * 3)}"><rect x="-82" y="-36" width="164" height="72" rx="20" fill="#2f7bf5"/><text y="15" text-anchor="middle" font-family="Inter Display,Inter" font-weight="900" font-size="44" fill="#fff">2007</text></g>` : ''}`
 };
 
 // ── 4. Zao snow monsters: winter slope, monsters behind, one fir in front: snow → cutaway → ice → snow again
@@ -194,7 +195,7 @@ ART.susami = (o = {}) => {
      <path d="M-48 -18 H10 M-48 -4 H10 M-48 10 H-4" stroke="#9aa3b6" stroke-width="3"/></g>` : ''}</g>
    ${bub}
   </g>
-  ${posted > 0 ? `<g transform="translate(720 300) rotate(-8) scale(${(.85 + .15 * Math.min(1, posted * 2)).toFixed(3)})" opacity="${Math.min(1, posted * 3)}">
+  ${posted > 0 ? `${posted < 1 ? [...Array(10)].map((_, i) => { const a = i / 10 * 6.283, r0 = 90 + posted * 40, r1 = r0 + 26 * (1 - posted); return `<path d="M${(720 + Math.cos(a) * r0).toFixed(1)} ${(300 + Math.sin(a) * r0 * .6).toFixed(1)} L${(720 + Math.cos(a) * r1).toFixed(1)} ${(300 + Math.sin(a) * r1 * .6).toFixed(1)}" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity="${(1 - posted).toFixed(2)}"/>` }).join('') : ''}<g transform="translate(720 300) rotate(${(-8 + (posted < .35 ? 0 : Math.sin(posted * 40) * 3 * (1 - posted))).toFixed(2)}) scale(${(posted < .3 ? 2.4 - 1.4 * Math.pow(posted / .3, 2) : 1 - .08 * Math.sin(Math.min(1, (posted - .3) / .25) * Math.PI)).toFixed(3)})" opacity="${Math.min(1, posted * 5)}">
     <rect x="-96" y="-30" width="192" height="60" rx="14" fill="#fff" stroke="#2f7bf5" stroke-width="5"/><text x="0" y="13" text-anchor="middle" font-family="Inter Display,Inter" font-weight="900" font-size="34" fill="#2f7bf5" letter-spacing=".08em">POSTED</text></g>` : ''}
   ${bag > 0 ? `<g transform="translate(150 160)" opacity="${bag}"><circle r="46" fill="#fff" opacity=".92"/><path d="M-20 -6 C-20 -26 20 -26 20 -6 L24 24 L-24 24Z" fill="#c9a26b" stroke="#8a6a3e" stroke-width="3"/><path d="M-10 -20 Q0 -32 10 -20" stroke="#8a6a3e" stroke-width="3" fill="none"/><path d="M0 -60 L0 -82 M-8 -74 L0 -84 L8 -74" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/></g>` : ''}`
 };

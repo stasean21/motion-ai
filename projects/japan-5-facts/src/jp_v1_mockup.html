@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>5 Facts About Japan</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#06182a}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#111218}
+.abs{position:absolute}
+.pill{position:absolute;display:flex;align-items:center;justify-content:center;white-space:nowrap;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 14px 30px -14px rgba(10,20,40,.5)}
+svg{display:block}
+</style>
+</head>
+<body>
+<div id="glw" class="abs" style="inset:0;background:#06182a">
+ <canvas id="glc" width="1080" height="1920" class="abs" style="left:0;top:0"></canvas>
+ <svg id="gls" class="abs" style="left:0;top:0" width="1080" height="1920"></svg>
+ <svg id="glo" class="abs" style="left:0;top:0" width="1080" height="1920"></svg>
+</div>
+<div id="dim" class="abs" style="inset:0;background:#041222;opacity:0"></div>
+<div id="card" class="abs" style="left:80px;top:500px;width:920px;height:720px;border-radius:40px;overflow:hidden;border:8px solid #fff;box-shadow:0 30px 60px -20px rgba(0,0,0,.6);transform-origin:50% 50%;visibility:hidden">
+ <svg id="cardsvg" width="904" height="704" viewBox="8 8 904 704"></svg>
+</div>
+<div id="ui" class="abs" style="inset:0"></div>
+<script src="lib/d3-array.min.js"></script>
+<script src="lib/d3-geo.min.js"></script>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/world10m.js"></script>
+<script src="lib/world50m.js"></script>
+<script src="tex/globe_tex.js"></script>
+<script src="sat/det_ref.js"></script>
+<script src="sat/det_japan.js"></script>
+<script src="sat/det_jclose.js"></script>
+<script src="art.js"></script>
+<script>
+const FPS=60,BLUE='#2f7bf5',DUR=93;
+const $=id=>document.getElementById(id);
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),seg=(t,a,b)=>clamp((t-a)/(b-a)),lerp=(a,b,t)=>a+(b-a)*t;
+const eo=p=>1-Math.pow(1-p,3),eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+const mk=(parent,h)=>{const d=document.createElement('div');d.innerHTML=h.trim();const e=d.firstChild;$(parent).appendChild(e);return e};
+const vis=(el,o)=>{el.style.opacity=o;el.style.visibility=o<=.003?'hidden':'visible'};
+
+// ───────── places (real coordinates) and the story schedule from the storyboard
+const PL={seto:[133.0,34.25],aogashima:[139.767,32.458],kishi:[135.309,34.231],zao:[140.417,38.155],susami:[135.495,33.546]};
+const NAMES={aogashima:'AOGASHIMA',kishi:'KISHI STATION',zao:'ZAO',susami:'SUSAMI'};
+// facts: fly-in [a,b], card open [b,c], card close [d,e], back to Japan [e,f]
+const FACTS=[
+ {k:'aogashima',fly:[21,23],open:[23,25],close:[35.5,36.7],back:[36.7,38]},
+ {k:'kishi',fly:[38,40],open:[40,42],close:[53,54],back:[54,55]},
+ {k:'zao',fly:[55,57],open:[57,59],close:[70,71],back:[71,72]},
+ {k:'susami',fly:[72,74],open:[74,76],close:[85.5,86.2],back:[86.2,87]}];
+const VO=[[.25,4.75,'A cat stationmaster. A volcano inside a volcano. Welcome to Japan.'],
+ [6,19,'Japan’s official island count, published in twenty twenty-three, was fourteen thousand, one hundred and twenty-five. Better mapping changed the count. The country didn’t suddenly grow.'],
+ [23.5,35.5,'Aogashima looks like a tiny green island. Look closer: a smaller volcanic cone sits inside a much larger caldera. It’s a volcano inside a volcano—and people live on the island.'],
+ [40.8,53,'In two thousand seven, Kishi Station gave a cat named Tama the title of stationmaster. She greeted passengers and became the railway’s famous mascot. Visitors came just to meet her.'],
+ [57.8,69.5,'These aren’t creatures or sculptures. They’re trees. In the Zao mountains, freezing droplets coat the branches with ice. Snow builds up on top, creating the shapes people call snow monsters.'],
+ [74,85.2,'And in Susami, you can post a postcard underwater. About ten metres down, a red mailbox stands on the seabed. Special postcards go in, and are collected for delivery.'],
+ [87.4,92.6,'Which fact surprised you most? Comment its number—and choose our next country.']];
+const KEY=/^(Japan[.’]?|fourteen|thousand,|caldera\.|Tama|trees\.|underwater\.|ten|metres|next|country\.)/;
+
+// ───────── UI
+const TITLE=mk('ui',`<div class="pill" style="left:540px;top:245px;height:104px;padding:0 52px;border-radius:36px;font-weight:900;font-size:62px;letter-spacing:-.03em">5 FACTS ABOUT <span style="color:${BLUE};margin-left:.28em">JAPAN</span></div>`);
+const FACTP=mk('ui',`<div class="pill" style="left:540px;top:378px;height:60px;padding:0 28px;font-weight:800;font-size:28px;letter-spacing:.08em"></div>`);
+const JB=mk('ui',`<div class="abs" style="left:205px;top:1385px;width:0;height:0"></div>`);
+const INFO=mk('ui',`<div class="abs" style="left:700px;top:1385px;transform:translate(-50%,-50%);width:560px;min-height:180px;padding:26px 34px;border-radius:40px;background:rgba(255,255,255,.97);box-shadow:0 18px 40px -18px rgba(10,20,40,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center"></div>`);
+const SUB=mk('ui',`<div class="abs" style="left:540px;top:1610px;transform:translate(-50%,-50%);padding:16px 36px;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 16px 34px -16px rgba(10,20,40,.55);font-weight:700;font-size:40px;text-align:center;white-space:nowrap"></div>`);
+const ICONS=mk('ui',`<div class="abs" style="left:540px;top:860px;transform:translate(-50%,-50%);display:flex;gap:22px">${ART.icons.map((s,i)=>`<div class="ic" style="display:flex;flex-direction:column;align-items:center;gap:12px"><div style="width:156px;height:156px;border-radius:44px;background:#fff;box-shadow:0 18px 36px -16px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"><svg width="104" height="104" viewBox="0 0 100 100">${s}</svg></div><div style="width:56px;height:56px;border-radius:50%;background:${BLUE};color:#fff;font-weight:900;font-size:32px;display:flex;align-items:center;justify-content:center">${i+1}</div></div>`).join('')}</div>`);
+const pillT=(el,o,s=1,dy=0)=>{el.style.transform=`translate(-50%,-50%) translateY(${dy}px) scale(${s})`;vis(el,o)};
+const textIn=(t,t0,t1)=>{if(t<t0||t>=t1)return 0;return eo(seg(t,t0,t0+10/FPS))*(1-seg(t,t1-12/FPS,t1))};
+
+// kinetic subtitles: short chunks; word timings spread by length until the voice is recorded
+const WORDS=[];VO.forEach(([a,b,txt],li)=>{const ws=txt.split(' '),wt=ws.map(w=>w.length+3),T=wt.reduce((s,v)=>s+v,0);let t=a;ws.forEach((w,i)=>{WORDS.push({txt:w,t,li,key:KEY.test(w)});t+=(b-a)*wt[i]/T})});
+const CH=[];{let cur=[];WORDS.forEach((w,i)=>{cur.push(w);const nx=WORDS[i+1],len=cur.reduce((s,x)=>s+x.txt.length+1,0);if(/[.?!:—]$/.test(w.txt)||len>=30||!nx||nx.li!==w.li){CH.push(cur);cur=[]}})}
+CH.forEach((c,i)=>{const nx=CH[i+1];c.t0=c[0].t;c.t1=nx&&nx[0].li===c[0].li?nx[0].t-.02:VO[c[0].li][1]+.35});
+const lc=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t)),LB=[157,182,234],NV=[43,58,103],BK=[17,18,24],BLc=[47,123,245],GR=[150,156,170];
+const eb=p=>{const c1=1.7,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)};
+function renderSub(t){const c=CH.find(c=>t>=c.t0-.01&&t<c.t1+.15);if(!c){vis(SUB,0);return}const ex=clamp((t-c.t1)/.15);vis(SUB,1-ex*.9);
+  SUB.innerHTML=c.filter(w=>t>=w.t).map(w=>{const p=clamp((t-w.t)/.28),q=clamp((t-w.t-.28)/.25);let col=w.key?lc(LB,BLc,p):p<1?lc(LB,NV,p):lc(NV,BK,q);if(ex>0)col=lc(col,GR,ex);const s=w.key?(.6+.4*eb(p))*1.06:1;
+    return `<span style="display:inline-block;margin:0 ${w.key?'.24em':'.1em'};color:rgb(${col});opacity:${Math.min(1,p*1.6)};filter:blur(${((1-p)*8+ex*5).toFixed(2)}px);transform:translateY(${((1-p)*18).toFixed(1)}px) scale(${s.toFixed(3)});${w.key?'font-weight:900':''}">${w.txt}</span>`}).join(' ')}
+
+// ───────── globe (WebGL orthographic, NASA Blue Marble) + Natural Earth borders; Japan highlight in the house style
+const GL=$('glc').getContext('webgl',{preserveDrawingBuffer:true,antialias:true});
+const VS=`attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
+const FS=`precision highp float;uniform sampler2D tex;uniform sampler2D det;uniform vec2 C;uniform float R;uniform vec2 L;
+uniform vec3 DG;uniform vec2 DS;uniform float DON;
+void main(){vec2 q=(gl_FragCoord.xy-C)/R;float r2=dot(q,q);vec3 bg=vec3(.024,.094,.165);
+  if(r2>1.){float d=sqrt(r2)-1.;float g=exp(-d*R/38.)*.55+exp(-d*R/140.)*.18;gl_FragColor=vec4(bg+vec3(.35,.6,1.)*g,1.);return;}
+  vec3 v=vec3(q.x,q.y,sqrt(1.-r2));float cl=cos(L.y),sl=sin(L.y);vec3 w=vec3(v.x,v.y*cl+v.z*sl,-v.y*sl+v.z*cl);
+  float lon=atan(w.x,w.z)+L.x,lat=asin(clamp(w.y,-1.,1.));float fx=fract(lon/6.2831853+.5);vec2 uv=vec2(fx,.5-lat/3.1415927);
+  vec3 c=texture2D(tex,uv).rgb;
+  if(DON>0.){float ym=log(tan(.78539816+clamp(lat,-1.47,1.47)*.5));vec2 d=vec2((fx*DG.x-DG.y)/DS.x,((1.-ym/3.1415927)*.5*DG.x-DG.z)/DS.y);
+    float wg=smoothstep(0.,.03,d.x)*smoothstep(0.,.03,1.-d.x)*smoothstep(0.,.03,d.y)*smoothstep(0.,.03,1.-d.y);c=mix(c,texture2D(det,d).rgb,wg*DON);}
+  c*=1.08;float limb=pow(v.z,.35);c=c*(.55+.45*limb)+vec3(.3,.55,1.)*pow(1.-v.z,3.)*.55;gl_FragColor=vec4(c,1.);}`;
+const sh=(t,src)=>{const o=GL.createShader(t);GL.shaderSource(o,src);GL.compileShader(o);if(!GL.getShaderParameter(o,GL.COMPILE_STATUS))throw new Error(GL.getShaderInfoLog(o));return o};
+const PG=GL.createProgram();GL.attachShader(PG,sh(GL.VERTEX_SHADER,VS));GL.attachShader(PG,sh(GL.FRAGMENT_SHADER,FS));GL.linkProgram(PG);GL.useProgram(PG);
+GL.bindBuffer(GL.ARRAY_BUFFER,GL.createBuffer());GL.bufferData(GL.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),GL.STATIC_DRAW);
+const aP=GL.getAttribLocation(PG,'p');GL.enableVertexAttribArray(aP);GL.vertexAttribPointer(aP,2,GL.FLOAT,false,0,0);
+const U={};['C','R','L','DG','DS','DON','tex','det'].forEach(n=>U[n]=GL.getUniformLocation(PG,n));GL.uniform1i(U.tex,0);GL.uniform1i(U.det,1);
+const TEX=new Image();TEX.src=GLOBE_SRC;
+TEX.onload=()=>{GL.activeTexture(GL.TEXTURE0);const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,TEX);
+  [GL.TEXTURE_MIN_FILTER,GL.TEXTURE_MAG_FILTER].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.LINEAR));[GL.TEXTURE_WRAP_S,GL.TEXTURE_WRAP_T].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.CLAMP_TO_EDGE))};
+const DETIMG={},DETTEX={};Object.keys(DET_SRC).forEach(k=>{const im=new Image();im.src=DET_SRC[k];DETIMG[k]=im});
+function bindDet(k){if(!k){GL.uniform1f(U.DON,0);return}
+  if(!DETTEX[k]){GL.activeTexture(GL.TEXTURE1);const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,DETIMG[k]);
+    [GL.TEXTURE_MIN_FILTER,GL.TEXTURE_MAG_FILTER].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.LINEAR));[GL.TEXTURE_WRAP_S,GL.TEXTURE_WRAP_T].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.CLAMP_TO_EDGE));DETTEX[k]=t}
+  GL.activeTexture(GL.TEXTURE1);GL.bindTexture(GL.TEXTURE_2D,DETTEX[k]);GL.activeTexture(GL.TEXTURE0);
+  const r=DET_REF[k];GL.uniform3f(U.DG,256*2**r.z,r.X0*256,r.Y0*256);GL.uniform2f(U.DS,r.W,r.H);GL.uniform1f(U.DON,1)}
+const C10=topojson.feature(WORLD10,WORLD10.objects.countries).features,C50=topojson.feature(WORLD50,WORLD50.objects.countries).features;
+const JP10=C10.find(c=>c.id==='392'),JP50=C50.find(c=>c.id==='392');
+const MESH10=topojson.mesh(WORLD10,WORLD10.objects.countries,(a,b)=>a!==b),MESH50=topojson.mesh(WORLD50,WORLD50.objects.countries,(a,b)=>a!==b);
+const GPR=d3.geoOrthographic().clipAngle(90).precision(.3),GPATH=d3.geoPath(GPR);
+// camera views: fit a lon/lat box into a screen rect
+function fit(lo0,lo1,la0,la1,rect){const pts=[];for(let i=0;i<=24;i++){const f=i/24;pts.push([lerp(lo0,lo1,f),la0],[lerp(lo0,lo1,f),la1],[lo0,lerp(la0,la1,f)],[lo1,lerp(la0,la1,f)])}
+  const lon=(lo0+lo1)/2,lat=(la0+la1)/2,pr=d3.geoOrthographic().rotate([-lon,-lat]).fitExtent(rect,{type:'MultiPoint',coordinates:pts});return {lon,lat,R:pr.scale(),tx:pr.translate()[0],ty:pr.translate()[1]}}
+const V={start:{lon:172,lat:18,R:430,tx:540,ty:880},
+  japan:fit(128.5,146,30.2,45.6,[[90,480],[990,1250]]),
+  seto:fit(130.6,135.4,32.9,35.6,[[80,500],[1000,1220]])};
+FACTS.forEach(f=>{const [x,y]=PL[f.k];V[f.k]=fit(x-2.3,x+2.3,y-1.5,y+1.5,[[80,520],[1000,1240]])});
+const hl=(d,o,fo=.34)=>`<g opacity="${o}"><path d="${d}" fill="${BLUE}" fill-opacity="${fo}"/><path d="${d}" fill="none" stroke="#7fb2ff" stroke-width="12" stroke-opacity=".45" stroke-linejoin="round" style="filter:blur(5px)"/><path d="${d}" fill="none" stroke="#fff" stroke-width="3.2" stroke-linejoin="round"/></g>`;
+function drawGlobe(c,o={}){const {lon,lat,R,tx,ty}=c;
+  GL.viewport(0,0,1080,1920);GL.uniform2f(U.C,tx,1920-ty);GL.uniform1f(U.R,R);GL.uniform2f(U.L,lon*Math.PI/180,lat*Math.PI/180);bindDet(R>2600?'jclose':R>700?'japan':null);GL.drawArrays(GL.TRIANGLE_STRIP,0,4);
+  GPR.rotate([-lon,-lat]).scale(R).translate([tx,ty]);const fine=R>1500;
+  const fo=.34*(1-clamp((R-2600)/3000))+.06;   // fill fades when we are close to a place
+  $('gls').innerHTML=`<path d="${GPATH(fine?MESH10:MESH50)||''}" fill="none" stroke="#fff" stroke-width="1.4" stroke-opacity=".5"/>`+((o.hl??1)>.01?hl(GPATH(fine?JP10:JP50)||'',o.hl??1,fo):'')}
+const proj=p=>GPR(p);
+function slerp(a,b,u){const r=Math.PI/180,va=[Math.cos(a[1]*r)*Math.cos(a[0]*r),Math.cos(a[1]*r)*Math.sin(a[0]*r),Math.sin(a[1]*r)],vb=[Math.cos(b[1]*r)*Math.cos(b[0]*r),Math.cos(b[1]*r)*Math.sin(b[0]*r),Math.sin(b[1]*r)];
+  const d=Math.acos(clamp(va[0]*vb[0]+va[1]*vb[1]+va[2]*vb[2],-1,1));if(d<1e-6)return a;const s1=Math.sin((1-u)*d)/Math.sin(d),s2=Math.sin(u*d)/Math.sin(d);
+  const v=va.map((x,i)=>x*s1+vb[i]*s2);return [Math.atan2(v[1],v[0])/r,Math.asin(clamp(v[2],-1,1))/r]}
+const mix=(A,B,u)=>{const e=eio(u),c=slerp([A.lon,A.lat],[B.lon,B.lat],e);return {lon:c[0],lat:c[1],R:Math.exp(lerp(Math.log(A.R),Math.log(B.R),e)),tx:lerp(A.tx,B.tx,e),ty:lerp(A.ty,B.ty,e)}};
+function camera(t){
+  if(t<.2)return V.start;
+  if(t<3.6){const u=seg(t,.2,3.6);const c=mix(V.start,V.japan,u);return c}
+  if(t<10)return V.japan;
+  if(t<14)return mix(V.japan,V.seto,seg(t,10,12.2));
+  if(t<19.5)return V.seto;
+  if(t<21)return mix(V.seto,V.japan,seg(t,19.5,21));
+  for(const f of FACTS){if(t<f.fly[0])return V.japan;
+    if(t<f.fly[1])return mix(V.japan,V[f.k],seg(t,f.fly[0],f.fly[1]));
+    if(t<f.back[0])return V[f.k];
+    if(t<f.back[1])return mix(V[f.k],V.japan,seg(t,f.back[0],f.back[1]))}
+  return V.japan}
+
+// ───────── Japanball: sprite crossfades, tilt, a short squash on reactions
+const JBS={};['f1','f2','f3','f5','s1','s3','s5','s9','m2'].forEach(k=>{JBS[k]=`jb/${k}.png`});
+const JBI={};Object.entries(JBS).forEach(([k,src])=>{const i=document.createElement('img');i.src=src;i.className='abs';i.style.cssText=k[0]==='m'?'width:300px;left:-146px;top:-152px;opacity:0':'width:260px;left:-130px;top:-130px;opacity:0';JB.appendChild(i);JBI[k]=i});
+function setJB(a,b,mixv,tilt,sq,enter){Object.entries(JBI).forEach(([k,i])=>i.style.opacity=k===a&&k===b?1:k===a?1-mixv:k===b?mixv:0);
+  JB.style.transform=`translate(${(-35*(1-enter)).toFixed(1)}px,${(35*(1-enter)).toFixed(1)}px) rotate(${tilt.toFixed(2)}deg) scale(${(1+sq).toFixed(3)},${(1-sq).toFixed(3)})`;vis(JB,enter)}
+function jbState(t){   // [spriteA, spriteB, mix, tilt, squash]
+  const blinkAt=[3.9,18.2,33.8,45.2,68.6,84.4,90.6];let bl=blinkAt.some(b=>t>=b&&t<b+.1);
+  const sq=[7.2,24.2,42.2,57.3,59.4,79.6,87.2].reduce((s,b)=>s+(t>=b&&t<b+.3?.04*Math.sin((t-b)/.3*Math.PI):0),0);
+  if(t<4.4)return ['f1','f2',bl?1:0,0,sq];
+  if(t<7.2)return ['f1','f2',bl?1:0,0,sq];
+  if(t<17)return ['f1','f3',seg(t,7.2,7.35),0,sq];
+  if(t<23)return ['f1','f2',bl?1:0,0,sq];
+  if(t<36)return ['f1','s1',seg(t,24,24.3),8*eio(seg(t,25,26))*(1-seg(t,34.5,35.5)),sq];
+  if(t<40)return ['f1','f2',bl?1:0,0,sq];
+  if(t<53)return ['f1','s5',seg(t,42,42.3),5*eio(seg(t,42,43))*(1-seg(t,52,53)),sq];
+  if(t<59.4)return ['f1','s3',seg(t,57.3,57.5),0,sq];
+  if(t<70)return ['s3','s9',seg(t,61.5,62),0,sq];
+  if(t<79.5)return ['f1','f2',bl?1:0,0,sq];
+  if(t<85.6)return ['f1','m2',seg(t,79.6,79.8),0,sq];
+  if(t<87.2)return ['m2','f1',seg(t,85.6,85.8),0,sq];
+  if(t<90.5)return ['f1','s1',seg(t,87.4,87.7),0,sq];
+  return ['s1','f1',seg(t,90.5,90.8),0,sq]}
+
+// ───────── info plate (right of Japanball)
+const big=(s,col='#111218',fs=46)=>`<div style="font-weight:900;font-size:${fs}px;letter-spacing:-.01em;line-height:1.05;color:${col}">${s}</div>`;
+const small=s=>`<div style="margin-top:12px;font-weight:700;font-size:22px;letter-spacing:.06em;color:#7d8597">${s}</div>`;
+function infoAt(t){
+  if(t>=7&&t<19.5){const n=Math.round(14125*eo(seg(t,7.2,8.7)));return [7,19.5,big(n.toLocaleString('en-US'),BLUE,96)+big('ISLANDS','#111218',40)+small('GSI · 2023 COUNT')]}
+  if(t>=25&&t<35.5)return [25,35.5,big('A VOLCANO')+big('INSIDE A VOLCANO',BLUE,40)];
+  if(t>=42&&t<53)return [42,53,big('TAMA',BLUE,58)+big('CAT STATIONMASTER','#111218',34)+small('KISHI STATION · 2007')];
+  if(t>=59&&t<70)return [59,70,big('SNOW MONSTERS',BLUE,44)+big('THEY’RE TREES','#111218',34)+small('ZAO · TOHOKU')];
+  if(t>=76&&t<85.5)return [76,85.5,big('UNDERWATER',BLUE,46)+big('MAILBOX','#111218',46)+small('ABOUT 10 m DEEP · SUSAMI')];
+  if(t>=88&&t<93)return [88,99,t<90.4?big('WHICH FACT','#111218',40)+big('SURPRISED YOU?',BLUE,40):big('COMMENT',BLUE,44)+big('1 – 5','#111218',56)];
+  return null}
+
+// ───────── card scenes
+function cardScene(k,t){
+  if(k==='aogashima')return ART.aogashima({outer:eio(seg(t,25,27.6)),inner:eio(seg(t,28,30.4)),labels:seg(t,30.2,30.6),par:Math.sin(seg(t,31,33)*Math.PI)});
+  if(k==='kishi')return ART.tama({cap:eo(seg(t,42.4,43.3)),blink:(t>=44.6&&t<44.75)||(t>=46.4&&t<46.55)?1:0,tilt:4*Math.sin(seg(t,45,47)*Math.PI),train:seg(t,47,50.4)*1.6-.25,pass:seg(t,47.5,52)});
+  if(k==='zao')return t<64?ART.zao({cut:eio(seg(t,59.2,60.8)),clear:eio(seg(t,61,61.8)),ice:eio(seg(t,61.8,64)),snow:1,t}):ART.zao({ice:1,snow:eio(seg(t,64,67)),fall:seg(t,66.5,67.5),t});
+  if(k==='susami')return ART.susami({dive:eio(seg(t,74.4,76.2)),card:seg(t,78,81.2),posted:seg(t,81.2,81.6),bag:seg(t,83,83.5)*(1-seg(t,85.2,85.5)),t});
+  return ''}
+// scale bar for Susami lives on the card overlay
+const SCALE=mk('ui',`<div class="abs" style="left:930px;top:560px;width:0;height:600px"><svg width="70" height="620" style="position:absolute;left:-35px;top:0" viewBox="-35 0 70 620"><path id="scl" d="M0 20 V600" stroke="#fff" stroke-width="5" stroke-linecap="round"/>${[...Array(11)].map((_,i)=>`<path d="M-10 ${20+i*58} H10" stroke="#fff" stroke-width="${i%5?3:5}"/>`).join('')}</svg>
+ <div class="pill" style="left:0;top:20px;height:40px;padding:0 14px;font-weight:900;font-size:22px;transform:translate(-130%,-50%)">0 m</div><div class="pill" style="left:0;top:600px;height:40px;padding:0 14px;font-weight:900;font-size:22px;color:${BLUE};transform:translate(-120%,-50%)">10 m</div></div>`);
+
+function renderAt(t){
+  t=Math.min(t,DUR-1e-6);
+  const c=camera(t);drawGlobe(c,{hl:seg(t,2.8,3.6)});
+  // point + label at the active place; national accents for fact 1
+  let ov='';const F=FACTS.find(f=>t>=f.fly[0]-.6&&t<f.back[1]);
+  if(F){const p=proj(PL[F.k]),a=seg(t,F.fly[0]-.6,F.fly[0])*(1-seg(t,F.back[0],F.back[0]+.4));
+    if(p&&a>0){const pu=seg(t,F.fly[0],F.fly[0]+.9),lw=NAMES[F.k].length*15+44;
+      ov+=`<g opacity="${a}"><circle cx="${p[0]}" cy="${p[1]}" r="${(14+pu*40).toFixed(1)}" fill="none" stroke="#fff" stroke-width="3" opacity="${(1-pu)*.8}"/><circle cx="${p[0]}" cy="${p[1]}" r="11" fill="#fff"/><circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${BLUE}"/>
+       <g transform="translate(${p[0]+22} ${p[1]-58})"><rect width="${lw}" height="46" rx="23" fill="#fff"/><text x="${lw/2}" y="31" text-anchor="middle" font-family="Inter Display,Inter" font-weight="800" font-size="22" letter-spacing=".06em" fill="#111218">${NAMES[F.k]}</text></g></g>`}}
+  if(t>=5&&t<7.2){[[131,32.5],[138,36],[143,43.2]].forEach(([x,y],i)=>{const u=seg(t,5.2+i*.55,6.2+i*.55);if(u>0&&u<1){const p=proj([x,y]);ov+=`<circle cx="${p[0]}" cy="${p[1]}" r="${(20+u*110).toFixed(1)}" fill="none" stroke="#fff" stroke-width="4" opacity="${(1-u)*.85}"/>`}})}
+  if(t>=13.8&&t<19.8){const a=seg(t,13.8,14.3)*(1-seg(t,19.3,19.8)),u=eio(seg(t,14.4,16.8));
+    ov+=`<path d="${GPATH(JP50)}" fill="none" stroke="#ffd34d" stroke-width="5" opacity="${(a*(1-u)).toFixed(3)}"/><path d="${GPATH(JP10)}" fill="none" stroke="#ffd34d" stroke-width="3" opacity="${(a*u).toFixed(3)}"/>
+     <g opacity="${a}" transform="translate(540 470)"><rect x="-210" y="-26" width="420" height="52" rx="26" fill="#fff"/><text y="9" text-anchor="middle" font-family="Inter Display,Inter" font-weight="800" font-size="24" letter-spacing=".05em" fill="#111218">${u<.5?'SIMPLE MAP':'DETAILED MAP'} <tspan fill="${BLUE}">→ MORE ISLANDS</tspan></text></g>`}
+  $('glo').innerHTML=ov;
+  // card: unfolds out of the point, folds back into it
+  const CF=FACTS.find(f=>t>=f.open[0]&&t<f.close[1]);
+  if(CF){const p=proj(PL[CF.k])||[540,860];const u=t<CF.open[1]?eio(seg(t,CF.open[0],CF.open[1])):1-eio(seg(t,CF.close[0],CF.close[1]));
+    const s=lerp(.09,1,u),x=lerp(p[0]-540,0,u),y=lerp(p[1]-860,0,u);
+    $('card').style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px) scale(${s.toFixed(4)})`;$('card').style.borderRadius=`${lerp(400,40,u)}px`;vis($('card'),clamp(u*5));
+    $('cardsvg').innerHTML=cardScene(CF.k,t);$('dim').style.opacity=(.3*u).toFixed(3)}
+  else{vis($('card'),0);$('dim').style.opacity=0}
+  vis(SCALE,CF&&CF.k==='susami'?seg(t,76,76.5)*(1-seg(t,85.3,85.6)):0);
+  // title + fact counter
+  const ti=eo(seg(t,.2,.4));pillT(TITLE,ti,1,(1-ti)*24);
+  const fi=t<21?1:t<38?2:t<55?3:t<72?4:5;FACTP.innerHTML=`FACT <span style="color:${BLUE};margin:0 .3em">0${fi}</span> / 05`;
+  pillT(FACTP,t<87?eo(seg(t,4.4,4.8)):1-seg(t,87,87.3));
+  // Japanball + info
+  const [a,b,mv,tilt,sq]=jbState(t);setJB(a,b,mv,tilt,sq,eo(seg(t,2.8,3.6)));
+  const inf=infoAt(t);if(inf){INFO.innerHTML=inf[2];const o=textIn(t,inf[0],inf[1]);INFO.style.opacity=o;INFO.style.visibility=o>0?'visible':'hidden';INFO.style.transform=`translate(-50%,-50%) translateY(${((1-o)*16).toFixed(1)}px)`}else vis(INFO,0);
+  // final icons
+  if(t>=87){ICONS.style.visibility='visible';ICONS.style.opacity=1;[...ICONS.children].forEach((e,i)=>{const p=eo(seg(t,87.1+i*.14,87.5+i*.14));e.style.opacity=p;e.style.transform=`translateY(${((1-p)*30).toFixed(1)}px) scale(${(.9+.1*p).toFixed(3)})`})}else vis(ICONS,0);
+  renderSub(t);
+}
+window.renderAt=renderAt;window.DUR=DUR;window.VO=VO;
+(TEX.complete?Promise.resolve():new Promise(r=>TEX.addEventListener('load',r))).then(()=>Promise.all([...Object.values(DETIMG)].map(i=>i.complete?Promise.resolve():new Promise(r=>{i.onload=r;i.onerror=r})))).then(()=>{
+  return Promise.all(Object.values(JBI).map(i=>i.complete?1:new Promise(r=>{i.onload=r;i.onerror=r})))}).then(()=>document.fonts.ready).then(()=>{renderAt(0);window.ready=true});
+</script>
+</body>
+</html>

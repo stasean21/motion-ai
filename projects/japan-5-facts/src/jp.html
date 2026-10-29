@@ -38,17 +38,18 @@ const FPS=60,BLUE='#2f7bf5',DUR=93;
 const $=id=>document.getElementById(id);
 const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),seg=(t,a,b)=>clamp((t-a)/(b-a)),lerp=(a,b,t)=>a+(b-a)*t;
 const eo=p=>1-Math.pow(1-p,3),eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+const eb=p=>{const c1=1.7,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)};   // ease-out-back (overshoot)
+const bounce=p=>{const n=7.5625,d=2.75;if(p<1/d)return n*p*p;if(p<2/d)return n*(p-=1.5/d)*p+.75;if(p<2.5/d)return n*(p-=2.25/d)*p+.9375;return n*(p-=2.625/d)*p+.984375};
 const mk=(parent,h)=>{const d=document.createElement('div');d.innerHTML=h.trim();const e=d.firstChild;$(parent).appendChild(e);return e};
 const vis=(el,o)=>{el.style.opacity=o;el.style.visibility=o<=.003?'hidden':'visible'};
 
 // ───────── places (real coordinates) and the story schedule from the storyboard
 const PL={seto:[133.0,34.25],aogashima:[139.767,32.458],kishi:[135.309,34.231],zao:[140.417,38.155],susami:[135.495,33.546]};
-const NAMES={aogashima:'AOGASHIMA',kishi:'KISHI STATION',zao:'ZAO',susami:'SUSAMI'};
-// facts: fly-in [a,b], card open [b,c], card close [d,e], back to Japan [e,f]
+const NAMES={aogashima:'AOGASHIMA',kishi:'KISHI STATION',zao:'ZAO MOUNTAINS',susami:'SUSAMI'};
 const FACTS=[
- {k:'aogashima',fly:[21,23],open:[23,25],close:[35.5,36.7],back:[36.7,38]},
- {k:'kishi',fly:[38,40],open:[40,42],close:[53,54],back:[54,55]},
- {k:'zao',fly:[55,57],open:[57,59],close:[70,71],back:[71,72]},
+ {k:'aogashima',fly:[21,23],open:[23,25],close:[35.5,36.4],back:[36.4,38]},
+ {k:'kishi',fly:[38,40],open:[40,42],close:[53,53.9],back:[53.9,55]},
+ {k:'zao',fly:[55,57],open:[57,59],close:[70,70.9],back:[70.9,72]},
  {k:'susami',fly:[72,74],open:[74,76],close:[85.5,86.2],back:[86.2,87]}];
 const VO=[[.25,4.75,'A cat stationmaster. A volcano inside a volcano. Welcome to Japan.'],
  [6,19,'Japan’s official island count, published in twenty twenty-three, was fourteen thousand, one hundred and twenty-five. Better mapping changed the count. The country didn’t suddenly grow.'],
@@ -56,26 +57,34 @@ const VO=[[.25,4.75,'A cat stationmaster. A volcano inside a volcano. Welcome to
  [40.8,53,'In two thousand seven, Kishi Station gave a cat named Tama the title of stationmaster. She greeted passengers and became the railway’s famous mascot. Visitors came just to meet her.'],
  [57.8,69.5,'These aren’t creatures or sculptures. They’re trees. In the Zao mountains, freezing droplets coat the branches with ice. Snow builds up on top, creating the shapes people call snow monsters.'],
  [74,85.2,'And in Susami, you can post a postcard underwater. About ten metres down, a red mailbox stands on the seabed. Special postcards go in, and are collected for delivery.'],
- [87.4,92.6,'Which fact surprised you most? Comment its number—and choose our next country.']];
-const KEY=/^(Japan[.’]?|fourteen|thousand,|caldera\.|Tama|trees\.|underwater\.|ten|metres|next|country\.)/;
+ [87.8,92.6,'Which country should we explore next? Tell us in the comments!']];
+const KEY=/^(Japan[.’]?|fourteen|thousand,|caldera\.|Tama|trees\.|underwater\.|ten|metres|country|comments!)/;
 
 // ───────── UI
-const TITLE=mk('ui',`<div class="pill" style="left:540px;top:245px;height:104px;padding:0 52px;border-radius:36px;font-weight:900;font-size:62px;letter-spacing:-.03em">5 FACTS ABOUT <span style="color:${BLUE};margin-left:.28em">JAPAN</span></div>`);
-const FACTP=mk('ui',`<div class="pill" style="left:540px;top:378px;height:60px;padding:0 28px;font-weight:800;font-size:28px;letter-spacing:.08em"></div>`);
-const JB=mk('ui',`<div class="abs" style="left:205px;top:1385px;width:0;height:0"></div>`);
-const INFO=mk('ui',`<div class="abs" style="left:700px;top:1385px;transform:translate(-50%,-50%);width:560px;min-height:180px;padding:26px 34px;border-radius:40px;background:rgba(255,255,255,.97);box-shadow:0 18px 40px -18px rgba(10,20,40,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center"></div>`);
+const shine=`<div class="shn abs" style="inset:0;border-radius:inherit;overflow:hidden;pointer-events:none"><div class="abs" style="top:-20%;bottom:-20%;width:38%;left:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.0) 20%,rgba(160,200,255,.55) 50%,rgba(255,255,255,0) 80%,transparent);transform:translateX(-160%) skewX(-18deg)"></div></div>`;
+const setShine=(el,u)=>{const s=el.querySelector('.shn>div');if(s)s.style.transform=`translateX(${lerp(-160,360,u).toFixed(1)}%) skewX(-18deg)`};
+const TL='5 FACTS ABOUT JAPAN'.split('');
+const TITLE=mk('ui',`<div class="pill" style="left:540px;top:245px;height:104px;padding:0 52px;border-radius:36px;font-weight:900;font-size:62px;letter-spacing:-.03em">${TL.map((c,i)=>`<span class="tl" style="display:inline-block;${i>=14?`color:${BLUE}`:''}">${c===' '?'&nbsp;':c}</span>`).join('')}${shine}</div>`);
+const FACTP=mk('ui',`<div class="pill" style="left:540px;top:378px;height:60px;padding:0 28px;font-weight:800;font-size:28px;letter-spacing:.08em;overflow:hidden">FACT&nbsp;<span style="display:inline-block;position:relative;width:1.5em;height:1.2em;overflow:hidden;color:${BLUE}"><span id="fn0" class="abs" style="left:0;top:0;width:100%;text-align:center"></span><span id="fn1" class="abs" style="left:0;top:0;width:100%;text-align:center"></span></span>&nbsp;/ 05${shine}</div>`);
+const JB=mk('ui',`<div class="abs" style="left:205px;top:1385px;width:0;height:0"><div id="jbsh" class="abs" style="left:-100px;top:118px;width:200px;height:30px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.45),rgba(0,0,0,0))"></div><div id="jbb" class="abs" style="left:0;top:0;width:0;height:0"></div><svg id="jbfx" class="abs" style="left:-200px;top:-260px;overflow:visible" width="400" height="400"></svg></div>`);
+const INFO=mk('ui',`<div class="abs" style="left:700px;top:1385px;transform:translate(-50%,-50%);width:560px;min-height:190px;padding:26px 30px;border-radius:40px;background:rgba(255,255,255,.97);box-shadow:0 18px 40px -18px rgba(10,20,40,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center"><div id="infc" style="display:flex;flex-direction:column;align-items:center"></div>${shine}</div>`);
 const SUB=mk('ui',`<div class="abs" style="left:540px;top:1610px;transform:translate(-50%,-50%);padding:16px 36px;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 16px 34px -16px rgba(10,20,40,.55);font-weight:700;font-size:40px;text-align:center;white-space:nowrap"></div>`);
 const ICONS=mk('ui',`<div class="abs" style="left:540px;top:860px;transform:translate(-50%,-50%);display:flex;gap:22px">${ART.icons.map((s,i)=>`<div class="ic" style="display:flex;flex-direction:column;align-items:center;gap:12px"><div style="width:156px;height:156px;border-radius:44px;background:#fff;box-shadow:0 18px 36px -16px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"><svg width="104" height="104" viewBox="0 0 100 100">${s}</svg></div><div style="width:56px;height:56px;border-radius:50%;background:${BLUE};color:#fff;font-weight:900;font-size:32px;display:flex;align-items:center;justify-content:center">${i+1}</div></div>`).join('')}</div>`);
+const SCALE=mk('ui',`<div class="abs" style="left:930px;top:560px;width:0;height:600px"><svg width="70" height="620" style="position:absolute;left:-35px;top:0" viewBox="-35 0 70 620"><path id="scl" d="M0 20 V600" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-dasharray="580" stroke-dashoffset="580"/>${[...Array(11)].map((_,i)=>`<path class="stk" d="M-10 ${20+i*58} H10" stroke="#fff" stroke-width="${i%5?3:5}" stroke-linecap="round"/>`).join('')}</svg>
+ <div id="sc0" class="pill" style="left:0;top:20px;height:40px;padding:0 14px;font-weight:900;font-size:22px">0 m</div><div id="sc1" class="pill" style="left:0;top:600px;height:40px;padding:0 14px;font-weight:900;font-size:24px;color:${BLUE}">10 m</div></div>`);
 const pillT=(el,o,s=1,dy=0)=>{el.style.transform=`translate(-50%,-50%) translateY(${dy}px) scale(${s})`;vis(el,o)};
-const textIn=(t,t0,t1)=>{if(t<t0||t>=t1)return 0;return eo(seg(t,t0,t0+10/FPS))*(1-seg(t,t1-12/FPS,t1))};
 
-// kinetic subtitles: short chunks; word timings spread by length until the voice is recorded
+// kinetic word builder: every word rises out of a blur with a stagger; key words overshoot
+function kin(lines,t,t0){let k=0;return lines.map(([txt,fs,col,extra=''])=>`<div style="font-weight:900;font-size:${fs}px;line-height:1.08;letter-spacing:-.01em;color:${col};white-space:nowrap;${extra}">`+txt.split(' ').map(w=>{const p=clamp((t-t0-k*.07)/.38);k++;const s=.7+.3*eb(p);
+  return `<span style="display:inline-block;margin:0 .12em;opacity:${Math.min(1,p*2).toFixed(3)};transform:translateY(${((1-eo(p))*26).toFixed(1)}px) scale(${s.toFixed(3)});filter:blur(${((1-p)*6).toFixed(2)}px)">${w}</span>`}).join('')+'</div>').join('')}
+const typeOn=(txt,t,t0,cps=26)=>{const n=Math.floor(clamp((t-t0)*cps,0,txt.length));return txt.slice(0,n)+(n<txt.length&&n>0?'<span style="opacity:.5">|</span>':'')};
+
+// kinetic subtitles
 const WORDS=[];VO.forEach(([a,b,txt],li)=>{const ws=txt.split(' '),wt=ws.map(w=>w.length+3),T=wt.reduce((s,v)=>s+v,0);let t=a;ws.forEach((w,i)=>{WORDS.push({txt:w,t,li,key:KEY.test(w)});t+=(b-a)*wt[i]/T})});
 const CH=[];{let cur=[];WORDS.forEach((w,i)=>{cur.push(w);const nx=WORDS[i+1],len=cur.reduce((s,x)=>s+x.txt.length+1,0);if(/[.?!:—]$/.test(w.txt)||len>=30||!nx||nx.li!==w.li){CH.push(cur);cur=[]}})}
 CH.forEach((c,i)=>{const nx=CH[i+1];c.t0=c[0].t;c.t1=nx&&nx[0].li===c[0].li?nx[0].t-.02:VO[c[0].li][1]+.35});
 const lc=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t)),LB=[157,182,234],NV=[43,58,103],BK=[17,18,24],BLc=[47,123,245],GR=[150,156,170];
-const eb=p=>{const c1=1.7,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)};
-function renderSub(t){const c=CH.find(c=>t>=c.t0-.01&&t<c.t1+.15);if(!c){vis(SUB,0);return}const ex=clamp((t-c.t1)/.15);vis(SUB,1-ex*.9);
+function renderSub(t){const c=CH.find(c=>t>=c.t0-.01&&t<c.t1+.15);if(!c){vis(SUB,0);return}const ex=clamp((t-c.t1)/.15),inn=eb(clamp((t-c.t0)/.2));vis(SUB,1-ex*.9);SUB.style.transform=`translate(-50%,-50%) scale(${(.92+.08*inn).toFixed(3)})`;
   SUB.innerHTML=c.filter(w=>t>=w.t).map(w=>{const p=clamp((t-w.t)/.28),q=clamp((t-w.t-.28)/.25);let col=w.key?lc(LB,BLc,p):p<1?lc(LB,NV,p):lc(NV,BK,q);if(ex>0)col=lc(col,GR,ex);const s=w.key?(.6+.4*eb(p))*1.06:1;
     return `<span style="display:inline-block;margin:0 ${w.key?'.24em':'.1em'};color:rgb(${col});opacity:${Math.min(1,p*1.6)};filter:blur(${((1-p)*8+ex*5).toFixed(2)}px);transform:translateY(${((1-p)*18).toFixed(1)}px) scale(${s.toFixed(3)});${w.key?'font-weight:900':''}">${w.txt}</span>`}).join(' ')}
 
@@ -139,90 +148,121 @@ function camera(t){
     if(t<f.fly[1])return mix(V.japan,V[f.k],seg(t,f.fly[0],f.fly[1]));
     if(t<f.back[0])return V[f.k];
     if(t<f.back[1])return mix(V[f.k],V.japan,seg(t,f.back[0],f.back[1]))}
-  return V.japan}
+  if(t<88.8)return V.japan;
+  const E={lon:150-(t-88.8)*5,lat:22,R:400,tx:540,ty:880};return mix(V.japan,E,seg(t,88.8,91.6))}
 
-// ───────── Japanball: sprite crossfades, tilt, a short squash on reactions
-const JBS={};['f1','f2','f3','f5','s1','s3','s5','s9','m2'].forEach(k=>{JBS[k]=`jb/${k}.png`});
-const JBI={};Object.entries(JBS).forEach(([k,src])=>{const i=document.createElement('img');i.src=src;i.className='abs';i.style.cssText=k[0]==='m'?'width:300px;left:-146px;top:-152px;opacity:0':'width:260px;left:-130px;top:-130px;opacity:0';JB.appendChild(i);JBI[k]=i});
-function setJB(a,b,mixv,tilt,sq,enter){Object.entries(JBI).forEach(([k,i])=>i.style.opacity=k===a&&k===b?1:k===a?1-mixv:k===b?mixv:0);
-  JB.style.transform=`translate(${(-35*(1-enter)).toFixed(1)}px,${(35*(1-enter)).toFixed(1)}px) rotate(${tilt.toFixed(2)}deg) scale(${(1+sq).toFixed(3)},${(1-sq).toFixed(3)})`;vis(JB,enter)}
-function jbState(t){   // [spriteA, spriteB, mix, tilt, squash]
-  const blinkAt=[3.9,18.2,33.8,45.2,68.6,84.4,90.6];let bl=blinkAt.some(b=>t>=b&&t<b+.1);
-  const sq=[7.2,24.2,42.2,57.3,59.4,79.6,87.2].reduce((s,b)=>s+(t>=b&&t<b+.3?.04*Math.sin((t-b)/.3*Math.PI):0),0);
-  if(t<4.4)return ['f1','f2',bl?1:0,0,sq];
-  if(t<7.2)return ['f1','f2',bl?1:0,0,sq];
-  if(t<17)return ['f1','f3',seg(t,7.2,7.35),0,sq];
-  if(t<23)return ['f1','f2',bl?1:0,0,sq];
-  if(t<36)return ['f1','s1',seg(t,24,24.3),8*eio(seg(t,25,26))*(1-seg(t,34.5,35.5)),sq];
-  if(t<40)return ['f1','f2',bl?1:0,0,sq];
-  if(t<53)return ['f1','s5',seg(t,42,42.3),5*eio(seg(t,42,43))*(1-seg(t,52,53)),sq];
-  if(t<59.4)return ['f1','s3',seg(t,57.3,57.5),0,sq];
-  if(t<70)return ['s3','s9',seg(t,61.5,62),0,sq];
-  if(t<79.5)return ['f1','f2',bl?1:0,0,sq];
-  if(t<85.6)return ['f1','m2',seg(t,79.6,79.8),0,sq];
-  if(t<87.2)return ['m2','f1',seg(t,85.6,85.8),0,sq];
-  if(t<90.5)return ['f1','s1',seg(t,87.4,87.7),0,sq];
-  return ['s1','f1',seg(t,90.5,90.8),0,sq]}
+// ───────── Japanball rig: drop-in, idle bob, hops with squash & stretch, wiggles, lean, blinks, sparkle bursts
+const JBS={};['f1','f2','f3','f9','s1','s2','s3','s9','m2'].forEach(k=>{JBS[k]=`jb/${k}.png`});
+const JBI={};Object.entries(JBS).forEach(([k,src])=>{const i=document.createElement('img');i.src=src;i.className='abs';i.style.cssText=k[0]==='m'?'width:300px;left:-146px;top:-152px;opacity:0':'width:260px;left:-130px;top:-130px;opacity:0';$('jbb').appendChild(i);JBI[k]=i});
+const HOPS=[[7.3,70],[9.3,36],[24.3,40],[30.5,50],[43.4,56],[47.3,30],[59.5,46],[62.1,34],[67.2,40],[74.5,44],[81.3,62],[87.3,50],[89.5,96],[91.7,64]];
+const WIG=[7.3,28.3,57.4,61.0];
+const SPARK=[8.7,30.6,43.4,62.1,74.5,81.3,89.6,91.7];
+const BLINKS=[];for(let b=1.3;b<93;b+=2.7)BLINKS.push(b);
+function jbSprite(t){
+  let s='f1';
+  if(t>=7.2&&t<9.2)s='f3';else if(t>=9.2&&t<10.4)s='f2';
+  const F=FACTS.find(f=>t>=f.open[0]&&t<f.close[1]);
+  if(F){s='s1';if(F.k==='aogashima'&&t>=28.2&&t<30.8)s='s3';if(F.k==='kishi'&&t>=43.3&&t<44.6)s='s2';if(F.k==='zao'&&t>=57.3&&t<59.3)s='s3';if(F.k==='zao'&&t>=61.9&&t<63.2)s='s9'}
+  if(t>=74.4&&t<86.2)s='m2';
+  if(t>=87&&t<89.4)s='s1';if(t>=89.4&&t<90.7)s='f2';
+  if((s==='f1'||s==='s1')&&BLINKS.some(b=>t>=b&&t<b+.1))s=s==='f1'?'f9':'s2';
+  return s}
+function jbMotion(t){let y=0,rot=0,sx=1,sy=1,h=0;
+  const pe=seg(t,2.9,3.65);y=-520*(1-bounce(pe));const land=[.364,.727,.909].map(x=>2.9+x*.75);land.forEach(l=>{const u=(t-l)/.12;if(u>=0&&u<1){const k=Math.sin(u*Math.PI)*(l===land[0]?.16:.07);sx+=k;sy-=k}});
+  y+=5*Math.sin(t*2*Math.PI/1.8);sy+=.012*Math.sin(t*2*Math.PI/1.8+1);sx-=.012*Math.sin(t*2*Math.PI/1.8+1);
+  for(const [h0,H] of HOPS){const pre=seg(t,h0-.1,h0),air=(t-h0)/.5,post=seg(t,h0+.5,h0+.64);
+    if(t>=h0-.1&&t<h0){const k=Math.sin(pre*Math.PI/2)*.1;sx+=k;sy-=k}
+    if(air>=0&&air<1){const hh=H*4*air*(1-air);y-=hh;h=Math.max(h,hh);const st=.08*Math.sin(air*Math.PI)*(air<.5?1:.4);sy+=st;sx-=st;if(h0===89.5)rot+=360*eio(air)}
+    if(t>=h0+.5&&t<h0+.64){const k=Math.sin(post*Math.PI)*.12;sx+=k;sy-=k}}
+  for(const w of WIG){const u=(t-w)/.6;if(u>=0&&u<1)rot+=9*Math.sin(u*Math.PI*6)*(1-u)}
+  const F=FACTS.find(f=>t>=f.open[0]&&t<f.close[1]);if(F){const u=Math.min(seg(t,F.open[0]+.6,F.open[0]+1.2),1-seg(t,F.close[0]-.4,F.close[0]));rot+=6*eio(u)}
+  if(t>=74.4&&t<74.7){const k=.15*Math.sin(seg(t,74.4,74.7)*Math.PI);sx+=k;sy+=k}
+  return {y,rot,sx,sy,h,enter:seg(t,2.9,3.0)}}
+function renderJB(t){const s=jbSprite(t),m=jbMotion(t);Object.entries(JBI).forEach(([k,i])=>i.style.opacity=k===s?1:0);
+  $('jbb').style.transform=`translateY(${m.y.toFixed(1)}px) rotate(${m.rot.toFixed(2)}deg) scale(${m.sx.toFixed(3)},${m.sy.toFixed(3)})`;
+  const hs=clamp(1-(-m.y)/260,.3,1);$('jbsh').style.transform=`scale(${hs.toFixed(3)})`;$('jbsh').style.opacity=(hs*m.enter).toFixed(3);vis(JB,m.enter);
+  let fx='';for(const s0 of SPARK){const u=(t-s0)/.55;if(u<0||u>=1)continue;for(let i=0;i<8;i++){const a=i/8*6.283+.3,r=150+u*70,x=200+Math.cos(a)*r,y=260+Math.sin(a)*r*.9,sc=(1-u)*(i%2?9:14);
+    fx+=`<path d="M${x} ${y-sc} L${x+sc*.28} ${y-sc*.28} L${x+sc} ${y} L${x+sc*.28} ${y+sc*.28} L${x} ${y+sc} L${x-sc*.28} ${y+sc*.28} L${x-sc} ${y} L${x-sc*.28} ${y-sc*.28}Z" fill="${i%2?'#ffd34d':'#fff'}" opacity="${(1-u).toFixed(2)}"/>`}}
+  $('jbfx').innerHTML=fx}
 
-// ───────── info plate (right of Japanball)
-const big=(s,col='#111218',fs=46)=>`<div style="font-weight:900;font-size:${fs}px;letter-spacing:-.01em;line-height:1.05;color:${col}">${s}</div>`;
-const small=s=>`<div style="margin-top:12px;font-weight:700;font-size:22px;letter-spacing:.06em;color:#7d8597">${s}</div>`;
-function infoAt(t){
-  if(t>=7&&t<19.5){const n=Math.round(14125*eo(seg(t,7.2,8.7)));return [7,19.5,big(n.toLocaleString('en-US'),BLUE,96)+big('ISLANDS','#111218',40)+small('GSI · 2023 COUNT')]}
-  if(t>=25&&t<35.5)return [25,35.5,big('A VOLCANO')+big('INSIDE A VOLCANO',BLUE,40)];
-  if(t>=42&&t<53)return [42,53,big('TAMA',BLUE,58)+big('CAT STATIONMASTER','#111218',34)+small('KISHI STATION · 2007')];
-  if(t>=59&&t<70)return [59,70,big('SNOW MONSTERS',BLUE,44)+big('THEY’RE TREES','#111218',34)+small('ZAO · TOHOKU')];
-  if(t>=76&&t<85.5)return [76,85.5,big('UNDERWATER',BLUE,46)+big('MAILBOX','#111218',46)+small('ABOUT 10 m DEEP · SUSAMI')];
-  if(t>=88&&t<93)return [88,99,t<90.4?big('WHICH FACT','#111218',40)+big('SURPRISED YOU?',BLUE,40):big('COMMENT',BLUE,44)+big('1 – 5','#111218',56)];
-  return null}
+// ───────── info plate (right of Japanball): segments of kinetic lines
+const SMALL=(s)=>`<div style="margin-top:12px;font-weight:700;font-size:22px;letter-spacing:.06em;color:#7d8597;white-space:nowrap">${s}</div>`;
+const PLATES=[
+ {a:7.2,b:19.5,parts:[{a:7.2,b:19.5,f:t=>{const p=seg(t,7.2,8.7),n=Math.round(14125*eo(p)),pk=t>=8.7&&t<9.1?.18*Math.sin(seg(t,8.7,9.1)*Math.PI):0;
+   return `<div style="font-weight:900;font-size:96px;line-height:1;color:${BLUE};font-variant-numeric:tabular-nums;transform:scale(${(1+pk).toFixed(3)})">${n.toLocaleString('en-US')}</div>`+kin([['ISLANDS',40,'#111218']],t,7.5)+SMALL(typeOn('GSI · 2023 COUNT',t,8.9))}}]},
+ {a:25,b:35.5,parts:[{a:25,b:35.5,f:t=>kin([['A VOLCANO',46,'#111218'],['INSIDE A VOLCANO',40,BLUE]],t,25.1)+SMALL(typeOn('AOGASHIMA · TOKYO',t,26.2))}]},
+ {a:42,b:53,parts:[{a:42,b:53,f:t=>kin([['TAMA',62,BLUE],['CAT STATIONMASTER',34,'#111218']],t,42.1)+SMALL(typeOn('KISHI STATION · SINCE 2007',t,43.2))}]},
+ {a:59,b:70,parts:[{a:59,b:64,f:t=>kin([['THEY’RE',40,'#111218'],['TREES!',58,BLUE]],t,59.5)},{a:64,b:70,f:t=>kin([['SNOW',52,BLUE],['MONSTERS',46,'#111218']],t,64.1)+SMALL(typeOn('ZAO · TOHOKU',t,65))}]},
+ {a:76,b:85.5,parts:[{a:76,b:85.5,f:t=>kin([['UNDERWATER',46,BLUE],['MAILBOX',46,'#111218']],t,76.1)+SMALL(typeOn('ABOUT 10 m DEEP · SUSAMI',t,77))}]},
+ {a:87.2,b:93.1,parts:[{a:87.2,b:89.4,f:t=>kin([['THAT’S',36,'#111218'],['5 FACTS!',56,BLUE]],t,87.3)},
+   {a:89.4,b:91.3,f:t=>kin([['WHICH COUNTRY',40,'#111218'],['IS NEXT?',56,BLUE]],t,89.5)},
+   {a:91.3,b:93.1,f:t=>kin([['TELL US IN THE',34,'#111218'],['COMMENTS',52,BLUE]],t,91.4)+`<div style="margin-top:4px;font-size:46px;font-weight:900;color:${BLUE};transform:translateY(${(Math.abs(Math.sin((t-91.6)*Math.PI*2.2))*10).toFixed(1)}px);opacity:${eo(seg(t,91.6,91.8))}">↓</div>`}]}];
+function renderInfo(t){const P=PLATES.find(p=>t>=p.a&&t<p.b);if(!P){vis(INFO,0);return}
+  const pin=eb(seg(t,P.a,P.a+.35)),pout=seg(t,P.b-.25,P.b);const part=P.parts.find(q=>t>=q.a&&t<q.b);
+  const po=part?1-seg(t,part.b-.18,part.b)*(part.b<P.b?1:0):1;
+  $('infc').innerHTML=part?part.f(t):'';$('infc').style.opacity=po;
+  INFO.style.transform=`translate(-50%,-50%) translateY(${(pout*18).toFixed(1)}px) scale(${((.8+.2*pin)*(1-.1*pout)).toFixed(3)})`;vis(INFO,clamp(seg(t,P.a,P.a+.15))*(1-pout));setShine(INFO,seg(t,P.a+.35,P.a+1.05))}
 
 // ───────── card scenes
 function cardScene(k,t){
-  if(k==='aogashima')return ART.aogashima({outer:eio(seg(t,25,27.6)),inner:eio(seg(t,28,30.4)),labels:seg(t,30.2,30.6),par:Math.sin(seg(t,31,33)*Math.PI)});
-  if(k==='kishi')return ART.tama({cap:eo(seg(t,42.4,43.3)),blink:(t>=44.6&&t<44.75)||(t>=46.4&&t<46.55)?1:0,tilt:4*Math.sin(seg(t,45,47)*Math.PI),train:seg(t,47,50.4)*1.6-.25,pass:seg(t,47.5,52)});
+  if(k==='aogashima')return ART.aogashima({outer:eio(seg(t,25,27.6)),inner:eio(seg(t,28,30.4)),labels:seg(t,30.2,30.7),par:Math.sin(seg(t,31,33)*Math.PI)});
+  if(k==='kishi')return ART.tama({cap:eo(seg(t,42.4,43.3)),y07:seg(t,41.6,42.1),blink:(t>=44.6&&t<44.75)||(t>=46.4&&t<46.55)||(t>=50.6&&t<50.75)?1:0,tilt:4*Math.sin(seg(t,45,47)*Math.PI),train:seg(t,47,50.4)*1.6-.25,pass:seg(t,47.5,52)});
   if(k==='zao')return t<64?ART.zao({cut:eio(seg(t,59.2,60.8)),clear:eio(seg(t,61,61.8)),ice:eio(seg(t,61.8,64)),snow:1,t}):ART.zao({ice:1,snow:eio(seg(t,64,67)),fall:seg(t,66.5,67.5),t});
-  if(k==='susami')return ART.susami({dive:eio(seg(t,74.4,76.2)),card:seg(t,78,81.2),posted:seg(t,81.2,81.6),bag:seg(t,83,83.5)*(1-seg(t,85.2,85.5)),t});
+  if(k==='susami')return ART.susami({dive:eio(seg(t,74.4,76.2)),card:seg(t,78,81.2),posted:seg(t,81.2,81.9),bag:seg(t,83,83.5)*(1-seg(t,85.2,85.5)),t});
   return ''}
-// scale bar for Susami lives on the card overlay
-const SCALE=mk('ui',`<div class="abs" style="left:930px;top:560px;width:0;height:600px"><svg width="70" height="620" style="position:absolute;left:-35px;top:0" viewBox="-35 0 70 620"><path id="scl" d="M0 20 V600" stroke="#fff" stroke-width="5" stroke-linecap="round"/>${[...Array(11)].map((_,i)=>`<path d="M-10 ${20+i*58} H10" stroke="#fff" stroke-width="${i%5?3:5}"/>`).join('')}</svg>
- <div class="pill" style="left:0;top:20px;height:40px;padding:0 14px;font-weight:900;font-size:22px;transform:translate(-130%,-50%)">0 m</div><div class="pill" style="left:0;top:600px;height:40px;padding:0 14px;font-weight:900;font-size:22px;color:${BLUE};transform:translate(-120%,-50%)">10 m</div></div>`);
+const PINS=[[104,35],[78,22],[134,-25],[118,-2],[127,36.3],[100,60],[101,15],[122,12],[103,47],[106,16],[172,-41],[67,48],[45,24],[30,0]];
 
 function renderAt(t){
   t=Math.min(t,DUR-1e-6);
   const c=camera(t);drawGlobe(c,{hl:seg(t,2.8,3.6)});
-  // point + label at the active place; national accents for fact 1
   let ov='';const F=FACTS.find(f=>t>=f.fly[0]-.6&&t<f.back[1]);
-  if(F){const p=proj(PL[F.k]),a=seg(t,F.fly[0]-.6,F.fly[0])*(1-seg(t,F.back[0],F.back[0]+.4));
-    if(p&&a>0){const pu=seg(t,F.fly[0],F.fly[0]+.9),lw=NAMES[F.k].length*15+44;
-      ov+=`<g opacity="${a}"><circle cx="${p[0]}" cy="${p[1]}" r="${(14+pu*40).toFixed(1)}" fill="none" stroke="#fff" stroke-width="3" opacity="${(1-pu)*.8}"/><circle cx="${p[0]}" cy="${p[1]}" r="11" fill="#fff"/><circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${BLUE}"/>
-       <g transform="translate(${p[0]+22} ${p[1]-58})"><rect width="${lw}" height="46" rx="23" fill="#fff"/><text x="${lw/2}" y="31" text-anchor="middle" font-family="Inter Display,Inter" font-weight="800" font-size="22" letter-spacing=".06em" fill="#111218">${NAMES[F.k]}</text></g></g>`}}
-  if(t>=5&&t<7.2){[[131,32.5],[138,36],[143,43.2]].forEach(([x,y],i)=>{const u=seg(t,5.2+i*.55,6.2+i*.55);if(u>0&&u<1){const p=proj([x,y]);ov+=`<circle cx="${p[0]}" cy="${p[1]}" r="${(20+u*110).toFixed(1)}" fill="none" stroke="#fff" stroke-width="4" opacity="${(1-u)*.85}"/>`}})}
-  if(t>=13.8&&t<19.8){const a=seg(t,13.8,14.3)*(1-seg(t,19.3,19.8)),u=eio(seg(t,14.4,16.8));
+  if(F){const p=proj(PL[F.k]),a=seg(t,F.fly[0]-.6,F.fly[0]-.3)*(1-seg(t,F.back[0],F.back[0]+.3));
+    if(p&&a>0){const pu=seg(t,F.fly[0]-.3,F.fly[0]+.6),pu2=seg(t,F.fly[1]-.2,F.fly[1]+.7),full=NAMES[F.k].length*15.5+44,gw=eo(seg(t,F.fly[0]-.2,F.fly[0]+.3)),lw=lerp(46,full,gw);
+      ov+=`<g opacity="${a}"><circle cx="${p[0]}" cy="${p[1]}" r="${(14+pu*46).toFixed(1)}" fill="none" stroke="#fff" stroke-width="3" opacity="${((1-pu)*.85).toFixed(2)}"/><circle cx="${p[0]}" cy="${p[1]}" r="${(14+pu2*46).toFixed(1)}" fill="none" stroke="#9cc6ff" stroke-width="3" opacity="${((1-pu2)*.85*(pu2>0)).toFixed(2)}"/>
+       <circle cx="${p[0]}" cy="${p[1]}" r="${(11*eb(seg(t,F.fly[0]-.6,F.fly[0]-.3))).toFixed(1)}" fill="#fff"/><circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${BLUE}"/>
+       <g transform="translate(${p[0]+22} ${p[1]-58})"><rect width="${lw.toFixed(1)}" height="46" rx="23" fill="#fff"/><path d="M8 46 L-14 54 L22 40Z" fill="#fff"/><text x="22" y="31" font-family="Inter Display,Inter" font-weight="800" font-size="22" letter-spacing=".06em" fill="#111218">${typeOn(NAMES[F.k],t,F.fly[0]+.05,30).replace(/<span[^>]*>\|<\/span>/,'')}</text></g></g>`}}
+  if(t>=5&&t<7.2){[[131,32.5],[138,36],[143,43.2]].forEach(([x,y],i)=>{const u=seg(t,5.2+i*.55,6.2+i*.55);if(u>0&&u<1){const p=proj([x,y]);ov+=`<circle cx="${p[0]}" cy="${p[1]}" r="${(20+u*110).toFixed(1)}" fill="none" stroke="#fff" stroke-width="4" opacity="${((1-u)*.85).toFixed(2)}"/>`}})}
+  if(t>=13.8&&t<19.8){const a=seg(t,13.8,14.3)*(1-seg(t,19.3,19.8)),u=eio(seg(t,14.4,16.8)),fl=seg(t,15.4,15.8);
     ov+=`<path d="${GPATH(JP50)}" fill="none" stroke="#ffd34d" stroke-width="5" opacity="${(a*(1-u)).toFixed(3)}"/><path d="${GPATH(JP10)}" fill="none" stroke="#ffd34d" stroke-width="3" opacity="${(a*u).toFixed(3)}"/>
-     <g opacity="${a}" transform="translate(540 470)"><rect x="-210" y="-26" width="420" height="52" rx="26" fill="#fff"/><text y="9" text-anchor="middle" font-family="Inter Display,Inter" font-weight="800" font-size="24" letter-spacing=".05em" fill="#111218">${u<.5?'SIMPLE MAP':'DETAILED MAP'} <tspan fill="${BLUE}">→ MORE ISLANDS</tspan></text></g>`}
+     <g opacity="${a}" transform="translate(540 470) scale(${(.8+.2*eb(seg(t,13.8,14.2))).toFixed(3)},${Math.abs(Math.cos(fl*Math.PI)).toFixed(3)})"><rect x="-210" y="-26" width="420" height="52" rx="26" fill="#fff"/><text y="9" text-anchor="middle" font-family="Inter Display,Inter" font-weight="800" font-size="24" letter-spacing=".05em" fill="#111218">${fl<.5?'SIMPLE MAP':'DETAILED MAP'} <tspan fill="${BLUE}">→ ${fl<.5?'FEWER':'MORE'} ISLANDS</tspan></text></g>`}
+  if(t>=89.6){PINS.forEach(([x,y],i)=>{const u=seg(t,89.9+i*.11,90.3+i*.11);if(u<=0)return;const p=proj([x,y]);if(!p)return;const R=d3.geoDistance([x,y],[-GPR.rotate()[0],-GPR.rotate()[1]]);if(R>1.45)return;
+    const s=eb(u),bob=Math.sin((t-90-i*.3)*3)*4;ov+=`<g transform="translate(${p[0].toFixed(1)} ${(p[1]+bob).toFixed(1)}) scale(${s.toFixed(3)})"><circle r="${(26+seg(t,90+i*.11,91+i*.11)*40).toFixed(1)}" fill="none" stroke="#fff" stroke-width="3" opacity="${(1-seg(t,90+i*.11,91+i*.11)).toFixed(2)}"/><path d="M0 18 L-10 2 A20 20 0 1 1 10 2Z" transform="translate(0 -24)" fill="${BLUE}" stroke="#fff" stroke-width="3"/><text y="-28" text-anchor="middle" font-family="Inter Display,Inter" font-weight="900" font-size="22" fill="#fff">?</text></g>`})}
   $('glo').innerHTML=ov;
-  // card: unfolds out of the point, folds back into it
+  // card: unfolds out of the point with a slight 3D tilt, a light sweep, then folds back
   const CF=FACTS.find(f=>t>=f.open[0]&&t<f.close[1]);
-  if(CF){const p=proj(PL[CF.k])||[540,860];const u=t<CF.open[1]?eio(seg(t,CF.open[0],CF.open[1])):1-eio(seg(t,CF.close[0],CF.close[1]));
+  if(CF){const p=proj(PL[CF.k])||[540,860];const op=t<CF.open[1];const u=op?eio(seg(t,CF.open[0],CF.open[1])):1-eio(seg(t,CF.close[0],CF.close[1]));
     const s=lerp(.09,1,u),x=lerp(p[0]-540,0,u),y=lerp(p[1]-860,0,u);
-    $('card').style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px) scale(${s.toFixed(4)})`;$('card').style.borderRadius=`${lerp(400,40,u)}px`;vis($('card'),clamp(u*5));
-    $('cardsvg').innerHTML=cardScene(CF.k,t);$('dim').style.opacity=(.3*u).toFixed(3)}
+    $('card').style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px) perspective(1600px) rotateX(${((1-u)*22).toFixed(2)}deg) scale(${s.toFixed(4)})`;$('card').style.borderRadius=`${lerp(400,40,u)}px`;vis($('card'),clamp(u*5));
+    $('cardsvg').innerHTML=cardScene(CF.k,t);$('dim').style.opacity=(.3*u).toFixed(3);setShine($('card'),seg(t,CF.open[1]-.3,CF.open[1]+.6))}
   else{vis($('card'),0);$('dim').style.opacity=0}
-  vis(SCALE,CF&&CF.k==='susami'?seg(t,76,76.5)*(1-seg(t,85.3,85.6)):0);
-  // title + fact counter
-  const ti=eo(seg(t,.2,.4));pillT(TITLE,ti,1,(1-ti)*24);
-  const fi=t<21?1:t<38?2:t<55?3:t<72?4:5;FACTP.innerHTML=`FACT <span style="color:${BLUE};margin:0 .3em">0${fi}</span> / 05`;
-  pillT(FACTP,t<87?eo(seg(t,4.4,4.8)):1-seg(t,87,87.3));
-  // Japanball + info
-  const [a,b,mv,tilt,sq]=jbState(t);setJB(a,b,mv,tilt,sq,eo(seg(t,2.8,3.6)));
-  const inf=infoAt(t);if(inf){INFO.innerHTML=inf[2];const o=textIn(t,inf[0],inf[1]);INFO.style.opacity=o;INFO.style.visibility=o>0?'visible':'hidden';INFO.style.transform=`translate(-50%,-50%) translateY(${((1-o)*16).toFixed(1)}px)`}else vis(INFO,0);
-  // final icons
-  if(t>=87){ICONS.style.visibility='visible';ICONS.style.opacity=1;[...ICONS.children].forEach((e,i)=>{const p=eo(seg(t,87.1+i*.14,87.5+i*.14));e.style.opacity=p;e.style.transform=`translateY(${((1-p)*30).toFixed(1)}px) scale(${(.9+.1*p).toFixed(3)})`})}else vis(ICONS,0);
+  // Susami depth scale: line draws down, ticks pop, labels slide in
+  const sv=CF&&CF.k==='susami'?seg(t,76,76.3)*(1-seg(t,85.3,85.6)):0;vis(SCALE,sv);
+  if(sv>0){const d=eio(seg(t,76.1,77.1));$('scl').setAttribute('stroke-dashoffset',(580*(1-d)).toFixed(1));SCALE.querySelectorAll('.stk').forEach((e,i)=>e.setAttribute('opacity',seg(d,i/11,i/11+.1)));
+    $('sc0').style.transform=`translate(-130%,-50%) scale(${eb(seg(t,76.1,76.5)).toFixed(3)})`;$('sc1').style.transform=`translate(-120%,-50%) scale(${eb(seg(t,77,77.4)).toFixed(3)})`;vis($('sc1'),seg(t,77,77.1))}
+  // title: letters rise one by one, then a light sweep; fact counter rolls on every change
+  TITLE.querySelectorAll('.tl').forEach((e,i)=>{const p=clamp((t-.2-i*.03)/.4);e.style.opacity=Math.min(1,p*2);e.style.transform=`translateY(${((1-eo(p))*44).toFixed(1)}px) rotate(${((1-eo(p))*-14).toFixed(1)}deg)`});
+  pillT(TITLE,eo(seg(t,.15,.4)),.9+.1*eb(seg(t,.15,.5)));setShine(TITLE,seg(t,1.2,2.0));
+  const ch=[[21,2],[38,3],[55,4],[72,5]];let fi=1,lt=-9;ch.forEach(([a,n])=>{if(t>=a){fi=n;lt=a}});const r=eio(seg(t,lt,lt+.35));
+  $('fn0').textContent='0'+(fi-1);$('fn1').textContent='0'+fi;$('fn0').style.transform=`translateY(${(-r*110).toFixed(1)}%)`;$('fn1').style.transform=`translateY(${((1-r)*110).toFixed(1)}%)`;$('fn0').style.opacity=fi>1?1-r:0;
+  const fp=t<87?eb(seg(t,4.4,4.8)):1-eio(seg(t,87,87.3));pillT(FACTP,clamp(t<87?seg(t,4.4,4.6):fp),(.7+.3*fp)*(1+.1*Math.sin(seg(t,lt,lt+.35)*Math.PI)));setShine(FACTP,t<21?seg(t,4.8,5.5):seg(t,lt+.2,lt+.9));
+  renderJB(t);renderInfo(t);
+  // recap icons: bounce in, then lift away as the globe pulls back
+  if(t>=87&&t<89.8){ICONS.style.visibility='visible';const out=eio(seg(t,89.2,89.7));ICONS.style.opacity=1-out;ICONS.style.transform=`translate(-50%,-50%) translateY(${(-out*120).toFixed(1)}px) scale(${(1-out*.2).toFixed(3)})`;
+    [...ICONS.children].forEach((e,i)=>{const p=seg(t,87.1+i*.14,87.6+i*.14);e.style.opacity=Math.min(1,p*3);e.style.transform=`translateY(${((1-bounce(p))*-160).toFixed(1)}px) rotate(${((1-eo(p))*(i%2?10:-10)).toFixed(1)}deg)`})}else vis(ICONS,0);
   renderSub(t);
 }
-window.renderAt=renderAt;window.DUR=DUR;window.VO=VO;
-(TEX.complete?Promise.resolve():new Promise(r=>TEX.addEventListener('load',r))).then(()=>Promise.all([...Object.values(DETIMG)].map(i=>i.complete?Promise.resolve():new Promise(r=>{i.onload=r;i.onerror=r})))).then(()=>{
-  return Promise.all(Object.values(JBI).map(i=>i.complete?1:new Promise(r=>{i.onload=r;i.onerror=r})))}).then(()=>document.fonts.ready).then(()=>{renderAt(0);window.ready=true});
+// ───────── sound events (frame-exact) for the audio script
+const SFX=[];const sx=(t,type,g=1,d=0)=>SFX.push({t:+t.toFixed(4),type,g,d});
+sx(0,'impact',.8);sx(.3,'air',.5,3.1);sx(3.17,'land',.6);sx(3.45,'land',.3);
+[7.2,7.7,8.2].forEach(a=>sx(a,'tick',.5));sx(8.7,'chime',.6);sx(5.2,'pop',.3);sx(5.75,'pop',.3);sx(6.3,'pop',.3);sx(10,'air',.35,2.2);sx(15.4,'flip',.5);sx(19.5,'rwhoosh',.5);
+FACTS.forEach(f=>{sx(f.fly[0],'whoosh',.55,2);sx(f.fly[0]-.6,'pop',.4);sx(f.open[0],'unfold',.55);sx(f.close[0],'fold',.45);sx(f.back[0],'rwhoosh',.45)});
+sx(25,'accent',.5);sx(28,'accent',.55);sx(30.25,'pop',.35);sx(41.6,'pop',.45);sx(43.25,'cap',.55);sx(46.9,'meow',.45);sx(47,'train',.35,3.4);
+sx(59.2,'accent',.45);sx(59,'wind',.4,8.5);sx(61.8,'ice',.45,2.2);sx(64,'snow',.35,3);sx(74.4,'water',.6);sx(78,'bubbles',.4,5);sx(81.2,'stamp',.7);sx(83,'pop',.35);
+HOPS.forEach(([h,H])=>sx(h-.02,'boing',.25+H/400));SPARK.forEach(s=>sx(s,'sparkle',.3));
+for(let i=0;i<5;i++)sx(87.1+i*.14,'pop',.45);sx(89.2,'rwhoosh',.5);PINS.forEach((_,i)=>sx(89.9+i*.11,'pin',.3));sx(91.4,'pop',.4);
+window.SFX=SFX;window.SCN={dur:DUR,vo:VO.map(v=>[v[0],v[1]])};window.renderAt=renderAt;window.DUR=DUR;window.VO=VO;
+$('card').insertAdjacentHTML('beforeend',shine);
+(TEX.complete?Promise.resolve():new Promise(r=>TEX.addEventListener('load',r))).then(()=>Promise.all([...Object.values(DETIMG),...Object.values(JBI)].map(i=>i.complete?1:new Promise(r=>{i.onload=r;i.onerror=r})))).then(()=>document.fonts.ready).then(()=>{renderAt(0);window.ready=true});
 </script>
 </body>
 </html>
