@@ -1,1 +1,6 @@
 start 13:04:37
+w0 0/150  17s
+w0 120/150  244s
+done ../out/chunks_ru/c000.mp4.tmp.mp4 643s
+chunk 0 done 13:15:26
+w0 0/150  6s
