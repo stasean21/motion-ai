@@ -1,0 +1,37 @@
+w0 0/150  23s
+w0 120/150  346s
+done ../out/chunks/c000.mp4.tmp.mp4 395s
+chunk 0 done 08:58:44
+w0 0/150  12s
+w0 120/150  321s
+done ../out/chunks/c010.mp4.tmp.mp4 386s
+chunk 10 done 09:05:10
+w0 0/150  10s
+w0 120/150  279s
+done ../out/chunks/c020.mp4.tmp.mp4 373s
+chunk 20 done 09:11:24
+w0 0/150  13s
+w0 120/150  299s
+done ../out/chunks/c030.mp4.tmp.mp4 404s
+chunk 30 done 09:18:08
+w0 0/150  14s
+w0 120/150  302s
+done ../out/chunks/c040.mp4.tmp.mp4 379s
+chunk 40 done 09:24:28
+w0 0/150  10s
+w0 120/150  250s
+done ../out/chunks/c050.mp4.tmp.mp4 357s
+chunk 50 done 09:30:26
+w0 0/150  16s
+w0 120/150  282s
+done ../out/chunks/c060.mp4.tmp.mp4 374s
+chunk 60 done 09:36:41
+w0 0/150  9s
+w0 120/150  281s
+done ../out/chunks/c070.mp4.tmp.mp4 371s
+chunk 70 done 09:42:53
+w0 0/135  12s
+w0 120/135  299s
+done ../out/chunks/c080.mp4.tmp.mp4 336s
+chunk 80 done 09:48:30
+ALLDONE
