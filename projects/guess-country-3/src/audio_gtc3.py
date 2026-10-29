@@ -85,7 +85,27 @@ def whoosh(): n = int(SR * .16); x = hp(lp(rng.standard_normal(n), 3000), 400); 
 def impact(): n = int(SR * .32); t = np.arange(n) / SR; x = sine(70 + 90 * np.exp(-t * 25), n) * env(n, .002, .1) + lp(rng.standard_normal(n), 900) * env(n, .001, .03) * .5 + sine(220, n) * env(n, .002, .05) * .3; return x / np.abs(x).max()
 def riser(): n = int(SR * 1.0); t = np.arange(n) / n; x = hp(rng.standard_normal(n), 300); x = lp(x, 6000); return x * t ** 2.2 * .35 + sine(200 + 600 * t ** 2, n) * t ** 2 * .15
 def pop(): n = int(SR * .09); t = np.arange(n) / SR; return sine(500 + 400 * np.exp(-t * 40), n) * env(n, .001, .025)
-def hop(): n = int(SR * 2.0); t = np.arange(n) / n; x = hp(lp(rng.standard_normal(n), 2400), 250); sw = np.sin(np.pi * t) ** 2; return x * sw * .35 + sine(160 + 140 * np.sin(np.pi * t), n) * sw * .06
+def hop(dur=2.0):
+    # follows the camera: 0→0.5 the view pulls away (quieter, darker, pitch falls, more "space"); 0.5→1 it dives in (louder, brighter, pitch rises) and lands
+    n = int(SR * dur); u = np.arange(n) / n; e = np.where(u < .5, 4 * u ** 3, 1 - (-2 * u + 2) ** 3 / 2)
+    near = 1 - np.sin(np.pi * e)                       # 1 = close to the map, 0 = whole globe in view
+    src = hp(rng.standard_normal(n), 120)
+    fc = 300 + 5200 * near ** 1.6                      # brightness follows the distance
+    y = np.empty(n); st = 0.
+    for i in range(n): a_ = np.exp(-2 * np.pi * fc[i] / SR); st = (1 - a_) * src[i] + a_ * st; y[i] = st
+    y *= (.25 + .75 * near) * np.minimum(1, u * 14)
+    f = 90 + 230 * near                                 # low "air" tone that dips with the pull-back and climbs on the dive
+    tone = (sine(f, n) * .6 + sine(f * 1.5, n) * .25) * (.15 + .35 * (1 - near)) * np.sin(np.pi * u) ** .7
+    far = (1 - near)[:, None][:, 0]
+    x = y * .9 + tone * .5
+    wet = np.zeros(n)                                   # sparse echo taps grow while far away = sense of distance
+    for d_, g_ in ((.09, .45), (.17, .3), (.29, .2)):
+        k = int(d_ * SR); wet[k:] += x[:-k] * g_
+    x = x + wet * far * .9
+    land = np.zeros(n); m = int(SR * .18); tt = np.arange(m) / SR
+    land[-m:] = sine(70 + 60 * np.exp(-tt * 30), m) * env(m, .004, .05) * .7   # soft touchdown on the new map
+    x = x + land
+    return x / (np.abs(x).max() + 1e-9) * .8
 def tapestop(): n = int(SR * .22); t = np.arange(n) / SR; return sine(180 * (1 - t / t[-1]) + 30, n) * np.linspace(1, 0, n) * .5
 sfx = {k: np.zeros(N) for k in ('ticks', 'answers', 'transitions', 'impacts')}
 at = lambda t: int(round(t * SR))
