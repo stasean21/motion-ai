@@ -14,7 +14,7 @@ svg{display:block}
 </head>
 <body>
 <div id="map" class="abs" style="inset:0;overflow:hidden"></div>
-<div id="glw" class="abs" style="inset:0;visibility:hidden;background:#06182a">
+<div id="glw" class="abs" style="inset:0;background:#06182a">
  <canvas id="glc" width="1080" height="1920" class="abs" style="left:0;top:0"></canvas>
  <svg id="gls" class="abs" style="left:0;top:0" width="1080" height="1920"></svg>
 </div>
@@ -25,6 +25,17 @@ svg{display:block}
 <script src="lib/world10m.js"></script>
 <script src="lib/world50m.js"></script>
 <script src="tex/globe_tex.js"></script>
+<script src="sat/det_ref.js"></script>
+<script src="sat/det_azerbaijan.js"></script>
+<script src="sat/det_bulgaria.js"></script>
+<script src="sat/det_canada.js"></script>
+<script src="sat/det_france.js"></script>
+<script src="sat/det_indonesia.js"></script>
+<script src="sat/det_peru.js"></script>
+<script src="sat/det_spain.js"></script>
+<script src="sat/det_sweden.js"></script>
+<script src="sat/det_usa.js"></script>
+
 <script src="sat/sat.js"></script>
 <script src="views.js"></script>
 <script>
@@ -71,7 +82,7 @@ function buildMap(k){const v=VIEWS[k],R=SAT[k],kk=1080/(v.w*Math.PI/180);
     <path d="${d}" fill="none" stroke="#fff" stroke-width="4.5" stroke-linejoin="round"/>
    </svg></div>`);
   MAPEL[k]=el}
-Object.keys(VIEWS).forEach(buildMap);
+// flat maps are no longer used: the whole video lives on one globe
 
 // ───────── UI
 const TITLE=mk('ui',`<div class="pill" style="left:540px;top:230px;height:104px;padding:0 50px;border-radius:36px;font-weight:900;font-size:64px;letter-spacing:-.03em">GUESS THE <span style="color:${BLUE};margin-left:.28em">COUNTRY</span><span style="margin-left:22px;padding:6px 14px;border-radius:14px;background:${BLUE};color:#fff;font-size:26px;letter-spacing:.06em;font-weight:900">PART 3</span></div>`);
@@ -97,33 +108,50 @@ const textIn=(t,t0,dur)=>{if(t<t0||t>=t0+dur)return {o:0,s:1};const a=eo(seg(t,t
 // ───────── globe (WebGL orthographic, NASA Blue Marble texture) + d3 borders; used for the intro and every map change
 const GL=$('glc').getContext('webgl',{preserveDrawingBuffer:true,antialias:true});
 const VS=`attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
-const FS=`precision highp float;uniform sampler2D tex;uniform vec2 C;uniform float R;uniform vec2 L;  // centre px, radius px, (lon0,lat0) rad
+const FS=`precision highp float;uniform sampler2D tex;uniform sampler2D det;uniform vec2 C;uniform float R;uniform vec2 L;
+uniform vec3 DG;uniform vec2 DS;uniform float DON;   // detail mosaic: world px, X0 px, Y0 px; mosaic size; on/off
 void main(){vec2 q=(gl_FragCoord.xy-C)/R;float r2=dot(q,q);vec3 bg=vec3(.024,.094,.165);
   if(r2>1.){float d=sqrt(r2)-1.;float g=exp(-d*R/38.)*.55+exp(-d*R/140.)*.18;gl_FragColor=vec4(bg+vec3(.35,.6,1.)*g,1.);return;}
   vec3 v=vec3(q.x,q.y,sqrt(1.-r2));float cl=cos(L.y),sl=sin(L.y);vec3 w=vec3(v.x,v.y*cl+v.z*sl,-v.y*sl+v.z*cl);
-  float lon=atan(w.x,w.z)+L.x,lat=asin(clamp(w.y,-1.,1.));vec2 uv=vec2(fract(lon/6.2831853+.5),.5-lat/3.1415927);
-  vec3 c=texture2D(tex,uv).rgb*1.08;float limb=pow(v.z,.35);c=c*(.55+.45*limb)+vec3(.3,.55,1.)*pow(1.-v.z,3.)*.55;gl_FragColor=vec4(c,1.);}`;
+  float lon=atan(w.x,w.z)+L.x,lat=asin(clamp(w.y,-1.,1.));float fx=fract(lon/6.2831853+.5);vec2 uv=vec2(fx,.5-lat/3.1415927);
+  vec3 c=texture2D(tex,uv).rgb;
+  if(DON>0.){float ym=log(tan(.78539816+clamp(lat,-1.47,1.47)*.5));vec2 d=vec2((fx*DG.x-DG.y)/DS.x,((1.-ym/3.1415927)*.5*DG.x-DG.z)/DS.y);
+    float wg=smoothstep(0.,.02,d.x)*smoothstep(0.,.02,1.-d.x)*smoothstep(0.,.02,d.y)*smoothstep(0.,.02,1.-d.y);c=mix(c,texture2D(det,d).rgb,wg*DON);}
+  c*=1.08;float limb=pow(v.z,.35);c=c*(.55+.45*limb)+vec3(.3,.55,1.)*pow(1.-v.z,3.)*.55;gl_FragColor=vec4(c,1.);}`;
 const sh=(t,src)=>{const o=GL.createShader(t);GL.shaderSource(o,src);GL.compileShader(o);if(!GL.getShaderParameter(o,GL.COMPILE_STATUS))throw new Error(GL.getShaderInfoLog(o));return o};
 const PG=GL.createProgram();GL.attachShader(PG,sh(GL.VERTEX_SHADER,VS));GL.attachShader(PG,sh(GL.FRAGMENT_SHADER,FS));GL.linkProgram(PG);GL.useProgram(PG);
 GL.bindBuffer(GL.ARRAY_BUFFER,GL.createBuffer());GL.bufferData(GL.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),GL.STATIC_DRAW);
 const aP=GL.getAttribLocation(PG,'p');GL.enableVertexAttribArray(aP);GL.vertexAttribPointer(aP,2,GL.FLOAT,false,0,0);
-const U={C:GL.getUniformLocation(PG,'C'),R:GL.getUniformLocation(PG,'R'),L:GL.getUniformLocation(PG,'L')};
+const U={C:GL.getUniformLocation(PG,'C'),R:GL.getUniformLocation(PG,'R'),L:GL.getUniformLocation(PG,'L'),DG:GL.getUniformLocation(PG,'DG'),DS:GL.getUniformLocation(PG,'DS'),DON:GL.getUniformLocation(PG,'DON'),tex:GL.getUniformLocation(PG,'tex'),det:GL.getUniformLocation(PG,'det')};
+GL.uniform1i(U.tex,0);GL.uniform1i(U.det,1);
 const TEX=new Image();TEX.src=GLOBE_SRC;   // data URL: WebGL refuses file:// textures as cross-origin
-TEX.onload=()=>{const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,TEX);
+TEX.onload=()=>{GL.activeTexture(GL.TEXTURE0);const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,TEX);
   GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MIN_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MAG_FILTER,GL.LINEAR);
   GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_S,GL.CLAMP_TO_EDGE);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_T,GL.CLAMP_TO_EDGE)};
 const C50=topojson.feature(WORLD50,WORLD50.objects.countries).features.filter(c=>c.id!=='010'),MESH50=topojson.mesh(WORLD50,WORLD50.objects.countries,(a,b)=>a!==b);
 const GPR=d3.geoOrthographic().clipAngle(90).precision(.5),GPATH=d3.geoPath(GPR);
-function drawGlobe(lon,lat,R,hl){const cy=855;
-  GL.viewport(0,0,1080,1920);GL.uniform2f(U.C,540,1920-cy);GL.uniform1f(U.R,R);GL.uniform2f(U.L,lon*Math.PI/180,lat*Math.PI/180);GL.drawArrays(GL.TRIANGLE_STRIP,0,4);
-  GPR.rotate([-lon,-lat]).scale(R).translate([540,cy]);
-  $('gls').innerHTML=`<path d="${GPATH(MESH50)||''}" fill="none" stroke="#fff" stroke-width="1.3" stroke-opacity=".5"/>`+hl.filter(h=>h.o>.01).map(h=>{const d=GPATH(C50.find(c=>c.id===VIEWS[h.k].id))||'';
-    return `<g opacity="${h.o}"><path d="${d}" fill="${BLUE}" fill-opacity=".34"/><path d="${d}" fill="none" stroke="#7fb2ff" stroke-width="14" stroke-opacity=".45" stroke-linejoin="round" style="filter:blur(5px)"/><path d="${d}" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/></g>`}).join('')}
-// globe radius that matches a flat Mercator map at its centre
-const R0=k=>{const v=VIEWS[k];return 1080/(v.w*Math.PI/180)/Math.cos(v.cy*Math.PI/180)*(v.k_adj||1)};
-const VIEWPT=k=>{const v=VIEWS[k];const kk=1080/(v.w*Math.PI/180),my=Math.log(Math.tan(Math.PI/4+v.cy*Math.PI/360));
-  // geographic point sitting at the map's anchor (540, sy): re-centre the globe there so the hand-off lines up
-  const dy=((v.sy||855)-855)/kk,lat=(2*Math.atan(Math.exp(my+dy))-Math.PI/2)*180/Math.PI;return [v.cx,lat]};
+const DETIMG={},DETTEX={};Object.keys(DET_SRC).forEach(k=>{const im=new Image();im.src=DET_SRC[k];DETIMG[k]=im});
+function bindDet(k){if(!k){GL.uniform1f(U.DON,0);return}
+  if(!DETTEX[k]){GL.activeTexture(GL.TEXTURE1);const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,DETIMG[k]);
+    [GL.TEXTURE_MIN_FILTER,GL.TEXTURE_MAG_FILTER].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.LINEAR));[GL.TEXTURE_WRAP_S,GL.TEXTURE_WRAP_T].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.CLAMP_TO_EDGE));DETTEX[k]=t}
+  GL.activeTexture(GL.TEXTURE1);GL.bindTexture(GL.TEXTURE_2D,DETTEX[k]);GL.activeTexture(GL.TEXTURE0);
+  const r=DET_REF[k];GL.uniform3f(U.DG,256*2**r.z,r.X0*256,r.Y0*256);GL.uniform2f(U.DS,r.W,r.H);GL.uniform1f(U.DON,1)}
+// globe framing per country: fit the brief's framing box into the map area (80 %), centre on the box
+const myInv=y=>Math.atan(Math.sinh(y*Math.PI/180))*180/Math.PI;
+const GV={};Object.entries(VIEWS).forEach(([k,v])=>{const [x0,x1,y0,y1]=v.bbox,la0=myInv(y0),la1=myInv(y1),pts=[];
+  for(let i=0;i<=24;i++){const f=i/24;pts.push([lerp(x0,x1,f),la0],[lerp(x0,x1,f),la1],[x0,lerp(la0,la1,f)],[x1,lerp(la0,la1,f)])}
+  const lon=(x0+x1)/2,lat=(la0+la1)/2,cy=v.sy||855,hh=k==='canada'?565:340;
+  const pr=d3.geoOrthographic().rotate([-lon,-lat]).fitExtent([[540-374,cy-hh],[540+374,cy+hh]],{type:'MultiPoint',coordinates:pts});
+  GV[k]={lon,lat,R:pr.scale(),tx:pr.translate()[0],ty:pr.translate()[1]}});
+const MESH10=topojson.mesh(WORLD10,WORLD10.objects.countries,(a,b)=>a!==b),SVGC={};
+const hlSvg=(d,o)=>`<g opacity="${o}"><path d="${d}" fill="${BLUE}" fill-opacity=".34"/><path d="${d}" fill="none" stroke="#7fb2ff" stroke-width="14" stroke-opacity=".45" stroke-linejoin="round" style="filter:blur(5px)"/><path d="${d}" fill="none" stroke="#fff" stroke-width="4.5" stroke-linejoin="round"/></g>`;
+function drawGlobe(lon,lat,R,hl,o={}){const tx=o.tx??540,ty=o.ty??855;
+  GL.viewport(0,0,1080,1920);GL.uniform2f(U.C,tx,1920-ty);GL.uniform1f(U.R,R);GL.uniform2f(U.L,lon*Math.PI/180,lat*Math.PI/180);bindDet(o.det);GL.drawArrays(GL.TRIANGLE_STRIP,0,4);
+  if(o.cache&&SVGC[o.cache]){$('gls').innerHTML=SVGC[o.cache];return}
+  GPR.rotate([-lon,-lat]).scale(R).translate([tx,ty]);const fine=o.cache!=null;
+  const svg=`<path d="${GPATH(fine?MESH10:MESH50)||''}" fill="none" stroke="#fff" stroke-width="1.4" stroke-opacity=".5" stroke-linejoin="round"/>`+hl.filter(h=>h.o>.01).map(h=>{
+    const f=(fine?CTRY:C50).find(c=>c.id===VIEWS[h.k].id);return hlSvg(GPATH(f)||'',h.o)}).join('');
+  $('gls').innerHTML=svg;if(o.cache)SVGC[o.cache]=svg}
 function slerp(a,b,u){const r=Math.PI/180,va=[Math.cos(a[1]*r)*Math.cos(a[0]*r),Math.cos(a[1]*r)*Math.sin(a[0]*r),Math.sin(a[1]*r)],vb=[Math.cos(b[1]*r)*Math.cos(b[0]*r),Math.cos(b[1]*r)*Math.sin(b[0]*r),Math.sin(b[1]*r)];
   const d=Math.acos(clamp(va[0]*vb[0]+va[1]*vb[1]+va[2]*vb[2],-1,1));if(d<1e-6)return a;const s1=Math.sin((1-u)*d)/Math.sin(d),s2=Math.sin(u*d)/Math.sin(d);
   const v=va.map((x,i)=>x*s1+vb[i]*s2);return [Math.atan2(v[1],v[0])/r,Math.asin(clamp(v[2],-1,1))/r]}
@@ -133,16 +161,15 @@ let curMap=null;
 function renderAt(t){
   t=Math.min(t,DUR-1e-6);
   // map: hard cut on scene boundaries, static otherwise
-  const m=MAPS.find(([k,a,b])=>t>=a&&t<b)[0];if(m!==curMap){if(curMap)MAPEL[curMap].style.visibility='hidden';MAPEL[m].style.visibility='visible';curMap=m}
-  let gO=0;const cut=CUTS.find(c=>t>=c.t-HOP&&t<c.t);
-  if(t<INTRO+.25){   // intro: wide globe → Canada
-    const p=eio(seg(t,.35,INTRO)),A=[-40,22],B=VIEWPT('canada'),c=slerp(A,B,p),Rs=430,Re=R0('canada');
-    drawGlobe(c[0]-14*(1-seg(t,0,.35)),c[1],Math.exp(lerp(Math.log(Rs),Math.log(Re),Math.pow(p,1.6))),[{k:'canada',o:eo(seg(t,.2,.9))}]);gO=1-seg(t,INTRO,INTRO+.25)}
-  else if(cut){const u=seg(t,cut.t-HOP,cut.t),e=eio(u),a=VIEWPT(cut.from),b=VIEWPT(cut.to),c=slerp(a,b,e);
-    const la=Math.log(R0(cut.from)),lb=Math.log(R0(cut.to)),dip=Math.max(0,(la+lb)/2-Math.log(470));
-    drawGlobe(c[0],c[1],Math.exp(lerp(la,lb,e)-dip*Math.sin(Math.PI*e)),[{k:cut.from,o:1-seg(u,.1,.35)},{k:cut.to,o:seg(u,.62,.88)}]);
-    gO=Math.min(seg(u,0,.1),1-seg(u,.9,1))}
-  vis($('glw'),gO);
+  const cut=CUTS.find(c=>t>=c.t-HOP&&t<c.t);
+  if(t<INTRO){   // intro: wide globe swings round and dives into Canada, then holds
+    const p=eio(seg(t,.35,INTRO)),G=GV.canada,c=slerp([-40,22],[G.lon,G.lat],p),Rr=Math.exp(lerp(Math.log(430),Math.log(G.R),Math.pow(p,1.6)));
+    drawGlobe(c[0]-14*(1-seg(t,0,.35)),c[1],Rr,[{k:'canada',o:eo(seg(t,.2,.9))}],{tx:lerp(540,G.tx,p),ty:lerp(855,G.ty,p),det:p>.55?'canada':null})}
+  else if(cut){const u=seg(t,cut.t-HOP,cut.t),e=eio(u),A=GV[cut.from],B=GV[cut.to],c=slerp([A.lon,A.lat],[B.lon,B.lat],e);
+    const la=Math.log(A.R),lb=Math.log(B.R),dip=Math.max(0,(la+lb)/2-Math.log(470));
+    drawGlobe(c[0],c[1],Math.exp(lerp(la,lb,e)-dip*Math.sin(Math.PI*e)),[{k:cut.from,o:1-seg(u,.1,.35)},{k:cut.to,o:seg(u,.62,.88)}],
+      {tx:lerp(A.tx,B.tx,e),ty:lerp(A.ty,B.ty,e),det:u<.5?cut.from:cut.to})}
+  else{const k=MAPS.find(([k,a,b])=>t>=a&&t<b)[0],G=GV[k];drawGlobe(G.lon,G.lat,G.R,[{k,o:1}],{tx:G.tx,ty:G.ty,det:k,cache:k})}
   // title: rises 24 px in 12 frames on the very first frames, then fixed
   const ti=eo(seg(t,0,12/FPS));pillT(TITLE,0,0,ti,1,(1-ti)*24);
   // level pill: EASY fades out 21.00–21.10, MEDIUM in at 23.2, HARD/FINAL rise 16 px in 12 frames
@@ -171,7 +198,7 @@ const SFX=[];const sx=(t,type,g=1)=>SFX.push({t:+t.toFixed(4),f:Math.round(t*FPS
 sx(0,'impact',.8);THINK.forEach(([a],k)=>{for(let i=0;i<5;i++)sx(a+i,'tick',k===8&&i===4?.55:.6,)});REVEAL.forEach(([a])=>sx(a-.07,'ding',.6));
 SCHED.hops.forEach(h=>sx(h.t0,'hop',.5));sx(.3,'hop',.45);sx(WS,'tapestop',.7);sx(HS-.6,'riser',.4);sx(HS,'impact',.7);sx(FSq,'impact',.6);sx(CS,'pop',.6);
 window.SFX=SFX;window.SCN=SCHED;window.VO=VO;window.renderAt=renderAt;window.DUR=DUR;
-(TEX.complete?Promise.resolve():new Promise(r=>TEX.addEventListener('load',r))).then(()=>Promise.all([...document.images].map(i=>i.complete?Promise.resolve():new Promise(r=>{i.onload=r;i.onerror=r}))).then(()=>document.fonts.ready)).then(()=>{renderAt(0);window.ready=true});
+(TEX.complete?Promise.resolve():new Promise(r=>TEX.addEventListener('load',r))).then(()=>Promise.all([...document.images,...Object.values(DETIMG)].map(i=>i.complete?Promise.resolve():new Promise(r=>{i.onload=r;i.onerror=r}))).then(()=>document.fonts.ready)).then(()=>{renderAt(0);window.ready=true});
 </script>
 </body>
 </html>
