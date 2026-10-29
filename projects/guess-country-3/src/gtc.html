@@ -140,8 +140,8 @@ function bindDet(k){if(!k){GL.uniform1f(U.DON,0);return}
 const myInv=y=>Math.atan(Math.sinh(y*Math.PI/180))*180/Math.PI;
 const GV={};Object.entries(VIEWS).forEach(([k,v])=>{const [x0,x1,y0,y1]=v.bbox,la0=myInv(y0),la1=myInv(y1),pts=[];
   for(let i=0;i<=24;i++){const f=i/24;pts.push([lerp(x0,x1,f),la0],[lerp(x0,x1,f),la1],[x0,lerp(la0,la1,f)],[x1,lerp(la0,la1,f)])}
-  const lon=(x0+x1)/2,lat=(la0+la1)/2,cy=v.sy||855,hh=k==='canada'?565:340;
-  const pr=d3.geoOrthographic().rotate([-lon,-lat]).fitExtent([[540-374,cy-hh],[540+374,cy+hh]],{type:'MultiPoint',coordinates:pts});
+  const lon=(x0+x1)/2,lat=(la0+la1)/2,cy=v.sy||855,hh=k==='canada'?640:440;
+  const pr=d3.geoOrthographic().rotate([-lon,-lat]).fitExtent([[540-470,cy-hh],[540+470,cy+hh]],{type:'MultiPoint',coordinates:pts});
   GV[k]={lon,lat,R:pr.scale(),tx:pr.translate()[0],ty:pr.translate()[1]}});
 const MESH10=topojson.mesh(WORLD10,WORLD10.objects.countries,(a,b)=>a!==b),SVGC={};
 const hlSvg=(d,o)=>`<g opacity="${o}"><path d="${d}" fill="${BLUE}" fill-opacity=".34"/><path d="${d}" fill="none" stroke="#7fb2ff" stroke-width="14" stroke-opacity=".45" stroke-linejoin="round" style="filter:blur(5px)"/><path d="${d}" fill="none" stroke="#fff" stroke-width="4.5" stroke-linejoin="round"/></g>`;
