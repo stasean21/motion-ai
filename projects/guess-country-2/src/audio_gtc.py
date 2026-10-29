@@ -1,4 +1,4 @@
-# Guess the Country — original quiz music (120 BPM) + SFX on the brief's exact frames; music pre-ducked in the VO windows.
+# Guess the Country Part 2 — original quiz music (120 BPM) + SFX on the brief's exact frames; music pre-ducked in the VO windows.
 # usage: python3 -I audio_gtc.py outdir
 import sys, wave
 import numpy as np
@@ -30,10 +30,10 @@ ROOT = [36, 43, 45, 41]; ROOTH = [33, 29, 33, 28]
 MEL = [72, 76, 79, 76, 74, 71, 74, 79, 72, 76, 81, 76, 77, 72, 77, 81]   # original 8th-note motif (2 bars)
 L = {k: np.zeros(N) for k in ('kick', 'clap', 'hat', 'rim', 'bass', 'arp', 'pad')}
 def sec(t):
-    if t < 21: return 'easy'
+    if t < 22: return 'easy'
     if t < 24: return 'stop'
-    if t < 41: return 'medium'
-    if t < 42: return 'riser'
+    if t < 42.4: return 'medium'
+    if t < 43: return 'riser'
     if t < 57: return 'hard'
     if t < 62: return 'sparse'
     if t < 67: return 'min'
@@ -65,10 +65,10 @@ for bar in range(int(DUR / BAR) + 1):
         if b == 0 and s in ('sparse', 'min', 'out', 'stop'): put(L['pad'], pad(ch, BAR), i, .16 if s != 'min' else .09)
 music = L['kick'] + L['clap'] + L['hat'] + L['rim'] + L['bass'] + L['arp'] + L['pad']
 # tape stop at 21 s: the last 0.22 s of music before the cut slows to a halt, then drums are gone until 24 s (pad stays)
-a = fr(1261); n = int(SR * .22); src = music[a:a + int(SR * .6)].copy(); pos = np.cumsum(np.linspace(1, 0, n)); music[a:a + n] = np.interp(pos, np.arange(len(src)), src) * np.linspace(1, .2, n)
+a = fr(1321); n = int(SR * .22); src = music[a:a + int(SR * .6)].copy(); pos = np.cumsum(np.linspace(1, 0, n)); music[a:a + n] = np.interp(pos, np.arange(len(src)), src) * np.linspace(1, .2, n)
 # gain plan: VO windows pre-ducked ~ -9 dB (attack 0.1 s, release 0.25 s); thinking windows +3 dB
-VO = [(.2, 2.7), (8.05, 8.75), (14.05, 14.75), (20.05, 20.75), (21.15, 23.55), (29.05, 29.75), (35.05, 35.85), (41.05, 41.85), (42.1, 43.65), (49.05, 49.9), (55.1, 56.55), (57.15, 59.5), (60.1, 61.75), (67.2, 72.3)]
-THINK = [3, 9, 15, 24, 30, 36, 44, 50, 62]
+VO = [(.15, 2.85), (8.05, 8.85), (14.05, 14.9), (20.1, 21.65), (22.05, 23.9), (29.05, 29.85), (35.05, 35.8), (41.1, 42.55), (43.05, 43.85), (49.1, 50.55), (56.05, 56.95), (57.15, 59.5), (60.1, 61.85), (67.15, 72.5)]
+THINK = [3, 9, 15, 24, 30, 36, 44, 51, 62]
 g = np.ones(N)
 for t0 in THINK: g[int(t0 * SR):int((t0 + 5) * SR)] *= 10 ** (3 / 20)
 d = np.ones(N)
@@ -85,14 +85,14 @@ def riser(): n = int(SR * 1.0); t = np.arange(n) / n; x = hp(rng.standard_normal
 def pop(): n = int(SR * .09); t = np.arange(n) / SR; return sine(500 + 400 * np.exp(-t * 40), n) * env(n, .001, .025)
 def tapestop(): n = int(SR * .22); t = np.arange(n) / SR; return sine(180 * (1 - t / t[-1]) + 30, n) * np.linspace(1, 0, n) * .5
 sfx = {k: np.zeros(N) for k in ('ticks', 'answers', 'transitions', 'impacts')}
-TICKS = [181, 541, 901, 1441, 1801, 2161, 2641, 3001, 3721]
+TICKS = [181, 541, 901, 1441, 1801, 2161, 2641, 3061, 3721]
 for k, s0 in enumerate(TICKS):
     for i in range(5): put(sfx['ticks'], tick(low=(k == 8 and i == 4)), fr(s0 + 60 * i), .55)
-for f in [481, 841, 1201, 1741, 2101, 2461, 2941, 3301]: put(sfx['answers'], ding(), fr(f), .5)       # ding on the reveal frame; VO lands 50–100 ms later
-for f in [541, 901, 1801, 2161, 3001]: put(sfx['transitions'], whoosh(), fr(f), .45)
-for f in [1261, 2521, 3601]: put(sfx['transitions'], whoosh(), fr(f), .15)                           # yields to tape stop / impacts
-put(sfx['transitions'], tapestop(), fr(1261), .6); put(sfx['transitions'], riser(), fr(2461), .5); put(sfx['transitions'], pop(), fr(4021), .55)
-put(sfx['impacts'], impact(), fr(1), .55); put(sfx['impacts'], impact(), fr(1393), .4); put(sfx['impacts'], impact(), fr(2521), .6); put(sfx['impacts'], impact(), fr(3601), .6)
+for f in [481, 841, 1201, 1741, 2101, 2461, 2941, 3361]: put(sfx['answers'], ding(), fr(f), .5)       # ding on the reveal frame; VO lands 50–100 ms later
+for f in [541, 901, 1801, 2161, 3061]: put(sfx['transitions'], whoosh(), fr(f), .45)
+for f in [1321, 2581, 3601]: put(sfx['transitions'], whoosh(), fr(f), .15)                           # yields to tape stop / impacts
+put(sfx['transitions'], tapestop(), fr(1321), .6); put(sfx['transitions'], riser()[:int(SR * .6)] * np.linspace(.4, 1, int(SR * .6)), fr(2545), .45); put(sfx['transitions'], pop(), fr(4021), .55)
+put(sfx['impacts'], impact(), fr(1), .55); put(sfx['impacts'], impact(), fr(2581), .6); put(sfx['impacts'], impact(), fr(3601), .45)
 SF = sum(sfx.values())
 def rms(x): return np.sqrt(np.mean(x ** 2))
 music_n = music / rms(music) * 10 ** (-24 / 20)
