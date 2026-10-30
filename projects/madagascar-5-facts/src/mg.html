@@ -33,6 +33,7 @@ svg{display:block}
 <script src="sat/det_mad.js"></script>
 <script src="sat/det_mclose.js"></script>
 <script src="mart.js"></script>
+<script src="mbc/meta.js"></script>
 <script>
 const FPS=60,BLUE='#2f7bf5',DUR=93,CY=790;
 const $=id=>document.getElementById(id);
@@ -67,7 +68,7 @@ const setShine=(el,u)=>{const s=el.querySelector('.shn>div');if(s)s.style.transf
 const TL='MADAGASCAR'.split('');
 const TITLE=mk('ui',`<div class="pill" style="left:540px;top:245px;height:110px;padding:0 60px;border-radius:38px;font-weight:900;font-size:76px;letter-spacing:.02em">${TL.map(c=>`<span class="tl" style="display:inline-block">${c}</span>`).join('')}${shine}</div>`);
 const FACTP=mk('ui',`<div class="pill" style="left:540px;top:350px;height:60px;padding:0 28px;font-weight:700;font-size:26px;letter-spacing:.07em;overflow:hidden"><span id="fp5">5 SURPRISING FACTS</span><span id="fpf" style="display:none">FACT&nbsp;<span style="display:inline-block;position:relative;width:1.4em;height:1.2em;overflow:hidden;color:${BLUE};font-weight:900;vertical-align:top"><span id="fn0" class="abs" style="left:0;top:0;width:100%;text-align:center"></span><span id="fn1" class="abs" style="left:0;top:0;width:100%;text-align:center"></span></span>/ 05<span style="margin:0 .5em;color:#b7bdc9">·</span><span id="ftop" style="color:${BLUE};font-weight:800"></span></span>${shine}</div>`);
-const MB=mk('ui',`<div class="abs" style="left:205px;top:1330px;width:0;height:0"><div id="mbsh" class="abs" style="left:-100px;top:108px;width:200px;height:28px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.45),rgba(0,0,0,0))"></div><div id="mbb" class="abs" style="left:0;top:0;width:0;height:0"></div><img id="hat" src="mbs/hat_flat.png" class="abs" style="width:283px;left:-133px;top:0;transform-origin:50% 100%"><img id="hatfly" src="mbs/hat_fly.png" class="abs" style="width:200px;left:-100px;top:0;opacity:0"><svg id="mbfx" class="abs" style="left:-200px;top:-260px;overflow:visible" width="400" height="400"></svg></div>`);
+const MB=mk('ui',`<div class="abs" style="left:205px;top:1330px;width:0;height:0"><div id="mbsh" class="abs" style="left:-100px;top:108px;width:200px;height:28px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.45),rgba(0,0,0,0))"></div><div id="mbb" class="abs" style="left:0;top:0;width:0;height:0"></div><img id="hatfly" src="mbs/hat_fly.png" class="abs" style="width:230px;left:-115px;top:0;opacity:0"><svg id="mbfx" class="abs" style="left:-200px;top:-260px;overflow:visible" width="400" height="400"></svg></div>`);
 const INFO=mk('ui',`<div class="abs" style="left:640px;top:1322px;transform:translate(-50%,-50%);width:540px;min-height:176px;padding:24px 28px;border-radius:40px;background:rgba(255,255,255,.97);box-shadow:0 18px 40px -18px rgba(10,20,40,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center"><div id="infc" style="display:flex;flex-direction:column;align-items:center"></div>${shine}</div>`);
 const SUB=mk('ui',`<div class="abs" style="left:540px;top:1532px;transform:translate(-50%,-50%);padding:16px 36px;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 16px 34px -16px rgba(10,20,40,.55);font-weight:600;font-size:40px;text-align:center;white-space:nowrap"></div>`);
 const HOOK=mk('ui',`<div class="pill" style="left:540px;top:1080px;height:84px;padding:0 40px;border-radius:30px;font-weight:900;font-size:46px;letter-spacing:.02em"></div>`);
@@ -140,30 +141,33 @@ function camera(t){
   if(t<91.5)return V.island;
   return mix(V.island,V.tsingy,seg(t,91.5,92.6))}
 
-// ───────── Madagascarball rig: roll-in, hat drop, blinks, hops with real squash/stretch frames, valiha solo, spin, roll-out
-const MBK={h:.94,v:.94,s:.94,t:.571};
-const MBN=['h01','h01b','t01','t01b','t02','t03','t04','t05','t06','t06b','v01','v02','v03','v04','v05','v06','v07','v08','v09','v10','v11','s02','s04','s05'];
-const MBI={};MBN.forEach(k=>{const i=document.createElement('img');i.src=`mbs/${k}.png`;i.className='abs';i.style.opacity=0;$('mbb').appendChild(i);MBI[k]=i});
-const HOPS=[[7.7,46],[15.5,40],[24.4,40],[26.1,54],[33.2,36],[44.6,34],[51.1,50],[65.1,44],[81.1,58],[89.95,70]];
-const SPARK=[7.7,15.5,26.1,51.1,65.1,81.1,90.1];
-const BLINKS=[];for(let b=5.6;b<92;b+=2.8)BLINKS.push(b);
-function mbState(t){let s='h01',dx=0,dy=0,rot=0,hat=t>=4.3,hatDy=0;
-  if(t<3.2){s='v01';dx=-300*(1-eo(seg(t,2.75,3.2)));rot=0}else if(t<3.32)s='v02';else if(t<3.46)s='v03';
-  if(t>=4.3&&t<4.42)s='s02';if(t>=4.42&&t<4.6){s='s05';hatDy=-16*Math.sin(seg(t,4.42,4.6)*Math.PI)}
-  for(const [h0,H] of HOPS){if(t>=h0-.1&&t<h0)s='s02';if(t>=h0&&t<h0+.45){const a=(t-h0)/.45;s=a<.75?'s05':'h01';dy=-H*4*a*(1-a)}if(t>=h0+.45&&t<h0+.57)s='s02'}
-  if(t>=61.4&&t<66.2){s=t<61.7?'v04':t<62?'v05':t<65.4?(Math.floor((t-62)/.22)%2?'v07':'v06'):t<65.8?'v08':'v09'}
-  if(t>=87&&t<89.2)s='t06';if(t>=89.2&&t<89.8)s=['t02','t03','t04','t05'][Math.min(3,Math.floor((t-89.2)/.15))];if(t>=89.8&&t<92)s='t01';
-  if(t>=92&&t<93){s=t<92.15?'s02':Math.floor((t-92.15)/.1)%2?'v11':'v10';dx=-420*eio(seg(t,92.15,92.7))}
+// ───────── Madagascarball rig: the artist's sheets played frame by frame (roll-in, hat drop, squash & stretch hop,
+// valiha solo, turnaround, roll-out); frames stand on one ground line via the bottom of the ball
+const MBK={h:240/253,v:240/264,s:240/226,t:240/419};
+const MBI={};Object.keys(MBM).forEach(k=>{const i=document.createElement('img');i.src=`mbc/${k}.png`;i.className='abs';i.style.opacity=0;const m=MBM[k],kk=MBK[k[0]];
+  i.style.width=(m.w*kk)+'px';i.style.left=(-m.ax*kk)+'px';i.style.top=(120-m.ay*kk)+'px';$('mbb').appendChild(i);MBI[k]=i});
+const seq=(t,t0,list)=>{let a=t0;for(const [k,d] of list){if(t<a+d)return k;a+=d}return null};
+const HOP=[['s02',.06],['s03',.06],['s04',.06],['s05',.1],['s06',.12],['s07',.1],['s08',.08],['s09',.06],['s10',.06],['s11',.07],['s12',.07]];
+const HOPS=[[15.5,46],[26.1,56],[33.2,38],[44.6,36],[51.1,52],[65.1,46],[81.1,60]];
+const SPARK=[15.85,26.45,51.45,65.45,81.45,89.9];
+const BLINKS=[];for(let b=6.4;b<92;b+=2.8)BLINKS.push(b);
+function mbState(t){let s='h01',dx=0,dy=0,rot=0;
+  if(t<3.62){s=seq(t,2.75,[['v01',.45],['v02',.12],['v03',.18],['h01',.12]])||'h01';if(t<3.2)dx=-320*(1-eo(seg(t,2.75,3.2)))}
+  else if(t<5.15)s=seq(t,3.62,[['h02',.18],['h03',.18],['h04',.12],['h05',.12],['h06',.16],['h07',.24],['h08',9]]);
+  for(const [h0,H] of HOPS)if(t>=h0&&t<h0+.84){s=seq(t,h0,HOP);const a=seg(t,h0+.12,h0+.58);dy=-H*4*a*(1-a)}
+  if(t>=61.4&&t<66.4){s=t<61.7?'v04':t<62?'v05':t<65.4?(Math.floor((t-62)/.22)%2?'v07':'v06'):t<65.8?'v08':'v09'}
+  if(t>=87&&t<89.2)s='t06';
+  if(t>=89.2&&t<92){s=seq(t,89.2,[['t01',.1],['t02',.1],['t03',.1],['t04',.1],['t05',.1],['t01',9]])}
+  if(t>=92){s=seq(t,92,[['s02',.12],['v10',.12],['v11',.12],['v10',.12],['v11',9]]);dx=-440*eio(seg(t,92.12,92.7))}
   if((s==='h01'||s==='t01'||s==='t06')&&BLINKS.some(b=>t>=b&&t<b+.1))s+='b';
   rot+=-3*Math.sin(seg(t,34.5,36.5)*Math.PI)+5*Math.sin(seg(t,57,58.8)*Math.PI)+4*Math.sin(seg(t,78.3,79.2)*Math.PI);
-  return {s,dx,dy,rot,hat,hatDy,vis:seg(t,2.75,2.8)*(1-seg(t,92.6,92.75))}}
-function renderMB(t){const m=mbState(t);let sh=240;
-  Object.entries(MBI).forEach(([k,i])=>{if(k!==m.s){i.style.opacity=0;return}const kk=MBK[k[0]],w=i.naturalWidth*kk,h=i.naturalHeight*kk;sh=h;
-    i.style.opacity=1;i.style.width=w+'px';i.style.left=(-w/2)+'px';i.style.top=(120-h)+'px'});
-  const idle=t>4.6&&t<92?3*Math.sin(t*2*Math.PI/1.9):0;
+  return {s,dx,dy,rot,vis:seg(t,2.75,2.8)*(1-seg(t,92.6,92.75))}}
+function renderMB(t){const m=mbState(t);
+  Object.entries(MBI).forEach(([k,i])=>i.style.opacity=k===m.s?1:0);
+  const idle=t>5.2&&t<92&&!HOPS.some(([h])=>t>=h&&t<h+.84)?3*Math.sin(t*2*Math.PI/1.9):0;
   $('mbb').style.transform=`translate(${m.dx.toFixed(1)}px,${(m.dy+idle).toFixed(1)}px) rotate(${m.rot.toFixed(2)}deg)`;
-  const ht=$('hat');if(m.hat){ht.style.opacity=1;const top=120-sh+.24*sh-116+m.dy+idle+m.hatDy;ht.style.top=top.toFixed(1)+'px';ht.style.width='266px';ht.style.left=(-127+m.dx).toFixed(1)+'px';ht.style.transform=`rotate(${(m.rot+(m.s[0]==='s'?-4:0)).toFixed(2)}deg)`}else ht.style.opacity=0;
-  const hf=$('hatfly');if(t>=3.85&&t<4.3){const u=seg(t,3.85,4.3);hf.style.opacity=1;hf.style.top=(lerp(-560,-190,eio(u))).toFixed(1)+'px';hf.style.transform=`rotate(${lerp(-38,8,u).toFixed(1)}deg)`}else hf.style.opacity=0;
+  // the hat blows off as the camera takes off for fact 1
+  const hf=$('hatfly');if(t>=5.15&&t<5.9){const u=seg(t,5.15,5.9);hf.style.opacity=1-seg(u,.75,1);hf.style.left=(-115-260*eo(u)).toFixed(1)+'px';hf.style.top=(-210-520*eo(u)+80*u*u).toFixed(1)+'px';hf.style.transform=`rotate(${(-20-300*u).toFixed(1)}deg) scale(${(1-.3*u).toFixed(3)})`}else hf.style.opacity=0;
   const hs=clamp(1-(-m.dy)/240,.3,1);$('mbsh').style.transform=`translateX(${m.dx.toFixed(1)}px) scale(${hs.toFixed(3)})`;$('mbsh').style.opacity=(hs*m.vis).toFixed(3);vis(MB,m.vis);
   let fx='';for(const s0 of SPARK){const u=(t-s0)/.55;if(u<0||u>=1)continue;for(let i=0;i<8;i++){const a=i/8*6.283+.3,r=150+u*70,x=200+Math.cos(a)*r,y=260+Math.sin(a)*r*.9,sc=(1-u)*(i%2?9:14);
     fx+=`<path d="M${x} ${y-sc} L${x+sc*.28} ${y-sc*.28} L${x+sc} ${y} L${x+sc*.28} ${y+sc*.28} L${x} ${y+sc} L${x-sc*.28} ${y+sc*.28} L${x-sc} ${y} L${x-sc*.28} ${y-sc*.28}Z" fill="${i%2?'#ffd34d':'#fff'}" opacity="${(1-u).toFixed(2)}"/>`}}
@@ -239,17 +243,17 @@ function renderAt(t){
 }
 // ───────── sound events
 const SFX=[];const sx=(t,type,g=1,d=0)=>SFX.push({t:+t.toFixed(4),type,g,d});
-sx(0,'impact',.7);sx(0,'air',.3,.9);sx(.8,'unfold',.4);sx(1.65,'unfold',.4);sx(2.75,'fold',.45);sx(2.8,'air',.4,1.6);sx(3.3,'land',.55);sx(3.85,'whoosh',.3,.5);sx(4.3,'cap',.55);
+sx(0,'impact',.7);sx(0,'air',.3,.9);sx(.8,'unfold',.4);sx(1.65,'unfold',.4);sx(2.75,'fold',.45);sx(2.8,'air',.4,1.6);sx(3.2,'land',.55);sx(3.62,'whoosh',.3,.4);sx(3.98,'cap',.55);sx(4.1,'boing',.3);sx(5.15,'whoosh',.35,.7);
 FACTS.forEach(f=>{sx(f.fly[0],'whoosh',.5,f.fly[1]-f.fly[0]+.2);sx(f.fly[0]-.6,'pop',.35);sx(f.open[0],'unfold',.5);sx(f.close[0],'fold',.42);sx(f.back[0],'rwhoosh',.42)});
 sx(9.6,'accent',.4);[13,13.3,13.6].forEach(a=>sx(a,'tick',.4));sx(15.4,'pop',.4);sx(34.5,'wind',.35,2.4);sx(39.6,'night',.35,14);
 [41.03,41.33,41.63].forEach(a=>sx(a,'knock',.6));sx(43,'accent',.35);sx(43.6,'ping',.35);sx(44.3,'ping',.25);sx(47.2,'gnaw',.4,1.2);sx(50.6,'accent',.4);
 sx(56.3,'forest',.4,14.8);for(let i=0;i<15;i++)sx(62+i*.22,'valiha',.35,i);sx(65.1,'accent',.35);
 sx(77.5,'air',.35,1);sx(78.2,'chime',.5);sx(81,'tick',.35);
-HOPS.forEach(([h,H])=>sx(h-.02,'boing',.22+H/400));SPARK.forEach(s=>sx(s,'sparkle',.28));
+HOPS.forEach(([h,H])=>{sx(h+.1,'boing',.22+H/400);sx(h+.6,'land',.3)});SPARK.forEach(s=>sx(s,'sparkle',.28));
 for(let i=0;i<5;i++)sx(87.1+i*.14,'pop',.42);sx(89.2,'whoosh',.3,.6);sx(92.15,'whoosh',.3,.6);sx(92.1,'unfold',.4);
 window.SFX=SFX;window.SCN={dur:DUR,vo:VO.map(v=>[v[0],v[1]]),duck:[[57.4,60.1,.18],[77,78.2,.3]]};window.renderAt=renderAt;window.DUR=DUR;window.VO=VO;
 $('card').insertAdjacentHTML('beforeend',shine);
-(TEX.complete?Promise.resolve():new Promise(r=>TEX.addEventListener('load',r))).then(()=>Promise.all([...Object.values(DETIMG),...Object.values(MBI),$('hat'),$('hatfly')].map(i=>i.complete?1:new Promise(r=>{i.onload=r;i.onerror=r})))).then(()=>document.fonts.ready).then(()=>{renderAt(0);window.ready=true});
+(TEX.complete?Promise.resolve():new Promise(r=>TEX.addEventListener('load',r))).then(()=>Promise.all([...Object.values(DETIMG),...Object.values(MBI),$('hatfly')].map(i=>i.complete?1:new Promise(r=>{i.onload=r;i.onerror=r})))).then(()=>document.fonts.ready).then(()=>{renderAt(0);window.ready=true});
 </script>
 </body>
 </html>
