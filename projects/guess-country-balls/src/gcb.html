@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Guess the Country — Countryball</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#06182a}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#111218}
+.abs{position:absolute}
+.pill{position:absolute;display:flex;align-items:center;justify-content:center;white-space:nowrap;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 14px 30px -14px rgba(10,20,40,.5)}
+svg{display:block}
+</style>
+</head>
+<body>
+<div id="glw" class="abs" style="inset:0;background:#06182a">
+ <canvas id="glc" width="1080" height="1920" class="abs" style="left:0;top:0"></canvas>
+ <svg id="gls" class="abs" style="left:0;top:0" width="1080" height="1920"></svg>
+ <svg id="glo" class="abs" style="left:0;top:0" width="1080" height="1920"></svg>
+</div>
+<div id="dim" class="abs" style="inset:0;background:#041222;opacity:0"></div>
+<div id="card" class="abs" style="left:80px;top:430px;width:920px;height:720px;border-radius:40px;overflow:hidden;border:8px solid #fff;box-shadow:0 30px 60px -20px rgba(0,0,0,.6);transform-origin:50% 50%;visibility:hidden">
+ <svg id="cardsvg" width="904" height="704" viewBox="8 8 904 704"></svg>
+</div>
+<div id="ui" class="abs" style="inset:0"></div>
+<script src="lib/d3-array.min.js"></script>
+<script src="lib/d3-geo.min.js"></script>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/world10m.js"></script>
+<script src="lib/world50m.js"></script>
+<script src="tex/globe_tex.js"></script>
+<script src="sat/det_ref.js"></script>
+<script src="sat/det_mexico.js"></script>
+<script src="sat/det_germany.js"></script>
+<script src="sat/det_chile.js"></script>
+<script src="sat/det_malawi.js"></script>
+<script src="sat/det_slovenia.js"></script>
+<script src="sat/det_morocco.js"></script>
+<script src="sat/det_finland.js"></script>
+<script src="sat/det_thailand.js"></script>
+<script src="sat/det_india.js"></script>
+<script src="balls/meta.js"></script>
+<script src="voice_place.js"></script>
+
+<script>
+const BLUE='#2f7bf5';const $=id=>document.getElementById(id);
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),seg=(t,a,b)=>clamp((t-a)/(b-a)),lerp=(a,b,t)=>a+(b-a)*t;
+const eo=p=>1-Math.pow(1-p,3),eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2,eb=p=>{const c1=1.7,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)};
+const mk=(parent,h)=>{const d=document.createElement('div');d.innerHTML=h.trim();const e=d.firstChild;$(parent).appendChild(e);return e};
+const vis=(el,o)=>{el.style.opacity=o;el.style.visibility=o<=.003?'hidden':'visible'};
+const shine=`<div class="shn abs" style="inset:0;border-radius:inherit;overflow:hidden;pointer-events:none"><div class="abs" style="top:-20%;bottom:-20%;width:38%;left:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,0) 20%,rgba(160,200,255,.55) 50%,rgba(255,255,255,0) 80%,transparent);transform:translateX(-160%) skewX(-18deg)"></div></div>`;
+const setShine=(el,u)=>{const s=el.querySelector('.shn>div');if(s)s.style.transform=`translateX(${lerp(-160,360,u).toFixed(1)}%) skewX(-18deg)`};
+// ───────── globe (WebGL orthographic, NASA Blue Marble) + Natural Earth borders; Japan highlight in the house style
+const GL=$('glc').getContext('webgl',{preserveDrawingBuffer:true,antialias:true});
+const VS=`attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
+const FS=`precision highp float;uniform sampler2D tex;uniform sampler2D det;uniform vec2 C;uniform float R;uniform vec2 L;
+uniform vec3 DG;uniform vec2 DS;uniform float DON;
+void main(){vec2 q=(gl_FragCoord.xy-C)/R;float r2=dot(q,q);vec3 bg=vec3(.024,.094,.165);
+  if(r2>1.){float d=sqrt(r2)-1.;float g=exp(-d*R/38.)*.55+exp(-d*R/140.)*.18;gl_FragColor=vec4(bg+vec3(.35,.6,1.)*g,1.);return;}
+  vec3 v=vec3(q.x,q.y,sqrt(1.-r2));float cl=cos(L.y),sl=sin(L.y);vec3 w=vec3(v.x,v.y*cl+v.z*sl,-v.y*sl+v.z*cl);
+  float lon=atan(w.x,w.z)+L.x,lat=asin(clamp(w.y,-1.,1.));float fx=fract(lon/6.2831853+.5);vec2 uv=vec2(fx,.5-lat/3.1415927);
+  vec3 c=texture2D(tex,uv).rgb;
+  if(DON>0.){float ym=log(tan(.78539816+clamp(lat,-1.47,1.47)*.5));vec2 d=vec2((fx*DG.x-DG.y)/DS.x,((1.-ym/3.1415927)*.5*DG.x-DG.z)/DS.y);
+    float wg=smoothstep(0.,.03,d.x)*smoothstep(0.,.03,1.-d.x)*smoothstep(0.,.03,d.y)*smoothstep(0.,.03,1.-d.y);c=mix(c,texture2D(det,d).rgb,wg*DON);}
+  c*=1.08;float limb=pow(v.z,.35);c=c*(.55+.45*limb)+vec3(.3,.55,1.)*pow(1.-v.z,3.)*.55;gl_FragColor=vec4(c,1.);}`;
+const sh=(t,src)=>{const o=GL.createShader(t);GL.shaderSource(o,src);GL.compileShader(o);if(!GL.getShaderParameter(o,GL.COMPILE_STATUS))throw new Error(GL.getShaderInfoLog(o));return o};
+const PG=GL.createProgram();GL.attachShader(PG,sh(GL.VERTEX_SHADER,VS));GL.attachShader(PG,sh(GL.FRAGMENT_SHADER,FS));GL.linkProgram(PG);GL.useProgram(PG);
+GL.bindBuffer(GL.ARRAY_BUFFER,GL.createBuffer());GL.bufferData(GL.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),GL.STATIC_DRAW);
+const aP=GL.getAttribLocation(PG,'p');GL.enableVertexAttribArray(aP);GL.vertexAttribPointer(aP,2,GL.FLOAT,false,0,0);
+const U={};['C','R','L','DG','DS','DON','tex','det'].forEach(n=>U[n]=GL.getUniformLocation(PG,n));GL.uniform1i(U.tex,0);GL.uniform1i(U.det,1);
+const TEX=new Image();TEX.src=GLOBE_SRC;
+TEX.onload=()=>{GL.activeTexture(GL.TEXTURE0);const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,TEX);
+  [GL.TEXTURE_MIN_FILTER,GL.TEXTURE_MAG_FILTER].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.LINEAR));[GL.TEXTURE_WRAP_S,GL.TEXTURE_WRAP_T].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.CLAMP_TO_EDGE))};
+const DETIMG={},DETTEX={};Object.keys(DET_SRC).forEach(k=>{const im=new Image();im.src=DET_SRC[k];DETIMG[k]=im});
+function bindDet(k){if(!k){GL.uniform1f(U.DON,0);return}
+  if(!DETTEX[k]){GL.activeTexture(GL.TEXTURE1);const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,DETIMG[k]);
+    [GL.TEXTURE_MIN_FILTER,GL.TEXTURE_MAG_FILTER].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.LINEAR));[GL.TEXTURE_WRAP_S,GL.TEXTURE_WRAP_T].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.CLAMP_TO_EDGE));DETTEX[k]=t}
+  GL.activeTexture(GL.TEXTURE1);GL.bindTexture(GL.TEXTURE_2D,DETTEX[k]);GL.activeTexture(GL.TEXTURE0);
+  const r=DET_REF[k];GL.uniform3f(U.DG,256*2**r.z,r.X0*256,r.Y0*256);GL.uniform2f(U.DS,r.W,r.H);GL.uniform1f(U.DON,1)}
+const C10=topojson.feature(WORLD10,WORLD10.objects.countries).features,C50=topojson.feature(WORLD50,WORLD50.objects.countries).features;
+
+const MESH10=topojson.mesh(WORLD10,WORLD10.objects.countries,(a,b)=>a!==b),MESH50=topojson.mesh(WORLD50,WORLD50.objects.countries,(a,b)=>a!==b);
+const GPR=d3.geoOrthographic().clipAngle(90).precision(.3),GPATH=d3.geoPath(GPR);
+// camera views: fit a lon/lat box into a screen rect
+function fit(lo0,lo1,la0,la1,rect){const pts=[];for(let i=0;i<=24;i++){const f=i/24;pts.push([lerp(lo0,lo1,f),la0],[lerp(lo0,lo1,f),la1],[lo0,lerp(la0,la1,f)],[lo1,lerp(la0,la1,f)])}
+  const lon=(lo0+lo1)/2,lat=(la0+la1)/2,pr=d3.geoOrthographic().rotate([-lon,-lat]).fitExtent(rect,{type:'MultiPoint',coordinates:pts});return {lon,lat,R:pr.scale(),tx:pr.translate()[0],ty:pr.translate()[1]}}
+const hl=(d,o,fo=.34)=>`<g opacity="${o}"><path d="${d}" fill="${BLUE}" fill-opacity="${fo}"/><path d="${d}" fill="none" stroke="#7fb2ff" stroke-width="12" stroke-opacity=".45" stroke-linejoin="round" style="filter:blur(5px)"/><path d="${d}" fill="none" stroke="#fff" stroke-width="3.2" stroke-linejoin="round"/></g>`;
+function drawGlobe(c,o={}){const {lon,lat,R,tx,ty}=c;
+  GL.viewport(0,0,1080,1920);GL.uniform2f(U.C,tx,1920-ty);GL.uniform1f(U.R,R);GL.uniform2f(U.L,lon*Math.PI/180,lat*Math.PI/180);bindDet(o.det||null);GL.drawArrays(GL.TRIANGLE_STRIP,0,4);
+  GPR.rotate([-lon,-lat]).scale(R).translate([tx,ty]);const f=C10.find(x=>x.id===o.id),d=GPATH(f)||'';
+  const dim=o.dim?`<path d="M0 0H1080V1920H0Z ${d}" fill="#040c18" fill-opacity="${o.dim}" fill-rule="evenodd"/>`:'';
+  const disp=o.id==='504'?`<path d="${GPATH(WSB)||''}" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="10 8" opacity=".9"/>`:'';
+  $('gls').innerHTML=`<path d="${GPATH(MESH10)||''}" fill="none" stroke="#fff" stroke-width="1.4" stroke-opacity="${o.dim?.25:.5}"/>`+dim+(o.id?hl(d,o.hl??1,.3):'')+disp}
+const WSB=topojson.mesh(WORLD10,WORLD10.objects.countries,(a,b)=>(a.id==='504'&&b.id==='732')||(a.id==='732'&&b.id==='504'));
+const proj=p=>GPR(p);
+function slerp(a,b,u){const r=Math.PI/180,va=[Math.cos(a[1]*r)*Math.cos(a[0]*r),Math.cos(a[1]*r)*Math.sin(a[0]*r),Math.sin(a[1]*r)],vb=[Math.cos(b[1]*r)*Math.cos(b[0]*r),Math.cos(b[1]*r)*Math.sin(b[0]*r),Math.sin(b[1]*r)];
+  const d=Math.acos(clamp(va[0]*vb[0]+va[1]*vb[1]+va[2]*vb[2],-1,1));if(d<1e-6)return a;const s1=Math.sin((1-u)*d)/Math.sin(d),s2=Math.sin(u*d)/Math.sin(d);
+  const v=va.map((x,i)=>x*s1+vb[i]*s2);return [Math.atan2(v[1],v[0])/r,Math.asin(clamp(v[2],-1,1))/r]}
+const mix=(A,B,u)=>{const e=eio(u),c=slerp([A.lon,A.lat],[B.lon,B.lat],e);return {lon:c[0],lat:c[1],R:Math.exp(lerp(Math.log(A.R),Math.log(B.R),e)),tx:lerp(A.tx,B.tx,e),ty:lerp(A.ty,B.ty,e)}};
+
+// ───────── schedule (built around the recorded voice; every thinking window is exactly 300 frames)
+const FLY=2.5;
+const C=[ // key, id, box, det, layout tall?, level, dim, reveal reaction frames
+ {k:'mexico',name:'MEXICO',id:'484',box:[-118,-86,14,32.8],lv:0,S:7.2,react:[['B',.9]]},
+ {k:'india',name:'INDIA',id:'356',box:[68,97.5,6.5,35.7],lv:0,S:16.1,react:[['C',.18],['D',.14],['B',.58]]},
+ {k:'germany',name:'GERMANY',id:'276',box:[5.6,15.3,47.2,55.1],lv:1,S:25.5,react:[['C',.9]]},
+ {k:'thailand',name:'THAILAND',id:'764',box:[97.3,105.7,5.6,20.5],lv:1,S:34.4,tall:1,react:[['C',.9]]},
+ {k:'chile',name:'CHILE',id:'152',box:[-76.5,-66,-56,-17.3],lv:2,S:46.3,tall:1,react:[['B',.9]]},
+ {k:'finland',name:'FINLAND',id:'246',box:[20,31.6,59.7,70.1],lv:2,S:55.2,tall:1,react:[['B',.9]]},
+ {k:'morocco',name:'MOROCCO',id:'504',box:[-13.4,-0.8,27.5,36],lv:2,S:64.1,react:[['A',.9]]},
+ {k:'malawi',name:'MALAWI',id:'454',box:[31.6,37,-17.3,-9.2],lv:3,S:74.5,tall:1,react:[['C',.2],['D',.7]]},
+ {k:'slovenia',name:null,id:'705',box:[13.2,16.8,45.3,47],lv:3,S:83.9}];
+C.forEach(c=>{c.T0=c.S+.4;c.R=c.S+5.4;c.E=c.S+6.4});
+const LV=[['EASY','#30c060'],['MEDIUM','#f2b705'],['HARD','#ff8a1f'],['EXPERT','#ff3b30']];
+const PLATES=[[5.2,7.2,0,'LEVEL 1 · EASY'],[22.5,25.5,1,'LEVEL 2 · MEDIUM'],[44.2,46.3,2,'LEVEL 3 · HARD'],[70.5,74.5,3,'LEVEL 4 · EXPERT'],[80.9,83.9,3,'FINAL COUNTRY · NO REVEAL']];
+const DIM=[0,.25,.5,.65];
+const DUR=97.5;
+const L1={map:[[110,440],[970,1230]],ball:[540,1430],pill:[540,1205]},LT={map:[[150,430],[640,1520]],ball:[790,1330],pill:[790,1100]};
+const VW={};C.forEach(c=>{VW[c.k]=fit(...c.box,(c.tall?LT:L1).map)});
+const START={R:400,lat:20,tx:540,ty:880};
+const SPIN=25,T2=2,TD=1.24,MLON=VW.mexico.lon,L2=MLON-SPIN*TD/2;
+const spinLon=t=>t<T2?L2-SPIN*(T2-t):t<T2+TD?L2+SPIN*(t-T2)-SPIN/(2*TD)*(t-T2)**2:MLON;
+const dipMix=(A,B,u)=>{const e=eio(u),c=slerp([A.lon,A.lat],[B.lon,B.lat],e),la=Math.log(A.R),lb=Math.log(B.R),dip=Math.max(0,(la+lb)/2-Math.log(470));
+  return {lon:c[0],lat:c[1],R:Math.exp(lerp(la,lb,e)-dip*Math.sin(Math.PI*e)),tx:lerp(A.tx,B.tx,e),ty:lerp(A.ty,B.ty,e)}};
+const WH={lon:-40,lat:-10,R:470,tx:540,ty:880};   // halfway: whole Earth between Thailand and Chile
+function camera(t){
+  if(t<T2)return {lon:spinLon(t),...START,lat:START.lat};
+  if(t<5.2){const u=eio(seg(t,T2,5.0)),V=VW.mexico;return {lon:lerp(spinLon(t),V.lon,eio(seg(t,2.6,5.0))),lat:lerp(START.lat,V.lat,u),R:Math.exp(lerp(Math.log(START.R),Math.log(V.R),u)),tx:lerp(START.tx,V.tx,u),ty:lerp(START.ty,V.ty,u)}}
+  for(let i=0;i<C.length;i++){const c=C[i],V=VW[c.k];
+    if(t<c.E+.0||i===C.length-1){if(t<c.S)break;if(i===C.length-1&&t>=95.9){const u=eio(seg(t,95.9,97.4));return {lon:V.lon+SPIN*Math.max(0,t-96.4)*seg(t,96.2,97),lat:lerp(V.lat,START.lat,u),R:Math.exp(lerp(Math.log(V.R),Math.log(START.R),u)),tx:lerp(V.tx,START.tx,u),ty:lerp(V.ty,START.ty,u)}}
+      const s=t<c.S+.4?.96+.04*eo(seg(t,c.S,c.S+.4)):1;return {...V,R:V.R*s}}
+    const n=C[i+1];if(t<n.S){const A=V,B=VW[n.k];
+      if(c.k==='thailand'){if(t<42.2)return mix(A,WH,seg(t,c.E,42.2));if(t<44.0)return {...WH,lon:WH.lon+(t-42.2)*-4};return mix({...WH,lon:WH.lon-7.2},B,seg(t,44.0,n.S))}
+      const f0=n.S-FLY;if(t<f0)return A;return dipMix(A,B,seg(t,f0,n.S))}}
+  return VW.mexico}
+
+// ───────── UI
+const TITLE=mk('ui',`<div class="pill" style="left:540px;top:240px;height:104px;padding:0 50px;border-radius:36px;font-weight:900;font-size:62px;letter-spacing:-.02em">GUESS THE <span style="color:${BLUE};margin-left:.28em">COUNTRY</span>${shine}</div>`);
+const LVL=mk('ui',`<div class="pill" style="left:470px;top:340px;height:60px;padding:0 26px;font-weight:800;font-size:27px;letter-spacing:.06em;gap:12px"></div>`);
+const PRG=mk('ui',`<div class="pill" style="left:850px;top:340px;height:60px;padding:0 22px;font-weight:900;font-size:28px;color:${BLUE};overflow:hidden"></div>`);
+const BIG=mk('ui',`<div class="pill" style="left:540px;top:860px;height:120px;padding:0 54px;border-radius:40px;font-weight:900;font-size:58px;letter-spacing:.02em;gap:20px">${shine}</div>`);
+const ANS=mk('ui',`<div class="abs" style="padding:16px 38px;border-radius:40px;background:rgba(255,255,255,.97);box-shadow:0 18px 40px -18px rgba(10,20,40,.55);display:flex;align-items:center;gap:20px;white-space:nowrap"></div>`);
+const FOL=mk('ui',`<div class="pill" style="left:540px;top:860px;height:110px;padding:0 54px 0 40px;border-radius:36px;background:${BLUE};color:#fff;font-weight:900;font-size:54px;gap:18px;letter-spacing:.04em"><span style="font-size:62px;line-height:1">+</span>FOLLOW${shine}</div>`);
+const SCORE=mk('ui',`<div class="abs" style="left:540px;top:1205px;transform:translate(-50%,-50%);padding:18px 40px;border-radius:40px;background:rgba(255,255,255,.97);box-shadow:0 18px 40px -18px rgba(10,20,40,.55);text-align:center"></div>`);
+const RING=mk('ui',`<svg class="abs" style="overflow:visible" width="380" height="400" viewBox="-190 -200 380 400"></svg>`);
+const SB=mk('ui',`<div class="abs" style="left:0;top:0;width:0;height:0"><div id="sbsh" class="abs" style="left:-100px;top:112px;width:200px;height:28px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.45),rgba(0,0,0,0))"></div><div id="sbm" class="abs" style="left:0;top:0;width:0;height:0"><img id="sbw" class="abs"><img id="sbf" class="abs"><div id="sbl" class="abs" style="height:6px;background:#fff;border-radius:3px;box-shadow:0 0 14px #fff"></div></div><svg id="sbfx" class="abs" style="left:-200px;top:-200px;overflow:visible" width="400" height="400"></svg></div>`);
+const SUB=mk('ui',`<div class="abs" style="left:540px;top:1660px;transform:translate(-50%,-50%);padding:16px 36px;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 16px 34px -16px rgba(10,20,40,.55);font-weight:600;font-size:40px;white-space:nowrap"></div>`);
+const HOOK=mk('ui',`<div class="pill" style="left:540px;top:860px;height:120px;padding:0 54px;border-radius:40px;font-weight:900;font-size:64px"></div>`);
+const IMGC={};Object.keys(BM).forEach(k=>{const i=new Image();i.src=`balls/${k}.png`;IMGC[k]=i});
+function sprite(el,key,D=236){const m=BM[key];const k=D/Math.max(m.w,m.h*.98);if(el.dataset.k!==key){el.src=`balls/${key}.png`;el.dataset.k=key}el.style.width=(m.w*k)+'px';el.style.left=(-m.w*k/2)+'px';el.style.top=(118-m.h*k)+'px';return m.h*k}
+const level=(n,name,col)=>`<span style="width:18px;height:18px;border-radius:50%;background:${col};box-shadow:0 0 12px ${col}"></span>LEVEL ${n} · <span style="color:${col==='#f2b705'?'#c99400':col}">${name}</span>`;
+const ring=(n,frac,col,r=158)=>{const a2=-Math.PI/2+frac*2*Math.PI,large=frac>.5?1:0;return `<circle r="${r}" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="14"/>${frac>.001?`<path d="M0 ${-r} A${r} ${r} 0 ${large} 1 ${(r*Math.cos(a2)).toFixed(1)} ${(r*Math.sin(a2)).toFixed(1)}" fill="none" stroke="${col}" stroke-width="14" stroke-linecap="round"/>`:''}`};
+const pillT=(el,o,s=1,dy=0)=>{el.style.transform=`translate(-50%,-50%) translateY(${dy}px) scale(${s})`;vis(el,o)};
+const star=(x,y,sc,c,o)=>`<path d="M${x} ${y-sc} L${x+sc*.28} ${y-sc*.28} L${x+sc} ${y} L${x+sc*.28} ${y+sc*.28} L${x} ${y+sc} L${x-sc*.28} ${y+sc*.28} L${x-sc} ${y} L${x-sc*.28} ${y-sc*.28}Z" fill="${c}" opacity="${o}"/>`;
+// subtitles from the recorded voice (hook lines are shown as big kinetic words instead)
+const KEY=/^(expert\??|easy\.|harder\.|Follow|day\.|focused\.|geography|reveal\.|guess\??|eight\??|score|challenge!|Mexico!|India!|Germany!|Thailand!|Chile!|Finland!|Morocco!|Malawi!)/i;
+const WORDS=WV.map(([li,txt,t])=>({txt,t,li,key:KEY.test(txt)}));
+const CH=[];{let cur=[];WORDS.forEach((w,i)=>{cur.push(w);const nx=WORDS[i+1],len=cur.reduce((s,x)=>s+x.txt.length+1,0);if(/[.?!]$/.test(w.txt)||len>=30||!nx||nx.li!==w.li){CH.push(cur);cur=[]}})}
+CH.forEach((c,i)=>{const nx=CH[i+1];c.t0=c[0].t;c.t1=nx&&nx[0].li===c[0].li?nx[0].t-.02:BV[c[0].li][1]+.3});
+const lc=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t)),LB=[157,182,234],NV=[43,58,103],BK=[17,18,24],BLc=[47,123,245],GR=[150,156,170];
+function renderSub(t,y){const c=CH.find(c=>t>=c.t0-.01&&t<c.t1+.15&&c[0].li>0);if(!c){vis(SUB,0);return}SUB.style.top=y+'px';const ex=clamp((t-c.t1)/.15),inn=eb(clamp((t-c.t0)/.2));vis(SUB,1-ex*.9);SUB.style.transform=`translate(-50%,-50%) scale(${(.92+.08*inn).toFixed(3)})`;
+  SUB.innerHTML=c.filter(w=>t>=w.t).map(w=>{const p=clamp((t-w.t)/.28),q=clamp((t-w.t-.28)/.25);let col=w.key?lc(LB,BLc,p):p<1?lc(LB,NV,p):lc(NV,BK,q);if(ex>0)col=lc(col,GR,ex);
+    return `<span style="display:inline-block;margin:0 .1em;color:rgb(${col});opacity:${Math.min(1,p*1.6)};filter:blur(${((1-p)*8+ex*5).toFixed(2)}px);transform:translateY(${((1-p)*16).toFixed(1)}px);${w.key?'font-weight:800':''}">${w.txt}</span>`}).join(' ')}
+const wt=(b,w)=>{const m=WV.find(x=>x[0]===b&&x[1].replace(/[.,?!]/g,'').toLowerCase()===w);return m?m[2]:BV[b][0]};
+
+// ───────── ball state
+const HOP=[['white_14',.06],['white_15',.07],['white_16',.08],['white_17',.12],['white_18',.12],['white_19',.08],['white_20',.07],['white_21',.08]];
+const seq=(t,t0,list)=>{let a=t0;for(const [k,d] of list){if(t<a+d)return k;a+=d}return list[list.length-1][0]};
+const BLINKS=[];for(let b=1.6;b<96;b+=2.7)BLINKS.push(b);
+function ballState(t){
+  let pos=L1.ball,white='white_01',flag=null,sweep=0,dy=0,rot=0,dx=0,sx=1,sy=1;
+  const cur=C.find(c=>t>=c.S-.01&&t<c.E+.01)||null;
+  // position: slide between centre and right layouts during flights
+  const tallAt=t=>{const c=C.find(c=>t>=c.S&&t<(C[C.indexOf(c)+1]?.S??999));return c&&c.tall?1:0};
+  {let prev=0,next=0;for(let i=0;i<C.length;i++){if(t>=C[i].S)prev=C[i].tall?1:0}const n=C.find(c=>c.S>t);next=n&&n.tall?1:0;
+   const p=C.filter(c=>c.S<=t).pop();let u=prev;if(n&&p&&t>p.E){const f0=n.S-FLY;u=lerp(prev,next,eio(seg(t,f0,n.S)))}else if(!p){u=0}
+   pos=[lerp(L1.ball[0],LT.ball[0],u),lerp(L1.ball[1],LT.ball[1],u)]}
+  // hook: roll in, brake squash, settle; surprised on "expert"
+  if(t<1.4){white=t<.95?'white_11':t<1.1?'white_12':'white_13';dx=-640*(1-eo(seg(t,.3,1.0)))}
+  const ex=wt(0,'expert');if(t>=ex&&t<ex+1)white='white_06';
+  // level plates: small hop at EASY, squint at MEDIUM, shake at HARD, serious at EXPERT
+  if(t>=5.3&&t<5.3+.68){white=seq(t,5.3,HOP);dy=-50*Math.sin(seg(t,5.42,5.88)*Math.PI)}
+  if(t>=22.6&&t<24.4)white='white_07';
+  if(t>=44.3&&t<44.9)rot+=6*Math.sin((t-44.3)*30)*(1-seg(t,44.3,44.9));
+  if(t>=70.6&&t<74.6)white='white_08';
+  if(cur){const e=t-cur.T0;
+    if(t>=cur.T0&&t<cur.R){ // thinking
+      if(cur.tall&&e>1&&e<3.6)white='white_03';
+      if(cur.k==='germany')rot+=3;if(cur.k==='finland'&&e<2.5)white='white_07';if(cur.k==='morocco')rot+=4*Math.sin(seg(e,0,.6)*Math.PI/2);
+      if(cur.k==='malawi')white=e<4?'white_08':'white_09';
+      if(cur.k==='slovenia')white=e<1.6?'white_04':e<3.2?'white_01':'white_09'}
+    if(cur.name&&t>=cur.R){const r=t-cur.R;flag=cur.k+'_A';sweep=eio(seg(r,0,.2))*(1-eio(seg(t,cur.E-.0,cur.E+.35)));
+      if(r>.2&&r<1.0){const k=seq(r,.2,cur.react.map(([a,d])=>[cur.k+'_'+a,d]));flag=k;white='white_01'}
+      if(cur.k==='india'&&r>.2&&r<.6)dy=-40*Math.sin(seg(r,.2,.5)*Math.PI);if(cur.k==='morocco'&&r>.2)rot+=5*Math.sin(seg(r,.2,1)*Math.PI);
+      if(r<.32){const k=.07*Math.sin(seg(r,0,.32)*Math.PI);sx+=k;sy-=k}}
+    if(!cur.name&&t>=cur.R)white='white_05'}
+  if(t>=cur?.E&&false){}
+  // after reveal the flag sweeps back down at E..E+.35 (handled above); halfway: looks at viewer + nod + hop
+  if(t>=41&&t<44.2){white='white_05';rot+=7*Math.sin(seg(t,42.2,42.5)*Math.PI)+7*Math.sin(seg(t,42.6,42.9)*Math.PI);if(t>=41.1&&t<41.78){white=seq(t,41.1,HOP);dy=-46*Math.sin(seg(t,41.22,41.68)*Math.PI)}}
+  if(t>=89.3&&t<95.6)white=t<92.8?'white_05':'white_01';
+  if(t>=95.6){const u=seg(t,95.6,96.4);white=seq(t,95.6,[['white_22',.1],['white_23',.1],['white_24',.1],['white_23',.1],['white_24',9]]);dx=760*eio(u)}
+  if(white==='white_01'&&!flag&&BLINKS.some(b=>t>=b&&t<b+.1))white='white_02';
+  if(flag&&sweep>=1&&flag.endsWith('_A')&&BLINKS.some(b=>t>=b&&t<b+.1))flag=flag.replace('_A','_B');
+  return {pos,white,flag,sweep,dy,rot,dx,sx,sy,vis:seg(t,.3,.35)*(1-seg(t,96.3,96.4))}}
+
+function renderAt(t){
+  t=Math.min(t,DUR-1e-6);
+  const cur=C.find(c=>t>=c.S-.01&&t<c.E+FLY)||C[0];const prevC=C.filter(c=>c.S<=t).pop();
+  const c=camera(t);
+  // which country is highlighted: the current one; during a flight the outline fades out then the next one in
+  const n=C.find(x=>x.S>t);let hlC=prevC,hlO=1;if(!prevC){hlC=C[0];hlO=seg(t,4.4,5.2)}else if(n&&t>prevC.E){const f0=n.S-FLY;const u=seg(t,f0,n.S);if(t>=f0){hlC=u<.5?prevC:n;hlO=u<.5?1-seg(u,.1,.35):seg(u,.62,.9)}}
+  const lv=hlC?hlC.lv:0;const dimv=prevC&&n&&t>prevC.E&&t>=n.S-FLY?lerp(DIM[prevC.lv],DIM[n.lv],seg(t,n.S-FLY,n.S))*(1-Math.sin(Math.PI*seg(t,n.S-FLY,n.S))):(prevC?DIM[prevC.lv]:0);
+  drawGlobe(c,{det:c.R>1500?hlC.k:null,id:hlC.id,dim:dimv,hl:hlO});
+  // title / level / progress
+  pillT(TITLE,eo(seg(t,.4,.7))*(1-seg(t,96.6,97)),.9+.1*eb(seg(t,.4,.8)));setShine(TITLE,seg(t,1,1.8));
+  const pl=PLATES.filter(p=>t>=p[0]).pop();const lvI=pl?pl[2]:0;LVL.innerHTML=level(lvI+1,LV[lvI][0],LV[lvI][1]);pillT(LVL,seg(t,5.2,5.5)*(1-seg(t,96.6,97)),pl?1+.1*Math.sin(seg(t,pl[0],pl[0]+.35)*Math.PI):1);
+  const done=C.filter(x=>t>=x.S).length;PRG.innerHTML=(t>=41&&t<44.2)?`4/9 · <span style="color:#111218">HALFWAY</span>`:`${Math.max(1,done)}/9`;pillT(PRG,seg(t,5.2,5.5)*(1-seg(t,96.6,97)));PRG.style.left=(t>=41&&t<44.2)?'820px':'850px';
+  // big centre plates: hook words, level plates, halfway follow, final
+  const hw=[[wt(0,'nine'),wt(0,'four'),'9 COUNTRIES'],[wt(0,'four'),wt(0,'five'),'4 LEVELS'],[wt(0,'five'),wt(0,'can'),'5 SECONDS EACH'],[wt(0,'can'),5.15,'CAN YOU REACH&nbsp;<span style="color:#ff3b30">EXPERT?</span>']].find(h=>t>=h[0]-.05&&t<h[1]-.05);
+  if(hw){HOOK.innerHTML=hw[2];pillT(HOOK,clamp(seg(t,hw[0]-.05,hw[0]+.05)),.75+.25*eb(seg(t,hw[0]-.05,hw[0]+.3)))}else vis(HOOK,0);
+  const P=PLATES.find(p=>t>=p[0]&&t<p[1]);
+  if(P){const col=LV[P[2]][1];BIG.innerHTML=`<span style="width:30px;height:30px;border-radius:50%;background:${col};box-shadow:0 0 18px ${col}"></span>${P[3].replace(/· (.*)$/,`· <span style="color:${col==='#f2b705'?'#c99400':col}">$1</span>`)}`+shine;
+    const o=seg(t,P[0],P[0]+.12)*(1-seg(t,P[1]-.25,P[1]));pillT(BIG,o,(.7+.3*eb(seg(t,P[0],P[0]+.35)))*(1-.1*seg(t,P[1]-.25,P[1])),-(seg(t,P[1]-.25,P[1]))*40);setShine(BIG,seg(t,P[0]+.3,P[0]+1))}else vis(BIG,0);
+  const fo=(t>=41.6&&t<44.1)?seg(t,41.6,41.75)*(1-seg(t,43.9,44.1)):(t>=92.8&&t<95.6)?seg(t,92.8,92.95)*(1-seg(t,95.4,95.6)):0;
+  if(fo>0){const t0=t<50?41.6:92.8;FOL.style.top=t<50?'860px':'1205px';const pulse=1+.06*Math.sin(seg(t,t0+.5,t0+.8)*Math.PI);pillT(FOL,fo,(.6+.4*eb(seg(t,t0,t0+.35)))*pulse);setShine(FOL,seg(t,t0+.6,t0+1.2))}else vis(FOL,0);
+  // final: score plate (Slovenia stays on screen)
+  if(t>=90.2&&t<92.8){SCORE.innerHTML=`<div style="font-weight:900;font-size:52px;white-space:nowrap">YOUR SCORE: <span style="color:${BLUE}">__ / 8</span></div><div style="font-weight:800;font-size:28px;color:#7d8597;letter-spacing:.06em;margin-top:6px">+ FINAL GUESS IN THE COMMENTS</div>`;const p=eb(seg(t,90.2,90.55));SCORE.style.transform=`translate(-50%,-50%) scale(${(.7+.3*p).toFixed(3)})`;vis(SCORE,seg(t,90.2,90.3)*(1-seg(t,92.6,92.8)))}else vis(SCORE,0);
+  // timer ring around the ball + answer pill
+  const b=ballState(t);
+  const th=C.find(x=>t>=x.T0&&t<x.R);let ro=0;
+  if(th){const e=t-th.T0,nn=5-Math.floor(e),col=nn>=4?'#30c060':nn>=2?'#f2b705':'#ff3b30',pop=eb(seg(e%1,0,.25));ro=seg(t,th.T0-.25,th.T0);
+    RING.innerHTML=ring(nn,1-e/5,col)+`<g transform="translate(118 -118) scale(${(.8+.2*pop).toFixed(3)})"><circle r="40" fill="#fff"/><text y="17" text-anchor="middle" font-family="Inter Display,Inter" font-weight="900" font-size="48" fill="${col==='#f2b705'?'#c99400':col}">${nn}</text></g>`}
+  else{const r=C.find(x=>t>=x.R&&t<x.R+.25);if(r){ro=1-seg(t,r.R,r.R+.2);RING.innerHTML=ring(0,0,'#fff')}else if(C.find(x=>t>=x.S&&t<x.T0)){ro=seg(t,C.find(x=>t>=x.S&&t<x.T0).S,C.find(x=>t>=x.S&&t<x.T0).T0)*.6;RING.innerHTML=ring(5,1,'#30c060')}}
+  RING.style.left=(b.pos[0]-190)+'px';RING.style.top=(b.pos[1]-200)+'px';vis(RING,ro);
+  const rv=C.find(x=>t>=x.R&&t<x.E+.3);
+  if(rv){const pp=eb(seg(t,rv.R+.05,rv.R+.35))*(1-seg(t,rv.E+.05,rv.E+.3));const L=rv.tall?LT:L1;ANS.style.left=L.pill[0]+'px';ANS.style.top=L.pill[1]+'px';ANS.style.transform=`translate(-50%,-50%) scale(${(.6+.4*pp).toFixed(3)})`;vis(ANS,clamp(pp*2));
+    ANS.innerHTML=rv.name?`<div style="width:64px;height:64px;border-radius:50%;background:#30c060;display:flex;align-items:center;justify-content:center"><svg width="36" height="36" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-weight:900;font-size:60px">${rv.name}</div>`:`<div style="font-weight:900;font-size:60px">YOUR <span style="color:${BLUE}">GUESS?</span></div>`}
+  else if(t>=89.3&&t<90.2){const pp=eb(seg(t,89.35,89.65));const L=L1;ANS.style.left=L.pill[0]+'px';ANS.style.top=L.pill[1]+'px';ANS.style.transform=`translate(-50%,-50%) scale(${(.6+.4*pp).toFixed(3)})`;vis(ANS,1-seg(t,90,90.2));ANS.innerHTML=`<div style="font-weight:900;font-size:60px">YOUR <span style="color:${BLUE}">GUESS?</span></div>`}
+  else vis(ANS,0);
+  // ball
+  SB.style.left=(b.pos[0]+b.dx)+'px';SB.style.top=b.pos[1]+'px';vis(SB,b.vis);
+  sprite($('sbw'),b.white);const fh=b.flag?sprite($('sbf'),b.flag):236;$('sbf').style.display=b.flag&&b.sweep>0?'block':'none';
+  $('sbf').style.clipPath=`inset(${((1-b.sweep)*100).toFixed(1)}% 0 0 0)`;const on=b.flag&&b.sweep>0&&b.sweep<1;$('sbl').style.display=on?'block':'none';if(on){$('sbl').style.left='-118px';$('sbl').style.width='236px';$('sbl').style.top=(118-fh*b.sweep-3)+'px'}
+  const idle=t>1.4&&t<95.6?3*Math.sin(t*2*Math.PI/1.7):0;
+  $('sbm').style.transform=`translateY(${(b.dy+idle).toFixed(1)}px) rotate(${b.rot.toFixed(2)}deg) scale(${b.sx.toFixed(3)},${b.sy.toFixed(3)})`;
+  const hs=clamp(1-Math.abs(b.dy)/200,.4,1);$('sbsh').style.transform=`scale(${hs.toFixed(3)})`;
+  let fx='';C.forEach(x=>{if(!x.name)return;const u=(t-x.R-.18)/.55;if(u<0||u>=1)return;for(let i=0;i<8;i++){const a=i/8*6.283+.3,r=170+u*70;fx+=star(200+Math.cos(a)*r,200+Math.sin(a)*r*.9,(1-u)*(i%2?10:15),i%2?'#ffd34d':'#fff',(1-u).toFixed(2))}});$('sbfx').innerHTML=fx;
+  renderSub(t,(cur&&cur.tall&&t>=cur.S&&t<cur.E)?1640:1660);
+}
+// ───────── sound events
+const SFX=[];const sx=(t,type,g=1,d=0)=>SFX.push({t:+t.toFixed(4),type,g,d});
+sx(0,'air',.4,2.2);sx(.3,'whoosh',.3,.7);sx(.98,'land',.45);sx(wt(0,'nine')-.05,'pop',.35);sx(wt(0,'four')-.05,'pop',.35);sx(wt(0,'five')-.05,'pop',.35);sx(wt(0,'can')-.05,'pop',.4);sx(wt(0,'expert'),'sparkle',.35);
+PLATES.forEach((p,i)=>{sx(p[0],'impact',.45+(i>=2?.1:0));sx(p[0]+.05,'pop',.4)});sx(5.3,'boing',.3);
+C.forEach((c,i)=>{for(let k=0;k<5;k++)sx(c.T0+k,'tick',i===8&&k===4?.45:.55);if(c.name){sx(c.R,'chime',.55);sx(c.R+.05,'pop',.4);sx(c.R,'swish',.4,.3);sx(c.E,'fold',.25)}const n=C[i+1];if(n)sx(c.k==='thailand'?c.E:n.S-FLY,'hop',.5,c.k==='thailand'?n.S-c.E:FLY)});
+sx(41.1,'boing',.3);sx(41.6,'pop',.45);sx(42.1,'click',.5);sx(92.8,'pop',.45);sx(93.3,'click',.5);sx(89.35,'pop',.4);sx(90.2,'pop',.4);sx(95.6,'whoosh',.35,.8);sx(95.9,'rwhoosh',.45);sx(96.4,'air',.35,1.1);
+window.SFX=SFX;window.SCN={dur:DUR,vo:BV,duck:[[84.3,89.3,.6]]};window.renderAt=renderAt;window.DUR=DUR;
+(TEX.complete?Promise.resolve():new Promise(r=>TEX.addEventListener('load',r))).then(()=>Promise.all([...Object.values(DETIMG),...Object.values(IMGC)].map(i=>i.complete?1:new Promise(r=>{i.onload=r;i.onerror=r})))).then(()=>document.fonts.ready).then(()=>{renderAt(0);window.ready=true});
+</script></body></html>
