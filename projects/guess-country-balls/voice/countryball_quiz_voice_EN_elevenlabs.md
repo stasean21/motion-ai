@@ -19,7 +19,7 @@
 | 10 | 0:51.5 | ≤ 0.9 s | Chile! |
 | 11 | 1:00.4 | ≤ 0.9 s | Finland! |
 | 12 | 1:09.3 | ≤ 0.9 s | Morocco! |
-| 13 | 1:10.6 | ≤ 2.4 s | Expert level. No neighbours. |
+| 13 | 1:10.6 | ≤ 2.4 s | Expert level. Only true geography fans get these. |
 | 14 | 1:18.7 | ≤ 0.9 s | Malawi! |
 | 15 | 1:20.0 | ≤ 2.4 s | Final country. No reveal. |
 | 16 | 1:28.1 | ≤ 1.2 s | What's your guess? |
@@ -41,7 +41,7 @@ Hard level. Stay focused. <break time="1.2s" />
 Chile! <break time="1.2s" />
 Finland! <break time="1.2s" />
 Morocco! <break time="1.2s" />
-Expert level. No neighbours. <break time="1.2s" />
+Expert level. Only true geography fans get these. <break time="1.2s" />
 Malawi! <break time="1.2s" />
 Final country. No reveal. <break time="1.2s" />
 What's your guess? <break time="1.2s" />

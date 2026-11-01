@@ -4,7 +4,7 @@ from PIL import Image
 LAYER = 'BlueMarble_ShadedRelief_Bathymetry'
 my = lambda lat: math.log(math.tan(math.pi / 4 + math.radians(lat) / 2))
 def tile(lon, lat, z): n = 2 ** z; return (lon + 180) / 360 * n, (1 - my(lat) / math.pi) / 2 * n
-BOX = {'mexico': (-120, -84, 12, 34, 6), 'germany': (3.5, 17.5, 46, 56, 8), 'chile': (-80, -62, -57, -16, 6)}
+BOX = {'mexico': (-120, -84, 12, 34, 6), 'germany': (3.5, 17.5, 46, 56, 8), 'chile': (-80, -62, -57, -16, 6), 'malawi': (30, 38, -18.5, -8.5, 8)}
 REF = {}; out = 'const DET_SRC={};'
 for k, (lo0, lo1, la0, la1, z) in BOX.items():
     x0, y0 = tile(lo0, la1, z); x1, y1 = tile(lo1, la0, z)

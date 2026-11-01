@@ -33,6 +33,7 @@ svg{display:block}
 <script src="sat/det_mexico.js"></script>
 <script src="sat/det_germany.js"></script>
 <script src="sat/det_chile.js"></script>
+<script src="sat/det_malawi.js"></script>
 <script src="balls/meta.js"></script>
 
 <script>
@@ -153,8 +154,7 @@ function frame(k){$('glw').style.background='#06182a';$('glc').style.visibility=
   if(k===3){drawGlobe({lon:30,lat:-5,R:470,tx:540,ty:880});LVL.innerHTML=level(2,'MEDIUM','#f2b705');PRG.innerHTML='4/9 · <span style="color:#111218">HALFWAY</span>';HALF.style.display='flex';FOLLOW.style.display='flex';[HALF,FOLLOW].forEach(x=>x.style.transform='translate(-50%,-50%)');setBall(540,1430,'white_05',null,0);sub('Follow for a new <span style="color:#2f7bf5;font-weight:800">challenge</span> every day.')}
   if(k===4){drawGlobe(fit(-76.5,-66,-56,-17.3,LT.map),{det:'chile',id:'152',dim:.55});LVL.innerHTML=level(3,'HARD','#ff8a1f');PRG.textContent='5/9';setBall(790,1330,'white_01','chile_B',1);pill(790,1100,'CHILE');sub('Chile<span style="color:#2f7bf5;font-weight:800">!</span>');
     let fx='';for(let i=0;i<8;i++){const a=i/8*6.283+.3,r=190,x=790+Math.cos(a)*r,y=1330+Math.sin(a)*r*.9,sc=i%2?10:15;fx+=`<path d="M${x} ${y-sc} L${x+sc*.28} ${y-sc*.28} L${x+sc} ${y} L${x+sc*.28} ${y+sc*.28} L${x} ${y+sc} L${x-sc*.28} ${y+sc*.28} L${x-sc} ${y} L${x-sc*.28} ${y-sc*.28}Z" fill="${i%2?'#ffd34d':'#fff'}" opacity=".85"/>`}$('glo').innerHTML=fx}
-  if(k===5){$('glc').style.visibility='hidden';$('glw').style.background='radial-gradient(circle at 50% 42%,#123158,#061428 70%)';const f=C10.find(x=>x.id==='454');const pr=d3.geoMercator().fitExtent([[330,460],[750,1180]],f);
-    $('gls').innerHTML=`<path d="${d3.geoPath(pr)(f)}" fill="#fff" stroke="#fff" stroke-width="3" style="filter:drop-shadow(0 0 22px rgba(160,200,255,.55))"/>`;LVL.innerHTML=level(4,'EXPERT','#ff3b30');PRG.textContent='8/9';rg(540,1430,1,.15,'#ff3b30');setBall(540,1430,'white_08',null,0)}
+  if(k===5){drawGlobe(fit(31.6,37,-17.3,-9.2,LT.map),{det:'malawi',id:'454',dim:.6});LVL.innerHTML=level(4,'EXPERT','#ff3b30');PRG.textContent='8/9';rg(790,1330,1,.15,'#ff3b30');setBall(790,1330,'white_08',null,0)}
 }
 function renderAt(t){frame(Math.round(t))}
 window.renderAt=renderAt;
