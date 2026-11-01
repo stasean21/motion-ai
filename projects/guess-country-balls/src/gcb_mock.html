@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Guess the Country — Countryball</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#06182a}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#111218}
+.abs{position:absolute}
+.pill{position:absolute;display:flex;align-items:center;justify-content:center;white-space:nowrap;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 14px 30px -14px rgba(10,20,40,.5)}
+svg{display:block}
+</style>
+</head>
+<body>
+<div id="glw" class="abs" style="inset:0;background:#06182a">
+ <canvas id="glc" width="1080" height="1920" class="abs" style="left:0;top:0"></canvas>
+ <svg id="gls" class="abs" style="left:0;top:0" width="1080" height="1920"></svg>
+ <svg id="glo" class="abs" style="left:0;top:0" width="1080" height="1920"></svg>
+</div>
+<div id="dim" class="abs" style="inset:0;background:#041222;opacity:0"></div>
+<div id="card" class="abs" style="left:80px;top:430px;width:920px;height:720px;border-radius:40px;overflow:hidden;border:8px solid #fff;box-shadow:0 30px 60px -20px rgba(0,0,0,.6);transform-origin:50% 50%;visibility:hidden">
+ <svg id="cardsvg" width="904" height="704" viewBox="8 8 904 704"></svg>
+</div>
+<div id="ui" class="abs" style="inset:0"></div>
+<script src="lib/d3-array.min.js"></script>
+<script src="lib/d3-geo.min.js"></script>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/world10m.js"></script>
+<script src="lib/world50m.js"></script>
+<script src="tex/globe_tex.js"></script>
+<script src="sat/det_ref.js"></script>
+<script src="sat/det_mexico.js"></script>
+<script src="sat/det_germany.js"></script>
+
+<script>
+const BLUE='#2f7bf5';const $=id=>document.getElementById(id);
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),lerp=(a,b,t)=>a+(b-a)*t,eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+const mk=(parent,h)=>{const d=document.createElement('div');d.innerHTML=h.trim();const e=d.firstChild;$(parent).appendChild(e);return e};
+// ───────── globe (WebGL orthographic, NASA Blue Marble) + Natural Earth borders; Japan highlight in the house style
+const GL=$('glc').getContext('webgl',{preserveDrawingBuffer:true,antialias:true});
+const VS=`attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
+const FS=`precision highp float;uniform sampler2D tex;uniform sampler2D det;uniform vec2 C;uniform float R;uniform vec2 L;
+uniform vec3 DG;uniform vec2 DS;uniform float DON;
+void main(){vec2 q=(gl_FragCoord.xy-C)/R;float r2=dot(q,q);vec3 bg=vec3(.024,.094,.165);
+  if(r2>1.){float d=sqrt(r2)-1.;float g=exp(-d*R/38.)*.55+exp(-d*R/140.)*.18;gl_FragColor=vec4(bg+vec3(.35,.6,1.)*g,1.);return;}
+  vec3 v=vec3(q.x,q.y,sqrt(1.-r2));float cl=cos(L.y),sl=sin(L.y);vec3 w=vec3(v.x,v.y*cl+v.z*sl,-v.y*sl+v.z*cl);
+  float lon=atan(w.x,w.z)+L.x,lat=asin(clamp(w.y,-1.,1.));float fx=fract(lon/6.2831853+.5);vec2 uv=vec2(fx,.5-lat/3.1415927);
+  vec3 c=texture2D(tex,uv).rgb;
+  if(DON>0.){float ym=log(tan(.78539816+clamp(lat,-1.47,1.47)*.5));vec2 d=vec2((fx*DG.x-DG.y)/DS.x,((1.-ym/3.1415927)*.5*DG.x-DG.z)/DS.y);
+    float wg=smoothstep(0.,.03,d.x)*smoothstep(0.,.03,1.-d.x)*smoothstep(0.,.03,d.y)*smoothstep(0.,.03,1.-d.y);c=mix(c,texture2D(det,d).rgb,wg*DON);}
+  c*=1.08;float limb=pow(v.z,.35);c=c*(.55+.45*limb)+vec3(.3,.55,1.)*pow(1.-v.z,3.)*.55;gl_FragColor=vec4(c,1.);}`;
+const sh=(t,src)=>{const o=GL.createShader(t);GL.shaderSource(o,src);GL.compileShader(o);if(!GL.getShaderParameter(o,GL.COMPILE_STATUS))throw new Error(GL.getShaderInfoLog(o));return o};
+const PG=GL.createProgram();GL.attachShader(PG,sh(GL.VERTEX_SHADER,VS));GL.attachShader(PG,sh(GL.FRAGMENT_SHADER,FS));GL.linkProgram(PG);GL.useProgram(PG);
+GL.bindBuffer(GL.ARRAY_BUFFER,GL.createBuffer());GL.bufferData(GL.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),GL.STATIC_DRAW);
+const aP=GL.getAttribLocation(PG,'p');GL.enableVertexAttribArray(aP);GL.vertexAttribPointer(aP,2,GL.FLOAT,false,0,0);
+const U={};['C','R','L','DG','DS','DON','tex','det'].forEach(n=>U[n]=GL.getUniformLocation(PG,n));GL.uniform1i(U.tex,0);GL.uniform1i(U.det,1);
+const TEX=new Image();TEX.src=GLOBE_SRC;
+TEX.onload=()=>{GL.activeTexture(GL.TEXTURE0);const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,TEX);
+  [GL.TEXTURE_MIN_FILTER,GL.TEXTURE_MAG_FILTER].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.LINEAR));[GL.TEXTURE_WRAP_S,GL.TEXTURE_WRAP_T].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.CLAMP_TO_EDGE))};
+const DETIMG={},DETTEX={};Object.keys(DET_SRC).forEach(k=>{const im=new Image();im.src=DET_SRC[k];DETIMG[k]=im});
+function bindDet(k){if(!k){GL.uniform1f(U.DON,0);return}
+  if(!DETTEX[k]){GL.activeTexture(GL.TEXTURE1);const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,DETIMG[k]);
+    [GL.TEXTURE_MIN_FILTER,GL.TEXTURE_MAG_FILTER].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.LINEAR));[GL.TEXTURE_WRAP_S,GL.TEXTURE_WRAP_T].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.CLAMP_TO_EDGE));DETTEX[k]=t}
+  GL.activeTexture(GL.TEXTURE1);GL.bindTexture(GL.TEXTURE_2D,DETTEX[k]);GL.activeTexture(GL.TEXTURE0);
+  const r=DET_REF[k];GL.uniform3f(U.DG,256*2**r.z,r.X0*256,r.Y0*256);GL.uniform2f(U.DS,r.W,r.H);GL.uniform1f(U.DON,1)}
+const C10=topojson.feature(WORLD10,WORLD10.objects.countries).features,C50=topojson.feature(WORLD50,WORLD50.objects.countries).features;
+
+const MESH10=topojson.mesh(WORLD10,WORLD10.objects.countries,(a,b)=>a!==b),MESH50=topojson.mesh(WORLD50,WORLD50.objects.countries,(a,b)=>a!==b);
+const GPR=d3.geoOrthographic().clipAngle(90).precision(.3),GPATH=d3.geoPath(GPR);
+// camera views: fit a lon/lat box into a screen rect
+function fit(lo0,lo1,la0,la1,rect){const pts=[];for(let i=0;i<=24;i++){const f=i/24;pts.push([lerp(lo0,lo1,f),la0],[lerp(lo0,lo1,f),la1],[lo0,lerp(la0,la1,f)],[lo1,lerp(la0,la1,f)])}
+  const lon=(lo0+lo1)/2,lat=(la0+la1)/2,pr=d3.geoOrthographic().rotate([-lon,-lat]).fitExtent(rect,{type:'MultiPoint',coordinates:pts});return {lon,lat,R:pr.scale(),tx:pr.translate()[0],ty:pr.translate()[1]}}
+const hl=(d,o,fo=.34)=>`<g opacity="${o}"><path d="${d}" fill="${BLUE}" fill-opacity="${fo}"/><path d="${d}" fill="none" stroke="#7fb2ff" stroke-width="12" stroke-opacity=".45" stroke-linejoin="round" style="filter:blur(5px)"/><path d="${d}" fill="none" stroke="#fff" stroke-width="3.2" stroke-linejoin="round"/></g>`;
+function drawGlobe(c,o={}){const {lon,lat,R,tx,ty}=c;
+  GL.viewport(0,0,1080,1920);GL.uniform2f(U.C,tx,1920-ty);GL.uniform1f(U.R,R);GL.uniform2f(U.L,lon*Math.PI/180,lat*Math.PI/180);bindDet(o.det||null);GL.drawArrays(GL.TRIANGLE_STRIP,0,4);
+  GPR.rotate([-lon,-lat]).scale(R).translate([tx,ty]);const f=C10.find(x=>x.id===o.id),d=GPATH(f)||'';
+  const dim=o.dim?`<path d="M0 0H1080V1920H0Z ${d}" fill="#040c18" fill-opacity="${o.dim}" fill-rule="evenodd"/>`:'';
+  $('gls').innerHTML=`<path d="${GPATH(MESH10)||''}" fill="none" stroke="#fff" stroke-width="1.4" stroke-opacity="${o.dim?.25:.5}"/>`+dim+hl(d,1,.3)}
+const proj=p=>GPR(p);
+function slerp(a,b,u){const r=Math.PI/180,va=[Math.cos(a[1]*r)*Math.cos(a[0]*r),Math.cos(a[1]*r)*Math.sin(a[0]*r),Math.sin(a[1]*r)],vb=[Math.cos(b[1]*r)*Math.cos(b[0]*r),Math.cos(b[1]*r)*Math.sin(b[0]*r),Math.sin(b[1]*r)];
+  const d=Math.acos(clamp(va[0]*vb[0]+va[1]*vb[1]+va[2]*vb[2],-1,1));if(d<1e-6)return a;const s1=Math.sin((1-u)*d)/Math.sin(d),s2=Math.sin(u*d)/Math.sin(d);
+  const v=va.map((x,i)=>x*s1+vb[i]*s2);return [Math.atan2(v[1],v[0])/r,Math.asin(clamp(v[2],-1,1))/r]}
+const mix=(A,B,u)=>{const e=eio(u),c=slerp([A.lon,A.lat],[B.lon,B.lat],e);return {lon:c[0],lat:c[1],R:Math.exp(lerp(Math.log(A.R),Math.log(B.R),e)),tx:lerp(A.tx,B.tx,e),ty:lerp(A.ty,B.ty,e)}};
+
+// ───────── layout (mockup): title · level + progress · map zone 440–1180 · ball left + plate right · subtitles
+const TITLE=mk('ui',`<div class="pill" style="left:540px;top:240px;height:104px;padding:0 50px;border-radius:36px;font-weight:900;font-size:62px;letter-spacing:-.02em">GUESS THE <span style="color:${BLUE};margin-left:.28em">COUNTRY</span></div>`);
+const LVL=mk('ui',`<div class="pill" style="left:470px;top:340px;height:60px;padding:0 26px;font-weight:800;font-size:27px;letter-spacing:.06em;gap:12px"></div>`);
+const PRG=mk('ui',`<div class="pill" style="left:850px;top:340px;height:60px;padding:0 22px;font-weight:900;font-size:28px;color:${BLUE}"></div>`);
+const PLATE=mk('ui',`<div class="abs" style="left:640px;top:1330px;transform:translate(-50%,-50%);width:540px;height:190px;padding:20px 30px;border-radius:40px;background:rgba(255,255,255,.97);box-shadow:0 18px 40px -18px rgba(10,20,40,.55);display:flex;align-items:center;justify-content:center;gap:26px"></div>`);
+const SUB=mk('ui',`<div class="abs" style="left:540px;top:1532px;transform:translate(-50%,-50%);padding:16px 36px;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 16px 34px -16px rgba(10,20,40,.55);font-weight:600;font-size:40px;white-space:nowrap"></div>`);
+const BALL=mk('ui',`<svg class="abs" style="left:65px;top:1190px;overflow:visible" width="280" height="290" viewBox="-140 -150 280 290"></svg>`);
+const ZONE=mk('ui',`<div class="abs" style="left:60px;top:440px;width:960px;height:740px;border:3px dashed rgba(255,214,77,.0);border-radius:30px"></div>`);
+// countryball drawn as vector: white body (or a flag swept in by a mask), black outline, gloss, oval eyes looking up-right
+const FLAGS={germany:`<rect x="-130" y="-130" width="260" height="88" fill="#111"/><rect x="-130" y="-42" width="260" height="88" fill="#dd0000"/><rect x="-130" y="46" width="260" height="90" fill="#ffce00"/>`,
+ mexico:`<rect x="-130" y="-130" width="88" height="260" fill="#006847"/><rect x="-42" y="-130" width="86" height="260" fill="#fff"/><rect x="44" y="-130" width="88" height="260" fill="#ce1126"/>`};
+function ball(o={}){const r=118,sweep=o.sweep??0,flag=o.flag;const lookX=o.lx??14,lookY=o.ly??-12;
+  return `<defs><clipPath id="bc"><circle r="${r}"/></clipPath><clipPath id="sw"><rect x="${-r-10}" y="${-r-10+(1-sweep)*(2*r+20)}" width="${2*r+20}" height="${2*r+20}"/></clipPath>
+   <radialGradient id="bs" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".65" stop-color="#000" stop-opacity=".06"/><stop offset="1" stop-color="#000" stop-opacity=".32"/></radialGradient></defs>
+  <ellipse cx="0" cy="${r+14}" rx="${r*.8}" ry="16" fill="#000" opacity=".3" style="filter:blur(6px)"/>
+  <g clip-path="url(#bc)"><circle r="${r}" fill="#f6f7f9"/>${o.q?`<text x="-52" y="76" text-anchor="middle" font-family="Inter Display,Inter" font-weight="900" font-size="64" fill="${BLUE}" transform="rotate(-12 -52 60)">?</text>`:''}
+   ${flag?`<g clip-path="url(#sw)">${FLAGS[flag]}</g>${sweep>0&&sweep<1?`<rect x="${-r}" y="${-r+(1-sweep)*(2*r)-3}" width="${2*r}" height="6" fill="#fff" opacity=".9"/>`:''}`:''}
+   <circle r="${r}" fill="url(#bs)"/><ellipse cx="-44" cy="-62" rx="34" ry="20" fill="#fff" opacity=".75" transform="rotate(-30 -44 -62)"/></g>
+  <circle r="${r}" fill="none" stroke="#0d0d0f" stroke-width="7"/>
+  ${o.happy?`<path d="M-6 -36 Q14 -58 34 -36 M48 -40 Q66 -60 84 -40" stroke="#0d0d0f" stroke-width="7" fill="none" stroke-linecap="round"/>`:
+  `<ellipse cx="14" cy="-30" rx="26" ry="32" fill="#fff" stroke="#0d0d0f" stroke-width="6"/><ellipse cx="68" cy="-38" rx="23" ry="29" fill="#fff" stroke="#0d0d0f" stroke-width="6"/>
+   <circle cx="${14+lookX*.6}" cy="${-30+lookY}" r="11" fill="#0d0d0f"/><circle cx="${68+lookX*.6}" cy="${-38+lookY}" r="10" fill="#0d0d0f"/><circle cx="${18+lookX*.6}" cy="${-35+lookY}" r="3.5" fill="#fff"/><circle cx="${71+lookX*.6}" cy="${-43+lookY}" r="3.2" fill="#fff"/>`}`}
+const level=(n,name,col)=>`<span style="width:18px;height:18px;border-radius:50%;background:${col};box-shadow:0 0 12px ${col}"></span>LEVEL ${n} · <span style="color:${col==='#f2b705'?'#c99400':col}">${name}</span>`;
+const timer=(n,frac,col)=>{const r=58,a2=-Math.PI/2+frac*2*Math.PI,large=frac>.5?1:0;return `<svg width="150" height="150" viewBox="-75 -75 150 150"><circle r="${r}" fill="none" stroke="#e7eaf1" stroke-width="12"/><path d="M0 ${-r} A${r} ${r} 0 ${large} 1 ${(r*Math.cos(a2)).toFixed(1)} ${(r*Math.sin(a2)).toFixed(1)}" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round"/><text y="24" text-anchor="middle" font-family="Inter Display,Inter" font-weight="900" font-size="68" fill="${col==='#f2b705'?'#c99400':col}">${n}</text></svg>`};
+function V(lo0,lo1,la0,la1){return fit(lo0,lo1,la0,la1,[[90,470],[990,1170]])}
+function renderAt(t){const k=Math.round(t);
+  $('glw').style.background='#06182a';$('glc').style.visibility='visible';
+  if(k===1){ // EASY · thinking on Mexico (sea + neighbours visible)
+    drawGlobe(V(-118,-86,14,32.8),{det:'mexico',id:'484'});LVL.innerHTML=level(1,'EASY','#30c060');PRG.textContent='1/9';
+    PLATE.innerHTML=timer(3,.6,'#f2b705')+`<div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:900;font-size:40px;line-height:1">WHICH</div><div style="font-weight:900;font-size:40px;line-height:1;color:${BLUE}">COUNTRY?</div><div style="font-weight:700;font-size:20px;letter-spacing:.06em;color:#7d8597;margin-top:6px">5 SECONDS</div></div>`;
+    BALL.innerHTML=ball({q:1});SUB.style.visibility='hidden'}
+  if(k===2){ // MEDIUM · reveal Germany: flag sweeps over the white ball, answer in the plate
+    drawGlobe(V(5.2,15.6,47.1,55.2),{det:'germany',id:'276',dim:.25});LVL.innerHTML=level(2,'MEDIUM','#f2b705');PRG.textContent='3/9';
+    PLATE.innerHTML=`<div style="width:74px;height:74px;border-radius:50%;background:#30c060;display:flex;align-items:center;justify-content:center"><svg width="40" height="40" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-weight:900;font-size:64px;letter-spacing:.01em">GERMANY</div>`;
+    BALL.innerHTML=ball({flag:'germany',sweep:.72});SUB.style.visibility='visible';SUB.innerHTML='Germany<span style="color:#2f7bf5;font-weight:800">!</span>'}
+  if(k===3){ // EXPERT · white silhouette only, timer red
+    $('glc').style.visibility='hidden';$('glw').style.background='radial-gradient(circle at 50% 42%,#123158,#061428 70%)';
+    const f=C10.find(x=>x.id==='454');const pr=d3.geoMercator().fitExtent([[300,470],[780,1170]],f);
+    $('gls').innerHTML=`<path d="${d3.geoPath(pr)(f)}" fill="#fff" stroke="#fff" stroke-width="3" style="filter:drop-shadow(0 0 22px rgba(160,200,255,.55))"/>`;
+    LVL.innerHTML=level(4,'EXPERT','#ff3b30');PRG.textContent='8/9';
+    PLATE.innerHTML=timer(1,.15,'#ff3b30')+`<div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:900;font-size:40px;line-height:1">NO</div><div style="font-weight:900;font-size:40px;line-height:1;color:#ff3b30">NEIGHBOURS</div><div style="font-weight:700;font-size:20px;letter-spacing:.06em;color:#7d8597;margin-top:6px">SILHOUETTE ONLY</div></div>`;
+    BALL.innerHTML=ball({q:1,lx:4,ly:-4});SUB.style.visibility='hidden'}
+  [TITLE,LVL,PRG].forEach(e=>e.style.transform='translate(-50%,-50%)')}
+window.renderAt=renderAt;
+(TEX.complete?Promise.resolve():new Promise(r=>TEX.addEventListener('load',r))).then(()=>Promise.all(Object.values(DETIMG).map(i=>i.complete?1:new Promise(r=>{i.onload=r;i.onerror=r})))).then(()=>document.fonts.ready).then(()=>{renderAt(1);window.ready=true});
+</script></body></html>
