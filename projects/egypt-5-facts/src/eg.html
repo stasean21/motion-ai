@@ -70,7 +70,8 @@ const SUB=mk('ui',`<div class="abs" style="left:540px;top:1532px;transform:trans
 const SER=mk('ui',`<div class="abs" style="left:540px;top:760px;width:0;height:0">
  <div id="sdots" class="abs" style="left:0;top:-150px;transform:translateX(-50%);display:flex;gap:26px">${[0,1,2,3,4].map(i=>`<div class="sd" style="width:74px;height:74px;border-radius:50%;background:#fff;box-shadow:0 12px 26px -10px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"><div style="width:30px;height:30px;border-radius:50%;background:${BLUE}"></div></div>`).join('')}</div>
  <div id="stext" class="pill" style="left:0;top:0;height:100px;padding:0 44px;border-radius:34px;font-weight:900;font-size:50px;overflow:hidden"></div>
- <div id="sbtn" class="pill" style="left:0;top:150px;height:96px;padding:0 46px 0 36px;border-radius:30px;background:${BLUE};color:#fff;font-weight:900;font-size:44px;letter-spacing:.04em;gap:18px"><svg width="40" height="40" viewBox="0 0 24 24"><path d="M12 22a2.5 2.5 0 0 0 2.4-2h-4.8a2.5 2.5 0 0 0 2.4 2zm7-6V11a7 7 0 0 0-5.5-6.8V3.5a1.5 1.5 0 0 0-3 0v.7A7 7 0 0 0 5 11v5l-2 2v1h18v-1z" fill="#fff"/></svg>SUBSCRIBE<div class="shn abs" style="inset:0;border-radius:inherit;overflow:hidden"><div class="abs" style="top:-20%;bottom:-20%;width:38%;left:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55) 50%,transparent);transform:translateX(-160%) skewX(-18deg)"></div></div></div></div>`);
+ <div id="sbtn" class="pill" style="left:0;top:150px;height:96px;padding:0 46px 0 36px;border-radius:30px;background:#ff0033;color:#fff;font-weight:900;font-size:44px;letter-spacing:.04em;gap:18px"><svg width="40" height="40" viewBox="0 0 24 24"><path d="M12 22a2.5 2.5 0 0 0 2.4-2h-4.8a2.5 2.5 0 0 0 2.4 2zm7-6V11a7 7 0 0 0-5.5-6.8V3.5a1.5 1.5 0 0 0-3 0v.7A7 7 0 0 0 5 11v5l-2 2v1h18v-1z" fill="#fff"/></svg>SUBSCRIBE<div class="shn abs" style="inset:0;border-radius:inherit;overflow:hidden"><div class="abs" style="top:-20%;bottom:-20%;width:38%;left:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55) 50%,transparent);transform:translateX(-160%) skewX(-18deg)"></div></div></div></div>`);
+const RECON=mk('ui',`<div class="pill" style="left:812px;top:470px;height:38px;padding:0 16px;font-weight:700;font-size:17px;letter-spacing:.06em;color:#5b6475">ARTIST’S RECONSTRUCTION</div>`);
 const ICONS=mk('ui',`<div class="abs" style="left:540px;top:${CY}px;transform:translate(-50%,-50%);display:flex;gap:22px">${[0,1,2,3,4].map(i=>`<div class="ic" style="display:flex;flex-direction:column;align-items:center;gap:12px"><div style="width:156px;height:156px;border-radius:44px;background:#fff;box-shadow:0 18px 36px -16px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"><svg width="104" height="104" viewBox="0 0 100 100">${(ART.icons||[])[i]||''}</svg></div><div style="width:56px;height:56px;border-radius:50%;background:${BLUE};color:#fff;font-weight:900;font-size:32px;display:flex;align-items:center;justify-content:center">${i+1}</div></div>`).join('')}</div>`);
 const pillT=(el,o,s=1,dy=0)=>{el.style.transform=`translate(-50%,-50%) translateY(${dy}px) scale(${s})`;vis(el,o)};
 function kin(lines,t,t0){let k=0;return lines.map(([txt,fs,col,extra=''])=>`<div style="font-weight:900;font-size:${fs}px;line-height:1.08;letter-spacing:-.01em;color:${col};white-space:nowrap;${extra}">`+txt.split(' ').map(w=>{const p=clamp((t-t0-k*.07)/.38);k++;const s=.7+.3*eb(p);
@@ -174,6 +175,7 @@ function ebState(t){let s='n01',dx=0,dy=0,rot=0,sx=1,sy=1;
   if(t>=91.44&&t<93.2)s='n08';
   if(t>=93.2){s='n08';dy=320*eio(seg(t,93.2,93.9))}
   if(s==='n08'&&BLINKS.some(b=>t>=b&&t<b+.1))s='n07';if(s==='e01'&&BLINKS.some(b=>t>=b&&t<b+.1))s='e04';
+  {const L=wt(7,'rebuilt')+1.6;if(t>=L-.05&&t<L+.25){const k=.14*Math.sin(seg(t,L-.05,L+.25)*Math.PI);sx+=k;sy-=k}}
   rot+=8*(Math.sin(seg(t,10.55,10.85)*Math.PI)+Math.sin(seg(t,10.95,11.25)*Math.PI));
   const F=FACTS.find(f=>t>=f.open[0]+.6&&t<f.close[0]);if(F)rot+=3;
   return {s,dx,dy,rot,sx,sy,vis:seg(t,4.0,4.05)*(1-seg(t,93.8,93.9))}}
@@ -187,7 +189,14 @@ function renderEB(t){const m=ebState(t);Object.entries(EBI).forEach(([k,i])=>i.s
 
 // ───────── info plate
 const SMALL=s=>`<div style="margin-top:10px;font-weight:700;font-size:21px;letter-spacing:.06em;color:#7d8597;white-space:nowrap">${s}</div>`;
-const PLATES=[{a:4.75,b:6.9,parts:[{a:4.75,b:6.9,f:t=>kin([['HISTORY THAT',38,'#111218'],['SOUNDS MADE UP',44,BLUE]],t,4.85)}]}];
+const PLATES=[{a:4.75,b:6.9,parts:[{a:4.75,b:6.9,f:t=>kin([['HISTORY THAT',38,'#111218'],['SOUNDS MADE UP',44,BLUE]],t,4.85)}]},
+ {a:wt(5,'smooth')-.2,b:25.5,parts:[{a:wt(5,'smooth')-.2,b:wt(5,'rough')-.3,f:t=>kin([['WHITE',44,'#111218'],['LIMESTONE',54,BLUE]],t,wt(5,'smooth'))+SMALL(typeOn('ONCE COVERED THE PYRAMID',t,wt(5,'smooth')+.8))},
+   {a:wt(5,'rough')-.3,b:25.5,f:t=>`<div style="display:flex;gap:14px;font-weight:900;font-size:36px;white-space:nowrap"><span style="color:#111218;opacity:${eo(seg(t,wt(5,'rough')-.2,wt(5,'rough')+.2))}">OUTSIDE</span><span style="color:#b7bdc9">/</span><span style="color:${BLUE};opacity:${eo(seg(t,wt(5,'underneath')-.2,wt(5,'underneath')+.2))}">UNDERNEATH</span></div>`+SMALL('SMOOTH CASING · ROUGH CORE')}]},
+ {a:29.4,b:40.4,parts:[{a:29.4,b:wt(6,'Scientists')-.2,f:t=>kin([['IRON',58,BLUE],['BLADE',40,'#111218']],t,29.5)+SMALL(typeOn('TUTANKHAMUN’S DAGGER',t,30.2))},{a:wt(6,'Scientists')-.2,b:wt(6,'Not')-.2,f:t=>kin([['METAL',40,'#111218'],['ANALYSIS',50,BLUE]],t,wt(6,'Scientists'))+SMALL('IRON + NICKEL · METEORITIC')},{a:wt(6,'Not')-.2,b:40.4,f:t=>kin([['IRON',40,'#111218'],['FROM SPACE',54,BLUE]],t,wt(6,'Not'))}]},
+ {a:44.3,b:55.5,parts:[{a:44.3,b:wt(7,'cut')-.3,f:t=>kin([['1960s',58,BLUE],['RISING WATER',38,'#111218']],t,44.4)},{a:wt(7,'cut')-.3,b:wt(7,'An')-.2,f:t=>`<div style="display:flex;align-items:center;gap:10px;font-weight:900;font-size:40px;white-space:nowrap">`+[['CUT',wt(7,'cut')],['MOVE',wt(7,'moved')],['REBUILD',wt(7,'rebuilt')]].map(([w,a],i,arr)=>{const p=seg(t,a-.1,a+.25);if(p<=0)return '';const act=i===arr.filter(x=>t>=x[1]-.1).length-1;return (i?`<span style="color:#b7bdc9;opacity:${p}">→</span>`:'')+`<span style="display:inline-block;color:${act?BLUE:'#111218'};opacity:${Math.min(1,p*2)};transform:scale(${(.7+.3*eb(p)).toFixed(3)})">${w}</span>`}).join('')+`</div>`+SMALL('1964–1968 · MOVED ~65 M HIGHER')},{a:wt(7,'An')-.2,b:55.5,f:t=>kin([['TAKEN APART',40,'#111218'],['AND SAVED',50,BLUE]],t,wt(7,'An'))}]},
+ {a:59.2,b:70.4,parts:[{a:59.2,b:wt(8,'The')-.2,f:t=>kin([['A FORGOTTEN',38,'#111218'],['SCRIPT?',54,BLUE]],t,59.3)},{a:wt(8,'The')-.2,b:wt(8,'Scholars')-.2,f:t=>kin([['1 DECREE',44,'#111218'],['3 SCRIPTS',54,BLUE]],t,wt(8,'The'))},{a:wt(8,'Scholars')-.2,b:wt(8,'Comparing')-.2,f:t=>kin([['GREEK',54,BLUE],['COULD BE READ',36,'#111218']],t,wt(8,'Scholars'))},{a:wt(8,'Comparing')-.2,b:70.4,f:t=>kin([['HIEROGLYPHS',44,'#111218'],['UNLOCKED',54,BLUE]],t,wt(8,'Comparing'))}]},
+ {a:73.9,b:85.9,parts:[{a:73.9,b:77.5,f:t=>kin([['THE PYRAMID…',38,'#111218'],['OR US?',58,BLUE]],t,74.0)},{a:77.5,b:wt(10,'Only')-.2,f:t=>kin([['TO US!',66,BLUE]],t,77.55)+SMALL(typeOn('PYRAMID ≈2,500 YRS OLD IN HER TIME',t,78.4))},{a:wt(10,'Only')-.2,b:85.9,f:t=>kin([['≈2,000 YEARS',50,BLUE],['CLEOPATRA → TODAY',32,'#111218']],t,wt(10,'Only'))}]},
+ {a:87.3,b:93,parts:[{a:87.3,b:wt(12,'Comment')-.15,f:t=>kin([['WHICH ONE',40,'#111218'],['SURPRISED YOU?',42,BLUE]],t,87.4)},{a:wt(12,'Comment')-.15,b:93,f:t=>kin([['COMMENT',40,'#111218'],['1 – 5',66,BLUE]],t,wt(12,'Comment'))+SMALL(typeOn('& NEXT COUNTRY? ↓',t,wt(12,'Comment')+.8))}]}];
 function renderInfo(t){const P=PLATES.find(p=>t>=p.a&&t<p.b);if(!P){vis(INFO,0);return}
   const pin=eb(seg(t,P.a,P.a+.35)),pout=seg(t,P.b-.2,P.b);const part=P.parts.find(q=>t>=q.a&&t<q.b);
   $('infc').innerHTML=part?part.f(t):'';INFO.style.transform=`translate(-50%,-50%) translateY(${(pout*18).toFixed(1)}px) scale(${((.8+.2*pin)*(1-.1*pout)).toFixed(3)})`;vis(INFO,clamp(seg(t,P.a,P.a+.15))*(1-pout));setShine(INFO,seg(t,P.a+.35,P.a+1.05))}
@@ -234,10 +243,30 @@ function renderAt(t){
   $('fn0').textContent='0'+(fi-1);$('fn1').textContent='0'+fi;$('fn0').style.transform=`translateY(${(-r*110).toFixed(1)}%)`;$('fn1').style.transform=`translateY(${((1-r)*110).toFixed(1)}%)`;$('fn0').style.opacity=fi>1?1-r:0;
   $('ftop').textContent=typeOn(FACTS[fi-1].topic,t,lt+.15,30);
   const fo=seg(t,12.4,12.7)*(1-seg(t,92.6,92.9));pillT(FACTP,fo,(.85+.15*eb(seg(t,12.4,12.8)))*(1+.08*Math.sin(seg(t,lt,lt+.35)*Math.PI)));setShine(FACTP,seg(t,lt+.2,lt+.9));
-  vis(ICONS,0);renderEB(t);renderInfo(t);renderSub(t);
+  if(t>=87.2&&t<93){ICONS.style.visibility='visible';const out=seg(t,92.4,92.9);ICONS.style.opacity=1-out;
+    [...ICONS.children].forEach((e,i)=>{const q=seg(t,87.3+i*.14,87.8+i*.14),act=t>=wt(12,'Comment')?1+.06*Math.sin((t-89.4)*4+i):1;e.style.opacity=Math.min(1,q*3);e.style.transform=`translateY(${((1-bounce(q))*-160).toFixed(1)}px) rotate(${((1-eo(q))*(i%2?10:-10)).toFixed(1)}deg) scale(${act.toFixed(3)})`})}else vis(ICONS,0);
+  {const g=FACTS[0];const on=t>=wt(5,'It')+.3&&t<g.close[0]?1:0;const ab=FACTS[2];const on2=t>=ab.open[1]&&t<ab.close[0]?1:0;const cl=FACTS[4];const on3=t>=cl.open[1]&&t<77.5?1:0;
+   vis(RECON,Math.max(on*seg(t,wt(5,'It')+.3,wt(5,'It')+.6),on2,on3));RECON.style.transform='translate(-50%,-50%)';RECON.textContent=on2?'SIMPLIFIED DIAGRAM':on3?'STYLISED PORTRAIT':'ARTIST’S RECONSTRUCTION'}
+  renderEB(t);renderInfo(t);renderSub(t);
 }
-function scene(k,t){if(k==='kings')return ART.dagger({t});if(k==='abusimbel')return ART.abusimbel({});return `<rect width="920" height="720" fill="#e9dcc3"/>`}
-window.renderAt=renderAt;window.DUR=DUR;window.SFX=[];window.SCN={dur:DUR,vo:BV};
+function scene(k,t){
+  if(k==='giza')return ART.pyramid({casing:eio(seg(t,wt(5,'It'),wt(5,'It')+2.4)),glint:t>=wt(5,'Imagine')&&t<wt(5,'Imagine')+1.6?seg(t,wt(5,'Imagine'),wt(5,'Imagine')+1.6):-1,cut:eio(seg(t,wt(5,'rough')-.4,wt(5,'rough')+.5)),par:Math.sin(t*.5)});
+  if(k==='kings'){const a=wt(6,'Scientists'),n=wt(6,'Not');return ART.dagger({rot:10*Math.sin(seg(t,29.2,32)*Math.PI*.5),glow:seg(t,wt(6,'iron')-.1,wt(6,'iron')+.4)*(1-seg(t,a-.3,a)),scan:t>=a&&t<a+2.4?seg(t,a,a+2.4):-1,tags:seg(t,a+.6,a+1.2)*(1-seg(t,n-.3,n)),space:Math.sin(seg(t,n,n+3.2)*Math.PI),t})}
+  if(k==='abusimbel'){const c=wt(7,'cut'),m=wt(7,'moved'),r=wt(7,'rebuilt');return ART.abusimbelMove({water:eio(seg(t,wt(7,'rising')-.2,wt(7,'rising')+1.6)),cut:seg(t,c-.2,c+.8),move:seg(t,m-.2,r+1.6),seams:1-seg(t,r+1.6,r+2.4),t})}
+  if(k==='rosetta')return ART.rosetta({zones:seg(t,wt(8,'three')-.5,wt(8,'three')+1.2),greek:seg(t,wt(8,'Greek')-.2,wt(8,'Greek')+.4),guides:seg(t,wt(8,'Comparing'),wt(8,'Comparing')+.6),unlock:seg(t,wt(8,'unlock'),wt(8,'unlock')+.8)});
+  if(k==='alex')return ART.cleo({tl:eio(seg(t,77.6,78.4)),r1:seg(t,wt(10,'pyramid')-.1,wt(10,'pyramid')+.6),r2:seg(t,wt(10,'Only'),wt(10,'Only')+1.2),look:Math.sin((t-76.45)*Math.PI*2)});
+  return ''}
+window.renderAt=renderAt;window.DUR=DUR;const SFX=[];const sx=(t,type,g=1,d=0)=>SFX.push({t:+t.toFixed(4),type,g,d});
+sx(0,'air',.4,2.2);sx(.4,'whoosh',.35,1.2);sx(.25,'accent',.35);sx(2.45,'unfold',.4);sx(2.9,'knock',.4);sx(3.2,'knock',.35);sx(3.8,'fold',.35);sx(4.0,'impact',.5);sx(4.3,'whoosh',.3,.5);sx(4.45,'land',.5);sx(5.12,'cap',.5);sx(6.25,'boing',.3);
+[0,1,2,3,4].forEach(i=>sx(6.95+i*.16,'pop',.3));sx(7.25,'pop',.35);sx(10.45,'pop',.45);sx(10.9,'click',.55);sx(12.1,'rwhoosh',.4);sx(12.5,'whoosh',.3,.5);
+FACTS.forEach(f=>{sx(f.fly[0],'whoosh',.5,f.fly[1]-f.fly[0]+.2);if(!f.nopin)sx(f.fly[0]-.6,'pop',.35);sx(f.open[0],'unfold',.5);sx(f.close[0],'fold',.42);sx(f.back[0],'rwhoosh',.42)});
+sx(wt(5,'It'),'swish',.45,2.4);sx(wt(5,'Imagine'),'sparkle',.35);sx(wt(5,'rough')-.4,'accent',.35);
+sx(wt(6,'iron')-.1,'ring',.45);sx(wt(6,'Scientists'),'scan',.35,2.4);sx(wt(6,'Not'),'air',.4,1.6);sx(wt(6,'Not')+1.2,'ring',.35);
+sx(wt(7,'rising')-.2,'water',.4,2.4);[0,1,2,3,4,5].forEach(k=>{const m=wt(7,'moved')-.2,r=wt(7,'rebuilt')+1.6,d=(r-m)/6;sx(m+d*(k+1)-.05,'thud',k===5?.6:.38)});
+sx(wt(8,'three'),'paper',.35,1.5);sx(wt(8,'Comparing'),'click',.4);sx(wt(8,'Comparing')+.25,'click',.35);sx(wt(8,'unlock'),'chime',.5);
+sx(77.5,'chime',.45);sx(wt(10,'Only'),'accent',.35);
+for(let i=0;i<5;i++)sx(87.3+i*.14,'pop',.42);sx(87.1,'whoosh',.3,.4);sx(90.6,'boing',.3);sx(93,'rwhoosh',.45);sx(93.4,'air',.4,1.6);
+SFX.forEach(e=>e.t=Math.max(0,e.t));window.SFX=SFX;window.SCN={dur:DUR,vo:BV,duck:[[76.45,77.5,.3]]};
 $('card').insertAdjacentHTML('beforeend',shine);
 (TEX.complete?Promise.resolve():new Promise(r=>TEX.addEventListener('load',r))).then(()=>Promise.all([...Object.values(DETIMG),...Object.values(EBI)].map(i=>i.complete?1:new Promise(r=>{i.onload=r;i.onerror=r})))).then(()=>document.fonts.ready).then(()=>{renderAt(0);window.ready=true});
 </script>
