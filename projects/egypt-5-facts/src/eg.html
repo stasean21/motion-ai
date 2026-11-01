@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Egypt — 5 Facts</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#06182a}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#111218}
+.abs{position:absolute}
+.pill{position:absolute;display:flex;align-items:center;justify-content:center;white-space:nowrap;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 14px 30px -14px rgba(10,20,40,.5)}
+svg{display:block}
+</style>
+</head>
+<body>
+<div id="glw" class="abs" style="inset:0;background:#06182a">
+ <canvas id="glc" width="1080" height="1920" class="abs" style="left:0;top:0"></canvas>
+ <svg id="gls" class="abs" style="left:0;top:0" width="1080" height="1920"></svg>
+ <svg id="glo" class="abs" style="left:0;top:0" width="1080" height="1920"></svg>
+</div>
+<div id="dim" class="abs" style="inset:0;background:#041222;opacity:0"></div>
+<div id="card" class="abs" style="left:80px;top:430px;width:920px;height:720px;border-radius:40px;overflow:hidden;border:8px solid #fff;box-shadow:0 30px 60px -20px rgba(0,0,0,.6);transform-origin:50% 50%;visibility:hidden">
+ <svg id="cardsvg" width="904" height="704" viewBox="8 8 904 704"></svg>
+</div>
+<div id="ui" class="abs" style="inset:0"></div>
+<script src="lib/d3-array.min.js"></script>
+<script src="lib/d3-geo.min.js"></script>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/world10m.js"></script>
+<script src="lib/world50m.js"></script>
+<script src="tex/globe_tex.js"></script>
+<script src="sat/det_ref.js"></script>
+<script src="sat/det_eg.js"></script>
+<script src="sat/det_egc.js"></script>
+<script src="egart.js"></script>
+<script src="ebc/meta.js"></script>
+<script src="voice_place.js"></script>
+<script>
+const FPS=60,BLUE='#2f7bf5',DUR=95,CY=785;
+const $=id=>document.getElementById(id);
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),seg=(t,a,b)=>clamp((t-a)/(b-a)),lerp=(a,b,t)=>a+(b-a)*t;
+const eo=p=>1-Math.pow(1-p,3),eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+const eb=p=>{const c1=1.7,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)};
+const bounce=p=>{const n=7.5625,d=2.75;if(p<1/d)return n*p*p;if(p<2/d)return n*(p-=1.5/d)*p+.75;if(p<2.5/d)return n*(p-=2.25/d)*p+.9375;return n*(p-=2.625/d)*p+.984375};
+const mk=(parent,h)=>{const d=document.createElement('div');d.innerHTML=h.trim();const e=d.firstChild;$(parent).appendChild(e);return e};
+const vis=(el,o)=>{el.style.opacity=o;el.style.visibility=o<=.003?'hidden':'visible'};
+const wt=(b,w,n=0)=>{const m=WV.filter(x=>x[0]===b&&x[1].replace(/[.,?!]/g,'')===w);return m[n]?m[n][2]:BV[b][0]};
+
+// ───────── places and schedule (fact windows follow the recorded voice blocks)
+const PL={giza:[31.134,29.979],kings:[32.601,25.740],abusimbel:[31.626,22.337],rosetta:[30.416,31.404],alex:[29.918,31.200]};
+const NAMES={giza:'GIZA',kings:'VALLEY OF THE KINGS',abusimbel:'ABU SIMBEL',rosetta:'ROSETTA (RASHID)',alex:'ALEXANDRIA'};
+const FACTS=[
+ {k:'giza',fly:[12.4,13.3],open:[13.3,14.3],close:[25.5,26.1],back:[26.1,27],topic:'THE WHITE PYRAMID'},
+ {k:'kings',fly:[27,28.2],open:[28.2,29.2],close:[40.4,41],back:[41,42],topic:'IRON FROM SPACE'},
+ {k:'abusimbel',fly:[42,43.2],open:[43.2,44.2],close:[55.5,56.1],back:[56.1,57],topic:'THEY MOVED THE TEMPLES'},
+ {k:'rosetta',fly:[57,58.2],open:[58.2,59.2],close:[70.4,71],back:[71,72],topic:'A STONE THAT CRACKED A CODE'},
+ {k:'alex',r:2.4,nopin:1,fly:[72,72.9],open:[72.9,73.8],close:[85.9,86.5],back:[86.5,87],topic:'CLEOPATRA & TIME'}];
+const VO=BV.map(b=>[b[0],b[1],'']);
+const KEY=/^(meteorite\.|moved\.|made|Five|country|Subscribe|white|limestone\.|underneath\.|iron|space\.|Abu|saved\.|Greek\.|hieroglyphs\.|us\??|twenty-five|thousand|one|five—and|next\.)/i;
+
+// ───────── UI
+const shine=`<div class="shn abs" style="inset:0;border-radius:inherit;overflow:hidden;pointer-events:none"><div class="abs" style="top:-20%;bottom:-20%;width:38%;left:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,0) 20%,rgba(160,200,255,.55) 50%,rgba(255,255,255,0) 80%,transparent);transform:translateX(-160%) skewX(-18deg)"></div></div>`;
+const setShine=(el,u)=>{const s=el.querySelector('.shn>div');if(s)s.style.transform=`translateX(${lerp(-160,360,u).toFixed(1)}%) skewX(-18deg)`};
+const TITLE=mk('ui',`<div class="pill" style="left:540px;top:245px;height:110px;padding:0 70px;border-radius:38px;font-weight:900;font-size:80px;letter-spacing:.06em">${'EGYPT'.split('').map(c=>`<span class="tl" style="display:inline-block">${c}</span>`).join('')}${shine}</div>`);
+const FACTP=mk('ui',`<div class="pill" style="left:540px;top:350px;height:60px;padding:0 28px;font-weight:700;font-size:26px;letter-spacing:.07em;overflow:hidden"><span id="fp5">5 FACTS THAT SOUND MADE UP</span><span id="fpf" style="display:none">FACT&nbsp;<span style="display:inline-block;position:relative;width:1.4em;height:1.2em;overflow:hidden;color:${BLUE};font-weight:900;vertical-align:top"><span id="fn0" class="abs" style="left:0;top:0;width:100%;text-align:center"></span><span id="fn1" class="abs" style="left:0;top:0;width:100%;text-align:center"></span></span>/ 05<span style="margin:0 .5em;color:#b7bdc9">·</span><span id="ftop" style="color:${BLUE};font-weight:800"></span></span>${shine}</div>`);
+const EB=mk('ui',`<div class="abs" style="left:205px;top:1335px;width:0;height:0"><div id="ebsh" class="abs" style="left:-100px;top:108px;width:200px;height:28px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.45),rgba(0,0,0,0))"></div><div id="ebb" class="abs" style="left:0;top:0;width:0;height:0"></div><svg id="ebfx" class="abs" style="left:-200px;top:-260px;overflow:visible" width="400" height="400"></svg></div>`);
+const INFO=mk('ui',`<div class="abs" style="left:640px;top:1322px;transform:translate(-50%,-50%);width:540px;min-height:176px;padding:24px 28px;border-radius:40px;background:rgba(255,255,255,.97);box-shadow:0 18px 40px -18px rgba(10,20,40,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center"><div id="infc" style="display:flex;flex-direction:column;align-items:center"></div>${shine}</div>`);
+const SUB=mk('ui',`<div class="abs" style="left:540px;top:1532px;transform:translate(-50%,-50%);padding:16px 36px;border-radius:999px;background:rgba(255,255,255,.96);box-shadow:0 16px 34px -16px rgba(10,20,40,.55);font-weight:600;font-size:40px;text-align:center;white-space:nowrap"></div>`);
+// series intro (6–12.5 s): five dots → "5 FACTS · ONE COUNTRY" → "SUBSCRIBE FOR YOUR COUNTRY" + button
+const SER=mk('ui',`<div class="abs" style="left:540px;top:760px;width:0;height:0">
+ <div id="sdots" class="abs" style="left:0;top:-150px;transform:translateX(-50%);display:flex;gap:26px">${[0,1,2,3,4].map(i=>`<div class="sd" style="width:74px;height:74px;border-radius:50%;background:#fff;box-shadow:0 12px 26px -10px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"><div style="width:30px;height:30px;border-radius:50%;background:${BLUE}"></div></div>`).join('')}</div>
+ <div id="stext" class="pill" style="left:0;top:0;height:100px;padding:0 44px;border-radius:34px;font-weight:900;font-size:50px;overflow:hidden"></div>
+ <div id="sbtn" class="pill" style="left:0;top:150px;height:96px;padding:0 46px 0 36px;border-radius:30px;background:${BLUE};color:#fff;font-weight:900;font-size:44px;letter-spacing:.04em;gap:18px"><svg width="40" height="40" viewBox="0 0 24 24"><path d="M12 22a2.5 2.5 0 0 0 2.4-2h-4.8a2.5 2.5 0 0 0 2.4 2zm7-6V11a7 7 0 0 0-5.5-6.8V3.5a1.5 1.5 0 0 0-3 0v.7A7 7 0 0 0 5 11v5l-2 2v1h18v-1z" fill="#fff"/></svg>SUBSCRIBE<div class="shn abs" style="inset:0;border-radius:inherit;overflow:hidden"><div class="abs" style="top:-20%;bottom:-20%;width:38%;left:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55) 50%,transparent);transform:translateX(-160%) skewX(-18deg)"></div></div></div></div>`);
+const ICONS=mk('ui',`<div class="abs" style="left:540px;top:${CY}px;transform:translate(-50%,-50%);display:flex;gap:22px">${[0,1,2,3,4].map(i=>`<div class="ic" style="display:flex;flex-direction:column;align-items:center;gap:12px"><div style="width:156px;height:156px;border-radius:44px;background:#fff;box-shadow:0 18px 36px -16px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"><svg width="104" height="104" viewBox="0 0 100 100">${(ART.icons||[])[i]||''}</svg></div><div style="width:56px;height:56px;border-radius:50%;background:${BLUE};color:#fff;font-weight:900;font-size:32px;display:flex;align-items:center;justify-content:center">${i+1}</div></div>`).join('')}</div>`);
+const pillT=(el,o,s=1,dy=0)=>{el.style.transform=`translate(-50%,-50%) translateY(${dy}px) scale(${s})`;vis(el,o)};
+function kin(lines,t,t0){let k=0;return lines.map(([txt,fs,col,extra=''])=>`<div style="font-weight:900;font-size:${fs}px;line-height:1.08;letter-spacing:-.01em;color:${col};white-space:nowrap;${extra}">`+txt.split(' ').map(w=>{const p=clamp((t-t0-k*.07)/.38);k++;const s=.7+.3*eb(p);
+  return `<span style="display:inline-block;margin:0 .12em;opacity:${Math.min(1,p*2).toFixed(3)};transform:translateY(${((1-eo(p))*26).toFixed(1)}px) scale(${s.toFixed(3)});filter:blur(${((1-p)*6).toFixed(2)}px)">${w}</span>`}).join('')+'</div>').join('')}
+const typeOn=(txt,t,t0,cps=26)=>txt.slice(0,Math.floor(clamp((t-t0)*cps,0,txt.length)));
+// subtitles from the recorded voice
+const WORDS=WV.map(([li,txt,t])=>({txt,t,li,key:KEY.test(txt)}));
+const CH=[];{let cur=[];WORDS.forEach((w,i)=>{cur.push(w);const nx=WORDS[i+1],len=cur.reduce((s,x)=>s+x.txt.length+1,0);if(/[.?!:—,]$/.test(w.txt)&&cur.length>=3||/[.?!]$/.test(w.txt)||len>=30||!nx||nx.li!==w.li){CH.push(cur);cur=[]}})}
+CH.forEach((c,i)=>{const nx=CH[i+1];c.t0=c[0].t;c.t1=nx&&nx[0].li===c[0].li?nx[0].t-.02:VO[c[0].li][1]+.3});
+const lc=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t)),LB=[157,182,234],NV=[43,58,103],BK=[17,18,24],BLc=[47,123,245],GR=[150,156,170];
+function renderSub(t){const c=CH.find(c=>t>=c.t0-.01&&t<c.t1+.15);if(!c){vis(SUB,0);return}const ex=clamp((t-c.t1)/.15),inn=eb(clamp((t-c.t0)/.2));vis(SUB,1-ex*.9);SUB.style.transform=`translate(-50%,-50%) scale(${(.92+.08*inn).toFixed(3)})`;
+  SUB.innerHTML=c.filter(w=>t>=w.t).map(w=>{const p=clamp((t-w.t)/.28),q=clamp((t-w.t-.28)/.25);let col=w.key?lc(LB,BLc,p):p<1?lc(LB,NV,p):lc(NV,BK,q);if(ex>0)col=lc(col,GR,ex);
+    return `<span style="display:inline-block;margin:0 .1em;color:rgb(${col});opacity:${Math.min(1,p*1.6)};filter:blur(${((1-p)*8+ex*5).toFixed(2)}px);transform:translateY(${((1-p)*16).toFixed(1)}px);${w.key?'font-weight:800':''}">${w.txt}</span>`}).join(' ')}
+
+// ───────── globe (WebGL orthographic, NASA Blue Marble) + Natural Earth borders; Japan highlight in the house style
+const GL=$('glc').getContext('webgl',{preserveDrawingBuffer:true,antialias:true});
+const VS=`attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
+const FS=`precision highp float;uniform sampler2D tex;uniform sampler2D det;uniform vec2 C;uniform float R;uniform vec2 L;
+uniform vec3 DG;uniform vec2 DS;uniform float DON;
+void main(){vec2 q=(gl_FragCoord.xy-C)/R;float r2=dot(q,q);vec3 bg=vec3(.024,.094,.165);
+  if(r2>1.){float d=sqrt(r2)-1.;float g=exp(-d*R/38.)*.55+exp(-d*R/140.)*.18;gl_FragColor=vec4(bg+vec3(.35,.6,1.)*g,1.);return;}
+  vec3 v=vec3(q.x,q.y,sqrt(1.-r2));float cl=cos(L.y),sl=sin(L.y);vec3 w=vec3(v.x,v.y*cl+v.z*sl,-v.y*sl+v.z*cl);
+  float lon=atan(w.x,w.z)+L.x,lat=asin(clamp(w.y,-1.,1.));float fx=fract(lon/6.2831853+.5);vec2 uv=vec2(fx,.5-lat/3.1415927);
+  vec3 c=texture2D(tex,uv).rgb;
+  if(DON>0.){float ym=log(tan(.78539816+clamp(lat,-1.47,1.47)*.5));vec2 d=vec2((fx*DG.x-DG.y)/DS.x,((1.-ym/3.1415927)*.5*DG.x-DG.z)/DS.y);
+    float wg=smoothstep(0.,.03,d.x)*smoothstep(0.,.03,1.-d.x)*smoothstep(0.,.03,d.y)*smoothstep(0.,.03,1.-d.y);c=mix(c,texture2D(det,d).rgb,wg*DON);}
+  c*=1.08;float limb=pow(v.z,.35);c=c*(.55+.45*limb)+vec3(.3,.55,1.)*pow(1.-v.z,3.)*.55;gl_FragColor=vec4(c,1.);}`;
+const sh=(t,src)=>{const o=GL.createShader(t);GL.shaderSource(o,src);GL.compileShader(o);if(!GL.getShaderParameter(o,GL.COMPILE_STATUS))throw new Error(GL.getShaderInfoLog(o));return o};
+const PG=GL.createProgram();GL.attachShader(PG,sh(GL.VERTEX_SHADER,VS));GL.attachShader(PG,sh(GL.FRAGMENT_SHADER,FS));GL.linkProgram(PG);GL.useProgram(PG);
+GL.bindBuffer(GL.ARRAY_BUFFER,GL.createBuffer());GL.bufferData(GL.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),GL.STATIC_DRAW);
+const aP=GL.getAttribLocation(PG,'p');GL.enableVertexAttribArray(aP);GL.vertexAttribPointer(aP,2,GL.FLOAT,false,0,0);
+const U={};['C','R','L','DG','DS','DON','tex','det'].forEach(n=>U[n]=GL.getUniformLocation(PG,n));GL.uniform1i(U.tex,0);GL.uniform1i(U.det,1);
+const TEX=new Image();TEX.src=GLOBE_SRC;
+TEX.onload=()=>{GL.activeTexture(GL.TEXTURE0);const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,TEX);
+  [GL.TEXTURE_MIN_FILTER,GL.TEXTURE_MAG_FILTER].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.LINEAR));[GL.TEXTURE_WRAP_S,GL.TEXTURE_WRAP_T].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.CLAMP_TO_EDGE))};
+const DETIMG={},DETTEX={};Object.keys(DET_SRC).forEach(k=>{const im=new Image();im.src=DET_SRC[k];DETIMG[k]=im});
+function bindDet(k){if(!k){GL.uniform1f(U.DON,0);return}
+  if(!DETTEX[k]){GL.activeTexture(GL.TEXTURE1);const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,DETIMG[k]);
+    [GL.TEXTURE_MIN_FILTER,GL.TEXTURE_MAG_FILTER].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.LINEAR));[GL.TEXTURE_WRAP_S,GL.TEXTURE_WRAP_T].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.CLAMP_TO_EDGE));DETTEX[k]=t}
+  GL.activeTexture(GL.TEXTURE1);GL.bindTexture(GL.TEXTURE_2D,DETTEX[k]);GL.activeTexture(GL.TEXTURE0);
+  const r=DET_REF[k];GL.uniform3f(U.DG,256*2**r.z,r.X0*256,r.Y0*256);GL.uniform2f(U.DS,r.W,r.H);GL.uniform1f(U.DON,1)}
+const C10=topojson.feature(WORLD10,WORLD10.objects.countries).features,C50=topojson.feature(WORLD50,WORLD50.objects.countries).features;
+const JP10=C10.find(c=>c.id==='818'),JP50=C50.find(c=>c.id==='818');
+const MESH10=topojson.mesh(WORLD10,WORLD10.objects.countries,(a,b)=>a!==b),MESH50=topojson.mesh(WORLD50,WORLD50.objects.countries,(a,b)=>a!==b);
+const GPR=d3.geoOrthographic().clipAngle(90).precision(.3),GPATH=d3.geoPath(GPR);
+// camera views: fit a lon/lat box into a screen rect
+function fit(lo0,lo1,la0,la1,rect){const pts=[];for(let i=0;i<=24;i++){const f=i/24;pts.push([lerp(lo0,lo1,f),la0],[lerp(lo0,lo1,f),la1],[lo0,lerp(la0,la1,f)],[lo1,lerp(la0,la1,f)])}
+  const lon=(lo0+lo1)/2,lat=(la0+la1)/2,pr=d3.geoOrthographic().rotate([-lon,-lat]).fitExtent(rect,{type:'MultiPoint',coordinates:pts});return {lon,lat,R:pr.scale(),tx:pr.translate()[0],ty:pr.translate()[1]}}
+const V={egypt:fit(24.6,36.4,21.6,31.8,[[100,430],[980,1150]])};
+FACTS.forEach(f=>{const [x,y]=PL[f.k],r=f.r||1.6;V[f.k]=fit(x-r,x+r,y-r*.8,y+r*.8,[[90,450],[990,1150]])});
+const hl=(d,o,fo=.34)=>`<g opacity="${o}"><path d="${d}" fill="${BLUE}" fill-opacity="${fo}"/><path d="${d}" fill="none" stroke="#7fb2ff" stroke-width="12" stroke-opacity=".45" stroke-linejoin="round" style="filter:blur(5px)"/><path d="${d}" fill="none" stroke="#fff" stroke-width="3.2" stroke-linejoin="round"/></g>`;
+function drawGlobe(c,o={}){const {lon,lat,R,tx,ty}=c;
+  GL.viewport(0,0,1080,1920);GL.uniform2f(U.C,tx,1920-ty);GL.uniform1f(U.R,R);GL.uniform2f(U.L,lon*Math.PI/180,lat*Math.PI/180);bindDet(R>2600?'egc':R>700?'eg':null);GL.drawArrays(GL.TRIANGLE_STRIP,0,4);
+  GPR.rotate([-lon,-lat]).scale(R).translate([tx,ty]);const fine=R>1500;
+  const fo=.34*(1-clamp((R-2600)/3000))+.06;   // fill fades when we are close to a place
+  $('gls').innerHTML=`<path d="${GPATH(fine?MESH10:MESH50)||''}" fill="none" stroke="#fff" stroke-width="1.4" stroke-opacity=".5"/>`+((o.hl??1)>.01?hl(GPATH(fine?JP10:JP50)||'',o.hl??1,fo):'')}
+const proj=p=>GPR(p);
+function slerp(a,b,u){const r=Math.PI/180,va=[Math.cos(a[1]*r)*Math.cos(a[0]*r),Math.cos(a[1]*r)*Math.sin(a[0]*r),Math.sin(a[1]*r)],vb=[Math.cos(b[1]*r)*Math.cos(b[0]*r),Math.cos(b[1]*r)*Math.sin(b[0]*r),Math.sin(b[1]*r)];
+  const d=Math.acos(clamp(va[0]*vb[0]+va[1]*vb[1]+va[2]*vb[2],-1,1));if(d<1e-6)return a;const s1=Math.sin((1-u)*d)/Math.sin(d),s2=Math.sin(u*d)/Math.sin(d);
+  const v=va.map((x,i)=>x*s1+vb[i]*s2);return [Math.atan2(v[1],v[0])/r,Math.asin(clamp(v[2],-1,1))/r]}
+const mix=(A,B,u)=>{const e=eio(u),c=slerp([A.lon,A.lat],[B.lon,B.lat],e);return {lon:c[0],lat:c[1],R:Math.exp(lerp(Math.log(A.R),Math.log(B.R),e)),tx:lerp(A.tx,B.tx,e),ty:lerp(A.ty,B.ty,e)}};
+// ───────── camera: 0–2 s the globe spins under a fixed camera, then the spin eases out while we dive to Egypt
+const SPIN=25,T2=2,TD=1.24,L2=31-SPIN*TD/2;
+const spinLon=t=>t<T2?L2-SPIN*(T2-t):t<T2+TD?L2+SPIN*(t-T2)-SPIN/(2*TD)*(t-T2)**2:31;
+const START={R:400,lat:20,tx:540,ty:830};
+function camera(t){
+  if(t<T2)return {lon:spinLon(t),lat:START.lat,R:START.R,tx:START.tx,ty:START.ty};
+  if(t<4.6){const u=eio(seg(t,T2,4.4));return {lon:lerp(spinLon(t),V.egypt.lon,eio(seg(t,2.6,4.4))),lat:lerp(START.lat,V.egypt.lat,u),R:Math.exp(lerp(Math.log(START.R),Math.log(V.egypt.R),u)),tx:lerp(START.tx,V.egypt.tx,u),ty:lerp(START.ty,V.egypt.ty,u)}}
+  const drift=(t>=4.6&&t<12.4)?{lon:V.egypt.lon+.25*Math.sin((t-4.6)*.4),lat:V.egypt.lat+.15*Math.sin((t-4.6)*.3),R:V.egypt.R*(1+.015*Math.sin((t-4.6)*.35)),tx:V.egypt.tx,ty:V.egypt.ty}:null;
+  if(drift)return drift;
+  for(const f of FACTS){if(t<f.fly[0])return V.egypt;
+    if(t<f.fly[1])return mix(V.egypt,V[f.k],seg(t,f.fly[0],f.fly[1]));
+    if(t<f.back[0])return V[f.k];
+    if(t<f.back[1])return mix(V[f.k],V.egypt,seg(t,f.back[0],f.back[1]))}
+  if(t<93)return V.egypt;
+  const u=eio(seg(t,93,94.6));return {lon:V.egypt.lon+SPIN*Math.max(0,t-93.6)*seg(t,93.4,94.4),lat:lerp(V.egypt.lat,START.lat,u),R:Math.exp(lerp(Math.log(V.egypt.R),Math.log(START.R),u)),tx:lerp(V.egypt.tx,START.tx,u),ty:lerp(V.egypt.ty,START.ty,u)}}
+
+// ───────── Egyptball rig: the artist's sheets frame by frame
+const EBK={e:240/344,n:240/258,s:240/258*367/303,t:240/258*367/390};
+const EBI={};Object.keys(EBM).forEach(k=>{const i=document.createElement('img');i.src=`ebc/${k}.png`;i.className='abs';i.style.opacity=0;const m=EBM[k],kk=EBK[k[0]];
+  i.style.width=(m.w*kk)+'px';i.style.left=(-m.ax*kk)+'px';i.style.top=(120-m.ay*kk)+'px';$('ebb').appendChild(i);EBI[k]=i});
+const seq=(t,t0,list)=>{let a=t0;for(const [k,d] of list){if(t<a+d)return k;a+=d}return null};
+const HOP=[['s02',.06],['s03',.06],['s04',.06],['s05',.1],['s06',.12],['s07',.1],['s08',.08],['s09',.06],['s10',.06],['s11',.07],['s12',.07]];
+const HOPS=[[6.25,44],[90.6,58]];
+const NEMES=[['n02',.2],['n03',.22],['n04',.12],['n05',.12],['n06',.15],['n07',.25],['n08',99]];
+const BLINKS=[];for(let b=7.6;b<93;b+=2.9)BLINKS.push(b);
+function ebState(t){let s='n01',dx=0,dy=0,rot=0,sx=1,sy=1;
+  if(t<4.7){const u=seg(t,4.0,4.45);dy=260*(1-eb(u));sy=1+.12*Math.sin(u*Math.PI);sx=1-.08*Math.sin(u*Math.PI);if(t>=4.45&&t<4.6){const k=.1*Math.sin(seg(t,4.45,4.6)*Math.PI);sx+=k;sy-=k}}
+  else if(t<12.4)s=seq(t,4.7,NEMES);
+  else if(t<13.2)s=seq(t,12.4,[['n06',.1],['n04',.12],['n03',.16],['n02',.16],['n01',.1],['e01',9]]);
+  else s='e01';
+  for(const [h0,H] of HOPS)if(t>=h0&&t<h0+.84){s=seq(t,h0,HOP);const a=seg(t,h0+.12,h0+.58);dy=-H*4*a*(1-a)}
+  // fact reactions (emotion sheet)
+  if(t>=wt(5,'Imagine')-.2&&t<wt(5,'Imagine')+1.6)s=t<wt(5,'Imagine')+.6?'e06':'e05';
+  if(t>=wt(6,'Not')&&t<wt(6,'Not')+1.8){s='e06';rot+=6*Math.sin(seg(t,wt(6,'Not'),wt(6,'Not')+.6)*Math.PI)}
+  if(t>=wt(8,'Scholars')-.3&&t<wt(8,'Comparing')+.4)s='e03';if(t>=wt(8,'Comparing')+.4&&t<wt(8,'Comparing')+2.2)s='e09';
+  if(t>=76.45&&t<77.5){s='e01';sx=Math.sin(seg(t,76.45,77.5)*Math.PI*2)>0?-1:1}
+  if(t>=77.5&&t<79){s='e06';rot+=5*Math.sin((t-77.5)*30)*(1-seg(t,77.5,78.1))}
+  if(t>=87&&t<89.4)s=t<87.1?'n01':seq(t,87.1,NEMES);
+  if(t>=89.4&&t<90.6)s=seq(t,89.4,[['t01',.12],['t02',.12],['t03',.12],['t04',.12],['t05',.12],['t06',.12],['n08',9]]);
+  if(t>=91.44&&t<93.2)s='n08';
+  if(t>=93.2){s='n08';dy=320*eio(seg(t,93.2,93.9))}
+  if(s==='n08'&&BLINKS.some(b=>t>=b&&t<b+.1))s='n07';if(s==='e01'&&BLINKS.some(b=>t>=b&&t<b+.1))s='e04';
+  rot+=8*(Math.sin(seg(t,10.55,10.85)*Math.PI)+Math.sin(seg(t,10.95,11.25)*Math.PI));
+  const F=FACTS.find(f=>t>=f.open[0]+.6&&t<f.close[0]);if(F)rot+=3;
+  return {s,dx,dy,rot,sx,sy,vis:seg(t,4.0,4.05)*(1-seg(t,93.8,93.9))}}
+function renderEB(t){const m=ebState(t);Object.entries(EBI).forEach(([k,i])=>i.style.opacity=k===m.s?1:0);
+  const idle=t>6.5&&t<93?3*Math.sin(t*2*Math.PI/1.9):0;
+  $('ebb').style.transform=`translate(${m.dx.toFixed(1)}px,${(m.dy+idle).toFixed(1)}px) rotate(${m.rot.toFixed(2)}deg) scale(${m.sx.toFixed(3)},${m.sy.toFixed(3)})`;
+  const hs=clamp(1-Math.abs(m.dy)/240,.3,1);$('ebsh').style.transform=`scale(${hs.toFixed(3)})`;$('ebsh').style.opacity=(hs*m.vis).toFixed(3);vis(EB,m.vis);
+  let fx='';const SP=[5.95,10.75];for(const s0 of SP){const u=(t-s0)/.55;if(u<0||u>=1)continue;for(let i=0;i<8;i++){const a=i/8*6.283+.3,r=150+u*70,x=200+Math.cos(a)*r,y=260+Math.sin(a)*r*.9,sc=(1-u)*(i%2?9:14);
+    fx+=`<path d="M${x} ${y-sc} L${x+sc*.28} ${y-sc*.28} L${x+sc} ${y} L${x+sc*.28} ${y+sc*.28} L${x} ${y+sc} L${x-sc*.28} ${y+sc*.28} L${x-sc} ${y} L${x-sc*.28} ${y-sc*.28}Z" fill="${i%2?'#ffd34d':'#fff'}" opacity="${(1-u).toFixed(2)}"/>`}}
+  $('ebfx').innerHTML=fx}
+
+// ───────── info plate
+const SMALL=s=>`<div style="margin-top:10px;font-weight:700;font-size:21px;letter-spacing:.06em;color:#7d8597;white-space:nowrap">${s}</div>`;
+const PLATES=[{a:4.75,b:6.9,parts:[{a:4.75,b:6.9,f:t=>kin([['HISTORY THAT',38,'#111218'],['SOUNDS MADE UP',44,BLUE]],t,4.85)}]}];
+function renderInfo(t){const P=PLATES.find(p=>t>=p.a&&t<p.b);if(!P){vis(INFO,0);return}
+  const pin=eb(seg(t,P.a,P.a+.35)),pout=seg(t,P.b-.2,P.b);const part=P.parts.find(q=>t>=q.a&&t<q.b);
+  $('infc').innerHTML=part?part.f(t):'';INFO.style.transform=`translate(-50%,-50%) translateY(${(pout*18).toFixed(1)}px) scale(${((.8+.2*pin)*(1-.1*pout)).toFixed(3)})`;vis(INFO,clamp(seg(t,P.a,P.a+.15))*(1-pout));setShine(INFO,seg(t,P.a+.35,P.a+1.05))}
+
+function renderAt(t){
+  t=Math.min(t,DUR-1e-6);
+  const c=camera(t);drawGlobe(c,{hl:seg(t,4.0,4.5)});
+  let ov='';
+  // Egypt outline draws itself in 24–30 frames
+  if(t>=4.0&&t<5.2){const p=eo(seg(t,4.0,4.48));ov+=`<path d="${GPATH(JP10)}" pathLength="1" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="1" stroke-dashoffset="${(1-p).toFixed(3)}" opacity="${(1-seg(t,4.6,5.2)).toFixed(2)}"/>`}
+  // hook teasers: meteor streak + dagger silhouette at the edges
+  if(t<2.4){const m=seg(t,.35,1.5);if(m>0&&m<1){const x=lerp(-80,1160,eio(m)),y=lerp(300,620,eio(m));ov+=`<path d="M${x} ${y} L${x-260} ${y-70}" stroke="url(#mtr)" stroke-width="8" stroke-linecap="round"/><circle cx="${x}" cy="${y}" r="12" fill="#ffe2a8"/><circle cx="${x}" cy="${y}" r="26" fill="#ffb86b" opacity=".35"/>`}
+    const d=eo(seg(t,.15,.7))*(1-eio(seg(t,1.9,2.35)));if(d>0)ov+=ART.daggerTeaser(d,t)}
+  const F=FACTS.find(f=>t>=f.fly[0]-.6&&t<f.back[1]&&!f.nopin);
+  if(F){const p=proj(PL[F.k]),a=seg(t,F.fly[0]-.6,F.fly[0]-.3)*(1-seg(t,F.back[0],F.back[0]+.3));
+    if(p&&a>0){const pu=seg(t,F.fly[0]-.3,F.fly[0]+.6),gw=eo(seg(t,F.fly[0]-.2,F.fly[0]+.3)),full=NAMES[F.k].length*15+44,lw=lerp(46,full,gw);
+      ov+=`<g opacity="${a}"><circle cx="${p[0]}" cy="${p[1]}" r="${(14+pu*46).toFixed(1)}" fill="none" stroke="#fff" stroke-width="3" opacity="${((1-pu)*.85).toFixed(2)}"/><circle cx="${p[0]}" cy="${p[1]}" r="${(11*eb(seg(t,F.fly[0]-.6,F.fly[0]-.3))).toFixed(1)}" fill="#fff"/><circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${BLUE}"/>
+       <g transform="translate(${(p[0]+22).toFixed(1)} ${(p[1]-58).toFixed(1)})"><rect width="${lw.toFixed(1)}" height="46" rx="23" fill="#fff"/><text x="22" y="31" font-family="Inter Display,Inter" font-weight="800" font-size="21" letter-spacing=".05em" fill="#111218">${typeOn(NAMES[F.k],t,F.fly[0]+.05,32)}</text></g></g>`}}
+  $('glo').innerHTML=`<defs><linearGradient id="mtr" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffe2a8"/><stop offset="1" stop-color="#ffb86b" stop-opacity="0"/></linearGradient></defs>`+ov;
+  // card: hook mini Abu Simbel card (2.5–4.3), then the fact cards
+  let u=0,p=[540,CY],html='',sc=1;
+  if(t>=2.45&&t<4.3){p=proj(PL.abusimbel)||p;const a=eb(seg(t,2.45,2.85)),b=1-eio(seg(t,3.8,4.3));u=Math.min(a,b);sc=.42;html=ART.abusimbel({cut:seg(t,2.8,3.5),sep:seg(t,3.3,3.7)*.6})}
+  const CF=FACTS.find(f=>t>=f.open[0]&&t<f.close[1]);
+  if(CF){p=CF.nopin?[540,CY]:proj(PL[CF.k])||p;u=t<CF.open[1]?eio(seg(t,CF.open[0],CF.open[1])):1-eio(seg(t,CF.close[0],CF.close[1]));html=scene(CF.k,t)}
+  if(u>0){const s=lerp(.08,sc,u),x=lerp(p[0]-540,(sc<1?0:0),u),y=lerp(p[1]-CY,sc<1?-60:0,u);
+    $('card').style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px) perspective(1600px) rotateX(${((1-u)*22).toFixed(2)}deg) scale(${s.toFixed(4)})`;$('card').style.borderRadius=`${lerp(400,40,u)}px`;vis($('card'),clamp(u*5));
+    $('cardsvg').innerHTML=html;$('dim').style.opacity=(.3*u*(sc<1?.5:1)).toFixed(3);if(CF)setShine($('card'),seg(t,CF.open[1]-.3,CF.open[1]+.6))}
+  else{vis($('card'),0);$('dim').style.opacity=0}
+  // title: EGYPT through a mask at the reveal; it stays until the loop
+  TITLE.querySelectorAll('.tl').forEach((e,i)=>{const q=clamp((t-4.35-i*.05)/.35);e.style.opacity=Math.min(1,q*2);e.style.transform=`translateY(${((1-eo(q))*40).toFixed(1)}px)`});
+  const mk_=eo(seg(t,4.25,4.8));TITLE.style.clipPath=`inset(0 ${((1-mk_)*50).toFixed(1)}% 0 ${((1-mk_)*50).toFixed(1)}% round 38px)`;pillT(TITLE,seg(t,4.25,4.4)*(1-seg(t,93,93.5)));setShine(TITLE,seg(t,5,5.8));
+  // series intro
+  if(t>=6.8&&t<12.7){vis(SER,1);const out=eio(seg(t,12.1,12.6));
+    SER.querySelectorAll('.sd').forEach((e,i)=>{const q=seg(t,6.95+i*.16,7.35+i*.16);e.style.opacity=Math.min(1,q*3)*(1-out);e.style.transform=`translateY(${((1-eb(q))*40-out*80).toFixed(1)}px) scale(${(.6+.4*eb(q)).toFixed(3)})`;e.firstChild.style.transform=`scale(${(.4+.6*eb(seg(t,7.4+i*.16,7.7+i*.16))).toFixed(3)})`});
+    const st=$('stext');const sub=t>=10.35;const t0=sub?10.4:7.25;
+    st.innerHTML=sub?kin([[`SUBSCRIBE FOR YOUR COUNTRY`,40,'#111218']],t,t0)+`<svg width="54" height="54" viewBox="0 0 100 100" style="margin-left:10px;transform:rotate(${((t-10.4)*40).toFixed(1)}deg)"><circle cx="50" cy="50" r="44" fill="${BLUE}"/><path d="M14 40 C30 30 44 46 56 36 C66 28 80 34 88 44 M10 62 C28 56 40 70 58 62 C70 56 82 62 90 60" stroke="#fff" stroke-width="7" fill="none"/></svg>`:kin([['5 FACTS',52,BLUE],['·',52,'#b7bdc9'],['ONE COUNTRY',52,'#111218']].map(x=>x),t,t0).replace(/<\/div><div[^>]*>/g,' ');
+    st.style.display='flex';st.style.flexDirection='row';st.style.alignItems='center';
+    const so=seg(t,7.1,7.35);pillT(st,so*(1-out),(.85+.15*eb(seg(t,7.1,7.5)))*(sub?(.96+.04*eb(seg(t,10.35,10.6))):1),-out*90);st.style.clipPath=`inset(${(out*100).toFixed(1)}% 0 0 0 round 34px)`;
+    const bt=$('sbtn'),bi=eb(seg(t,10.45,10.8)),pulse=1+.06*Math.sin(seg(t,10.9,10.9+18/60)*Math.PI);pillT(bt,seg(t,10.45,10.55)*(1-out),(.6+.4*bi)*pulse,-out*90+(1-bi)*30);setShine(bt,seg(t,11.0,11.6))}
+  else vis(SER,0);
+  // fact pill
+  const inF=t>=12.4&&t<87;$('fp5').style.display=inF?'none':'inline';$('fpf').style.display=inF?'inline':'none';
+  let fi=1,lt=12.4;FACTS.forEach((f,i)=>{if(t>=f.fly[0]){fi=i+1;lt=f.fly[0]}});const r=eio(seg(t,lt,lt+.35));
+  $('fn0').textContent='0'+(fi-1);$('fn1').textContent='0'+fi;$('fn0').style.transform=`translateY(${(-r*110).toFixed(1)}%)`;$('fn1').style.transform=`translateY(${((1-r)*110).toFixed(1)}%)`;$('fn0').style.opacity=fi>1?1-r:0;
+  $('ftop').textContent=typeOn(FACTS[fi-1].topic,t,lt+.15,30);
+  const fo=seg(t,12.4,12.7)*(1-seg(t,92.6,92.9));pillT(FACTP,fo,(.85+.15*eb(seg(t,12.4,12.8)))*(1+.08*Math.sin(seg(t,lt,lt+.35)*Math.PI)));setShine(FACTP,seg(t,lt+.2,lt+.9));
+  vis(ICONS,0);renderEB(t);renderInfo(t);renderSub(t);
+}
+function scene(k,t){if(k==='kings')return ART.dagger({t});if(k==='abusimbel')return ART.abusimbel({});return `<rect width="920" height="720" fill="#e9dcc3"/>`}
+window.renderAt=renderAt;window.DUR=DUR;window.SFX=[];window.SCN={dur:DUR,vo:BV};
+$('card').insertAdjacentHTML('beforeend',shine);
+(TEX.complete?Promise.resolve():new Promise(r=>TEX.addEventListener('load',r))).then(()=>Promise.all([...Object.values(DETIMG),...Object.values(EBI)].map(i=>i.complete?1:new Promise(r=>{i.onload=r;i.onerror=r})))).then(()=>document.fonts.ready).then(()=>{renderAt(0);window.ready=true});
+</script>
+</body>
+</html>
