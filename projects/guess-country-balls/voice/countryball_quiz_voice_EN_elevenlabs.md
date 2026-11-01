@@ -14,7 +14,7 @@
 | 05 | 0:22.6 | ≤ 2.2 s | Now, a little harder. |
 | 06 | 0:30.7 | ≤ 0.9 s | Germany! |
 | 07 | 0:39.6 | ≤ 0.9 s | Thailand! |
-| 08 | 0:40.9 | ≤ 2.8 s | Halfway there! Follow for a new challenge every week. |
+| 08 | 0:40.9 | ≤ 2.8 s | Halfway there! Follow for a new challenge every day. |
 | 09 | 0:43.9 | ≤ 2.2 s | Hard level. Stay focused. |
 | 10 | 0:51.5 | ≤ 0.9 s | Chile! |
 | 11 | 1:00.4 | ≤ 0.9 s | Finland! |
@@ -36,7 +36,7 @@ India! <break time="1.2s" />
 Now, a little harder. <break time="1.2s" />
 Germany! <break time="1.2s" />
 Thailand! <break time="1.2s" />
-Halfway there! Follow for a new challenge every week. <break time="1.2s" />
+Halfway there! Follow for a new challenge every day. <break time="1.2s" />
 Hard level. Stay focused. <break time="1.2s" />
 Chile! <break time="1.2s" />
 Finland! <break time="1.2s" />
