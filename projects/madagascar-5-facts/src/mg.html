@@ -34,6 +34,7 @@ svg{display:block}
 <script src="sat/det_mclose.js"></script>
 <script src="mart.js"></script>
 <script src="mbc/meta.js"></script>
+<script src="voice_place.js"></script>
 <script>
 const FPS=60,BLUE='#2f7bf5',DUR=93,CY=790;
 const $=id=>document.getElementById(id);
@@ -77,11 +78,11 @@ const pillT=(el,o,s=1,dy=0)=>{el.style.transform=`translate(-50%,-50%) translate
 function kin(lines,t,t0){let k=0;return lines.map(([txt,fs,col,extra=''])=>`<div style="font-weight:900;font-size:${fs}px;line-height:1.08;letter-spacing:-.01em;color:${col};white-space:nowrap;${extra}">`+txt.split(' ').map(w=>{const p=clamp((t-t0-k*.07)/.38);k++;const s=.7+.3*eb(p);
   return `<span style="display:inline-block;margin:0 .12em;opacity:${Math.min(1,p*2).toFixed(3)};transform:translateY(${((1-eo(p))*26).toFixed(1)}px) scale(${s.toFixed(3)});filter:blur(${((1-p)*6).toFixed(2)}px)">${w}</span>`}).join('')+'</div>').join('')}
 const typeOn=(txt,t,t0,cps=26)=>{const n=Math.floor(clamp((t-t0)*cps,0,txt.length));return txt.slice(0,n)};
-const WORDS=[];VO.forEach(([a,b,txt],li)=>{const ws=txt.split(' '),wt=ws.map(w=>w.length+3),T=wt.reduce((s,v)=>s+v,0);let t=a;ws.forEach((w,i)=>{WORDS.push({txt:w,t,li,key:KEY.test(w)});t+=(b-a)*wt[i]/T})});
+const WORDS=WV.map(([li,txt,t])=>({txt,t,li,key:KEY.test(txt)}));VO.forEach((v,i)=>{v[0]=BV[i][0];v[1]=BV[i][1]});
 const CH=[];{let cur=[];WORDS.forEach((w,i)=>{cur.push(w);const nx=WORDS[i+1],len=cur.reduce((s,x)=>s+x.txt.length+1,0);if(/[.?!:—,]$/.test(w.txt)&&cur.length>=3||/[.?!]$/.test(w.txt)||len>=30||!nx||nx.li!==w.li){CH.push(cur);cur=[]}})}
 CH.forEach((c,i)=>{const nx=CH[i+1];c.t0=c[0].t;c.t1=nx&&nx[0].li===c[0].li?nx[0].t-.02:VO[c[0].li][1]+.3});
 const lc=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t)),LB=[157,182,234],NV=[43,58,103],BK=[17,18,24],BLc=[47,123,245],GR=[150,156,170];
-function renderSub(t){if(t<3.1){vis(SUB,0);return}const c=CH.find(c=>t>=c.t0-.01&&t<c.t1+.15);if(!c){vis(SUB,0);return}const ex=clamp((t-c.t1)/.15),inn=eb(clamp((t-c.t0)/.2));vis(SUB,1-ex*.9);SUB.style.transform=`translate(-50%,-50%) scale(${(.92+.08*inn).toFixed(3)})`;
+function renderSub(t){if(t<5.1){vis(SUB,0);return}const c=CH.find(c=>t>=c.t0-.01&&t<c.t1+.15);if(!c){vis(SUB,0);return}const ex=clamp((t-c.t1)/.15),inn=eb(clamp((t-c.t0)/.2));vis(SUB,1-ex*.9);SUB.style.transform=`translate(-50%,-50%) scale(${(.92+.08*inn).toFixed(3)})`;
   SUB.innerHTML=c.filter(w=>t>=w.t).map(w=>{const p=clamp((t-w.t)/.28),q=clamp((t-w.t-.28)/.25);let col=w.key?lc(LB,BLc,p):p<1?lc(LB,NV,p):lc(NV,BK,q);if(ex>0)col=lc(col,GR,ex);
     return `<span style="display:inline-block;margin:0 .1em;color:rgb(${col});opacity:${Math.min(1,p*1.6)};filter:blur(${((1-p)*8+ex*5).toFixed(2)}px);transform:translateY(${((1-p)*16).toFixed(1)}px);${w.key?'font-weight:800':''}">${w.txt}</span>`}).join(' ')}
 
@@ -202,7 +203,7 @@ function scene(k,t){
   return ''}
 function hookScene(t){if(t<.8)return ART.tsingy({pan:seg(t,0,.8)*.05,person:0});if(t<1.65)return ART.indri({sing:.9,t});return ART.chameleon({zoom:0,t})}
 
-function renderAt(t){
+function renderOld(t,tr){
   t=Math.min(t,DUR-1e-6);
   const c=camera(t);drawGlobe(c,{hl:seg(t,2.9,3.3)});
   let ov='';const F=FACTS.find(f=>t>=f.fly[0]-.6&&t<f.back[1]);
@@ -239,8 +240,16 @@ function renderAt(t){
   renderMB(t);renderInfo(t);
   if(t>=87&&t<91.6){ICONS.style.visibility='visible';const out=seg(t,91.2,91.6);ICONS.style.opacity=1-out;ICONS.style.transform=`translate(-50%,-50%) scale(${(1-out*.1).toFixed(3)})`;
     [...ICONS.children].forEach((e,i)=>{const q=seg(t,87.1+i*.14,87.6+i*.14),act=t>=89.4?1+.06*Math.sin((t-89.4)*4+i):1;e.style.opacity=Math.min(1,q*3);e.style.transform=`translateY(${((1-bounce(q))*-160).toFixed(1)}px) rotate(${((1-eo(q))*(i%2?10:-10)).toFixed(1)}deg) scale(${act.toFixed(3)})`})}else vis(ICONS,0);
-  renderSub(t);
+  renderSub(tr);
 }
+const renderAt=t=>renderOld(warp(Math.min(t,DUR-1e-6)),t);
+const wt=(b,w,n=0)=>{const m=WV.filter(x=>x[0]===b&&x[1].replace(/[.,?!]/g,'')===w);return m[n][2]};
+const WARP=[[0,0],[1.75,.8],[3.12,1.65],[4.9,2.75],[5.2,3.2],[7.25,5],[8.2,6.5],[wt(4,'At'),9],[wt(4,'Some'),13],[wt(4,'Yes'),15.4],[19.6,19.5],[21,21],[23.2,23],
+ [wt(5,'They’re'),26],[wt(5,'Several'),29],[35,34.5],[40.6,40.2],[wt(6,'taps'),41],[wt(6,'listens'),43.5],[wt(6,'gnaws'),47],[wt(6,'finger')-.2,48.6],[wt(6,'built-in')-.3,51],[53.5,53.5],
+ [57,57],[57.75,58],[58.3,60.1-1.4],[wt(8,'Researchers')-.15,60.1],[wt(8,'family')-.35,65],[71.95,70.5],[73.1,72],[75,74.6],[wt(10,'An')-.3,78],[wt(10,'thirteen'),81.1],[86.75,85.8],
+ [87.8,87],[88,87.3],[wt(11,'Comment'),89.4],[92,91.5],[93,93]];
+const warpF=(t,A=0,Bk=1)=>{for(let i=1;i<WARP.length;i++){const p=WARP[i-1],q=WARP[i];if(t<=q[A])return p[Bk]+(q[Bk]-p[Bk])*(t-p[A])/Math.max(1e-6,q[A]-p[A])}return t};
+const warp=t=>warpF(t,0,1),unwarp=t=>warpF(t,1,0);
 // ───────── sound events
 const SFX=[];const sx=(t,type,g=1,d=0)=>SFX.push({t:+t.toFixed(4),type,g,d});
 sx(0,'impact',.7);sx(0,'air',.3,.9);sx(.8,'unfold',.4);sx(1.65,'unfold',.4);sx(2.75,'fold',.45);sx(2.8,'air',.4,1.6);sx(3.2,'land',.55);sx(3.62,'whoosh',.3,.4);sx(3.98,'cap',.55);sx(4.1,'boing',.3);sx(5.15,'whoosh',.35,.7);
@@ -251,7 +260,7 @@ sx(56.3,'forest',.4,14.8);for(let i=0;i<15;i++)sx(62+i*.22,'valiha',.35,i);sx(65
 sx(77.5,'air',.35,1);sx(78.2,'chime',.5);sx(81,'tick',.35);
 HOPS.forEach(([h,H])=>{sx(h+.1,'boing',.22+H/400);sx(h+.6,'land',.3)});SPARK.forEach(s=>sx(s,'sparkle',.28));
 for(let i=0;i<5;i++)sx(87.1+i*.14,'pop',.42);sx(89.2,'whoosh',.3,.6);sx(92.15,'whoosh',.3,.6);sx(92.1,'unfold',.4);
-window.SFX=SFX;window.SCN={dur:DUR,vo:VO.map(v=>[v[0],v[1]]),duck:[[57.4,60.1,.18],[77,78.2,.3]]};window.renderAt=renderAt;window.DUR=DUR;window.VO=VO;
+SFX.forEach(e=>{e.t=+unwarp(e.t).toFixed(4)});window.SFX=SFX;window.SCN={dur:DUR,vo:BV,duck:[[unwarp(77),unwarp(78.2),.3]]};window.renderAt=renderAt;window.DUR=DUR;window.VO=VO;
 $('card').insertAdjacentHTML('beforeend',shine);
 (TEX.complete?Promise.resolve():new Promise(r=>TEX.addEventListener('load',r))).then(()=>Promise.all([...Object.values(DETIMG),...Object.values(MBI),$('hatfly')].map(i=>i.complete?1:new Promise(r=>{i.onload=r;i.onerror=r})))).then(()=>document.fonts.ready).then(()=>{renderAt(0);window.ready=true});
 </script>

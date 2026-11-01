@@ -63,7 +63,8 @@ for a_ in (0, .82, 1.67): put(L['lead'], pluck(79, .4), int(a_ * SR), .25)
 music = sum(L.values()); music[int(92.2 * SR):] *= np.linspace(1, .4, N - int(92.2 * SR))
 # VO windows pre-ducked ~ -7 dB (attack 0.1 s, release 0.25 s) so a recorded voice sits on top later
 d = np.ones(N)
-for a, b in VO: d[int(a * SR):int(b * SR)] = .45
+VOICE = len(sys.argv) > 3
+for a, b in VO: d[int(a * SR):int(b * SR)] = .26 if VOICE else .45
 for a, b, g_ in M['SCN'].get('duck', []): d[int(a * SR):int(b * SR)] = np.minimum(d[int(a * SR):int(b * SR)], g_)
 ka, kr = np.exp(-1 / (.1 * SR / 10)), np.exp(-1 / (.25 * SR / 10)); dd = d[::10].copy(); s_ = 1.
 for i in range(len(dd)): k = ka if dd[i] < s_ else kr; s_ = k * s_ + (1 - k) * dd[i]; dd[i] = s_
@@ -150,11 +151,24 @@ for e in EV: put(sfx, S[e['type']](e['d']), round(e['t'] * SR), e['g'])
 def rms(x): return np.sqrt(np.mean(x ** 2))
 music_n = music / rms(music) * 10 ** (-23 / 20)
 bed = music_n + sfx * .5
+voice = np.zeros(N)
+if VOICE:   # recorded take, cut into its 12 blocks and placed at the planned video times (placement.json)
+    import subprocess
+    P = json.load(open(sys.argv[3])); raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', sys.argv[4], '-ac', '1', '-ar', str(SR), '-f', 'f32le', '-'], capture_output=True).stdout
+    v = np.frombuffer(raw, np.float32).astype(float)
+    for (a, b), (va, vb) in zip(P['blocks_voice'], P['blocks_video']):
+        i0, i1 = max(0, int((a - .04) * SR)), min(len(v), int((b + .12) * SR)); seg_ = v[i0:i1].copy(); f = int(.01 * SR)
+        seg_[:f] *= np.linspace(0, 1, f); seg_[-f:] *= np.linspace(1, 0, f); put(voice, seg_, int((va - .04) * SR))
+    sp = voice[np.abs(voice) > 1e-4]; voice *= 10 ** (-17 / 20) / np.sqrt(np.mean(sp ** 2))
+    bed = bed + voice
 fade = np.ones(N); fade[-int(SR * 6 / 60):] = np.linspace(1, 0, int(SR * 6 / 60))
 bed *= fade
+bed = np.tanh(bed * 1.15) / 1.15 if VOICE else bed
 bed *= min(1, 10 ** (-1 / 20) / np.abs(bed).max())
 def wr(path, x):
     x = (np.clip(np.stack([x, x], 1), -1, 1) * 32767).astype('<i2')
     with wave.open(path, 'wb') as w: w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(x.tobytes())
-wr(out + '/mix_music_sfx.wav', bed); wr(out + '/stem_music.wav', music_n * fade * .9 / np.abs(music_n).max()); wr(out + '/stem_sfx.wav', sfx * .5 * fade / max(1, np.abs(sfx * .5).max()))
+wr(out + ('/mix_voice_music_sfx.wav' if VOICE else '/mix_music_sfx.wav'), bed);
+if VOICE: wr(out + '/stem_voice.wav', voice / max(1, np.abs(voice).max()))
+wr(out + '/stem_music.wav', music_n * fade * .9 / np.abs(music_n).max()); wr(out + '/stem_sfx.wav', sfx * .5 * fade / max(1, np.abs(sfx * .5).max()))
 print('mg events', len(EV), 'bed rms dB', round(20 * np.log10(rms(bed)), 1))
