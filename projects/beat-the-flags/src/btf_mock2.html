@@ -1,0 +1,66 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Beat the Flags</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}html,body{width:1080px;height:1920px;overflow:hidden;background:#0a2a52}body{font-family:'Inter Display','Inter',sans-serif;color:#111218;-webkit-font-smoothing:antialiased}
+.abs{position:absolute}.pill{position:absolute;display:flex;align-items:center;justify-content:center;white-space:nowrap;border-radius:999px;background:rgba(255,255,255,.97);box-shadow:0 14px 30px -14px rgba(0,0,0,.5);transform:translate(-50%,-50%)}
+.card{position:absolute;border-radius:44px;background:#fff;box-shadow:0 34px 70px -24px rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center}
+.back{background:linear-gradient(145deg,#3b8cff,#1f5fd0);border:10px solid #fff}
+</style></head><body>
+<canvas id="glc" width="1080" height="1920" class="abs" style="left:0;top:0;filter:blur(14px) brightness(.75) saturate(1.1);opacity:.85"></canvas>
+<div class="abs" style="inset:0;background:radial-gradient(circle at 50% 40%,rgba(20,70,140,.15),rgba(5,20,45,.75) 75%)"></div>
+<div id="ui" class="abs" style="inset:0"></div>
+<script src="lib/d3-array.min.js"></script><script src="lib/d3-geo.min.js"></script><script src="tex/globe_tex.js"></script><script src="balls/meta.js"></script><script src="balls/eyes.js"></script><script src="balls2/meta.js"></script>
+<script>
+const BLUE='#2f7bf5',$=id=>document.getElementById(id);
+const mk=h=>{const d=document.createElement('div');d.innerHTML=h.trim();const e=d.firstChild;$('ui').appendChild(e);return e};
+// blurred globe background (static, simple sphere render)
+const GL=$('glc').getContext('webgl',{preserveDrawingBuffer:true});
+const VS=`attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`,FS=`precision highp float;uniform sampler2D tex;uniform vec2 C;uniform float R;uniform vec2 L;
+void main(){vec2 q=(gl_FragCoord.xy-C)/R;float r2=dot(q,q);if(r2>1.){float d=sqrt(r2)-1.;gl_FragColor=vec4(vec3(.04,.16,.32)+vec3(.35,.6,1.)*exp(-d*R/60.)*.5,1.);return;}
+vec3 v=vec3(q.x,q.y,sqrt(1.-r2));float cl=cos(L.y),sl=sin(L.y);vec3 w=vec3(v.x,v.y*cl+v.z*sl,-v.y*sl+v.z*cl);float lon=atan(w.x,w.z)+L.x,lat=asin(w.y);
+vec3 c=texture2D(tex,vec2(fract(lon/6.2831853+.5),.5-lat/3.1415927)).rgb;gl_FragColor=vec4(c*(.55+.45*pow(v.z,.35)),1.);}`;
+const sh=(t,s)=>{const o=GL.createShader(t);GL.shaderSource(o,s);GL.compileShader(o);return o};const PG=GL.createProgram();GL.attachShader(PG,sh(GL.VERTEX_SHADER,VS));GL.attachShader(PG,sh(GL.FRAGMENT_SHADER,FS));GL.linkProgram(PG);GL.useProgram(PG);
+GL.bindBuffer(GL.ARRAY_BUFFER,GL.createBuffer());GL.bufferData(GL.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),GL.STATIC_DRAW);const aP=GL.getAttribLocation(PG,'p');GL.enableVertexAttribArray(aP);GL.vertexAttribPointer(aP,2,GL.FLOAT,false,0,0);
+const TEX=new Image();TEX.src=GLOBE_SRC;TEX.onload=()=>{const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,TEX);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MIN_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_S,GL.CLAMP_TO_EDGE);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_T,GL.CLAMP_TO_EDGE)};
+function globe(lon){GL.viewport(0,0,1080,1920);GL.uniform2f(GL.getUniformLocation(PG,'C'),540,1920-820);GL.uniform1f(GL.getUniformLocation(PG,'R'),620);GL.uniform2f(GL.getUniformLocation(PG,'L'),lon*Math.PI/180,.3);GL.drawArrays(GL.TRIANGLE_STRIP,0,4)}
+// UI
+const TITLE=mk(`<div class="pill" style="left:540px;top:230px;height:106px;padding:0 54px;border-radius:38px;font-weight:900;font-size:66px;letter-spacing:-.01em">BEAT THE <span style="color:${BLUE};margin-left:.28em">FLAGS</span></div>`);
+const LV=[['EASY','#30c060'],['MEDIUM','#f2b705'],['HARD','#ff8a1f'],['EXPERT','#ff3b30']];
+const BADGES=mk(`<div class="abs" style="left:110px;top:300px;display:flex;gap:12px"></div>`);
+const ROUND=mk(`<div class="pill" style="left:868px;top:332px;height:62px;padding:0 24px;font-weight:900;font-size:28px;color:${BLUE}"></div>`);
+const lockI=open=>`<svg width="22" height="22" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 ${open?'7.6-1.8':'8 0V11'}" stroke="currentColor" stroke-width="2.6" fill="none"/></svg>`;
+function badges(n){BADGES.innerHTML=LV.map(([nm,c],i)=>{const on=i<n;return `<div style="height:62px;padding:0 18px 0 14px;border-radius:999px;background:${on?'#fff':'rgba(255,255,255,.18)'};display:flex;align-items:center;gap:8px;color:${on?c:'rgba(255,255,255,.75)'};font-weight:900;font-size:21px;letter-spacing:.05em;box-shadow:${on?'0 10px 24px -12px rgba(0,0,0,.5)':'none'}">${on?`<span style="width:14px;height:14px;border-radius:50%;background:${c};box-shadow:0 0 10px ${c}"></span>`:lockI(0)}<span style="color:${on?(c==='#f2b705'?'#c99400':c):'rgba(255,255,255,.75)'}">${nm}</span></div>`}).join('')}
+const CARD=mk(`<div class="card" style="left:110px;top:430px;width:860px;height:690px"><img id="flag" style="max-width:760px;max-height:520px;box-shadow:0 0 0 2px rgba(0,0,0,.08);border-radius:6px"></div>`);
+const STACK=mk(`<div class="abs" style="left:150px;top:1395px;width:0;height:0"></div>`);
+const RING=mk(`<svg class="abs" style="left:350px;top:1200px;overflow:visible" width="380" height="400" viewBox="-190 -200 380 400"></svg>`);
+const BALL=mk(`<div class="abs" style="left:540px;top:1400px;width:0;height:0"><div class="abs" style="left:-100px;top:112px;width:200px;height:28px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.45),rgba(0,0,0,0))"></div><img id="bw" class="abs"><div id="bfw" class="abs"><div id="bf" class="abs" style="mix-blend-mode:multiply;background-size:cover;background-position:center"></div></div><img id="be" class="abs"></div>`);
+const ANS=mk(`<div class="pill" style="left:540px;top:1175px;height:104px;padding:0 16px 0 34px;border-radius:38px;gap:20px;display:none"></div>`);
+const SUB=mk(`<div class="pill" style="left:540px;top:1655px;padding:16px 36px;font-weight:600;font-size:40px;display:none"></div>`);
+const BIG=mk(`<div class="abs" style="left:540px;top:780px;transform:translate(-50%,-50%);display:none"></div>`);
+function ball(key,flag,sweep=1){const src=k=>BM2[k]?['balls2',BM2[k]]:['balls',BM[k]];const D=236;
+  const put=(id,k)=>{const [dir,m]=src(k),kk=D/Math.max(m.w,m.h),w=m.w*kk,h=m.h*kk;const e=$(id);e.src=`${dir}/${k}.png`;e.style.cssText=`position:absolute;width:${w}px;left:${-w/2}px;top:${118-h}px;display:block`;return h};
+  put('bw',key);$('be').style.display='none';const fw=$('bfw');
+  if(flag){const h=put('be',flag);$('be').style.clipPath=`inset(${((1-sweep)*100).toFixed(1)}% 0 0 0)`}fw.style.display='none'}
+const ring=(n,frac,col,r=158)=>{const a2=-Math.PI/2+frac*2*Math.PI,large=frac>.5?1:0;return `<circle r="${r}" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="14"/><path d="M0 ${-r} A${r} ${r} 0 ${large} 1 ${(r*Math.cos(a2)).toFixed(1)} ${(r*Math.sin(a2)).toFixed(1)}" fill="none" stroke="${col}" stroke-width="14" stroke-linecap="round"/><g transform="translate(118 -118)"><circle r="40" fill="#fff"/><text y="17" text-anchor="middle" font-family="Inter Display,Inter" font-weight="900" font-size="48" fill="${col==='#f2b705'?'#c99400':col}">${n}</text></g>`};
+function stack(flags){STACK.innerHTML=flags.map((f,i)=>`<div class="card" style="left:${-80+i*5}px;top:${-56-i*7}px;width:160px;height:118px;border-radius:18px;transform:rotate(${-8+i*5}deg);box-shadow:0 12px 24px -10px rgba(0,0,0,.6)"><img src="flags/${f}.svg" style="max-width:128px;max-height:86px;border-radius:3px"></div>`).join('')+(flags.length?`<div class="abs" style="left:52px;top:-${92+flags.length*7}px;width:46px;height:46px;border-radius:50%;background:${BLUE};color:#fff;font-weight:900;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px -8px rgba(0,0,0,.6)">${flags.length}</div>`:'')}
+const answer=(name)=>`<span style="font-weight:900;font-size:58px">${name}</span><span style="height:72px;padding:0 22px;border-radius:999px;background:#30c060;color:#fff;font-weight:900;font-size:30px;display:flex;align-items:center;gap:8px">GOT IT? +1</span>`;
+function frame(k){globe(20+k*8);[ANS,SUB,BIG].forEach(e=>e.style.display='none');RING.style.display='none';CARD.style.display='flex';stack([]);
+  const sub=t=>{SUB.style.display='block';SUB.style.whiteSpace='pre';SUB.innerHTML=t};const R=(n,f,c)=>{RING.style.display='block';RING.innerHTML=ring(n,f,c)};
+  if(k===1){CARD.style.display='none';badges(0);ROUND.textContent='9 FLAGS';
+    BIG.style.display='block';BIG.innerHTML=[[-150,-14],[0,0],[150,14]].map(([x,r])=>`<div class="card back" style="left:${x-175}px;top:-260px;width:350px;height:480px;transform:rotate(${r}deg)"><span style="font-weight:900;font-size:220px;color:#fff;text-shadow:0 10px 30px rgba(0,0,0,.25)">?</span></div>`).join('')+`<div class="pill" style="left:0;top:330px;height:110px;padding:0 50px;border-radius:38px;font-weight:900;font-size:58px">BEAT THE <span style="color:${BLUE};margin-left:.28em">FLAGS?</span></div>`;
+    ball('W1',null);sub('Nine flags. Four levels. <b style="color:#2f7bf5">How far</b> can you get?')}
+  if(k===2){badges(1);ROUND.textContent='ROUND 1/9';$('flag').src='flags/ch.svg';R(3,.6,'#f2b705');ball('W1',null)}
+  if(k===3){badges(2);ROUND.textContent='ROUND 3/9';$('flag').src='flags/dk.svg';ball('white_05','dk_B',1);stack(['ch','jm']);ANS.style.display='flex';ANS.innerHTML=answer('DENMARK');sub('Denmark<b style="color:#2f7bf5">!</b>')}
+  if(k===4){badges(3);ROUND.textContent='ROUND 5/9';$('flag').src='flags/kz.svg';R(4,.85,'#30c060');ball('W6',null);stack(['ch','jm','dk','bd'])}
+  if(k===5){badges(2);ROUND.textContent='ROUND 4/9';CARD.style.display='none';stack(['ch','jm','dk','bd']);ball('white_05',null);
+    BIG.style.display='block';BIG.innerHTML=`<div class="card" style="left:-380px;top:-230px;width:760px;height:300px;flex-direction:column;gap:6px"><div style="font-weight:800;font-size:34px;letter-spacing:.08em;color:#7d8597">SCORE CHECK</div><div style="font-weight:900;font-size:120px;line-height:1">__ <span style="color:${BLUE}">/ 4</span></div></div><div class="pill" style="left:0;top:200px;height:110px;padding:0 54px 0 40px;border-radius:36px;background:${BLUE};color:#fff;font-weight:900;font-size:54px;gap:18px;transform:translate(-50%,-50%)"><span style="font-size:62px;line-height:1">+</span>FOLLOW</div>`;
+    sub('Four down. <b style="color:#2f7bf5">Still perfect?</b> Follow for more!')}
+  if(k===6){badges(4);ROUND.textContent='ROUND 9/9';CARD.style.display='none';stack(['ch','jm','dk','bd','kz','tn','pa','al']);ball('white_05',null);
+    const ranks=[['0–2','EXPLORER'],['3–5','NAVIGATOR'],['6–7','WORLD MASTER'],['8/8','GEOGRAPHY LEGEND']];
+    BIG.style.display='block';BIG.innerHTML=`<div class="card" style="left:-400px;top:-340px;width:800px;height:640px;flex-direction:column;justify-content:flex-start;padding:36px 44px;gap:14px">
+     <div style="display:flex;align-items:center;gap:22px;width:100%"><img src="flags/bt.svg" style="height:120px;border-radius:6px;box-shadow:0 0 0 2px rgba(0,0,0,.08)"><div><div style="font-weight:800;font-size:26px;letter-spacing:.08em;color:#7d8597">FINAL COUNTRY</div><div style="font-weight:900;font-size:60px;color:${BLUE}">?</div></div></div>
+     <div style="font-weight:900;font-size:64px;align-self:flex-start">YOUR SCORE: <span style="color:${BLUE}">__ / 8</span></div>
+     ${ranks.map(([s,n],i)=>`<div style="width:100%;height:66px;border-radius:20px;background:#f2f5fa;display:flex;align-items:center;gap:18px;padding:0 22px"><span style="width:96px;font-weight:900;font-size:28px;color:${LV[i][1]==='#f2b705'?'#c99400':LV[i][1]}">${s}</span><span style="font-weight:900;font-size:32px">${n}</span></div>`).join('')}</div>`;
+    sub('What’s your <b style="color:#2f7bf5">rank?</b> Comment your score')}
+}
+window.renderAt=t=>frame(Math.round(t));
+TEX.decode().then(()=>document.fonts.ready).then(()=>{window.ready=true});
+</script></body></html>
