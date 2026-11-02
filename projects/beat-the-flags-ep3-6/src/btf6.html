@@ -1,0 +1,186 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Beat the Flags · Part 6</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}html,body{width:1080px;height:1920px;overflow:hidden;background:#0a2a52}body{font-family:'Inter Display','Inter',sans-serif;color:#111218;-webkit-font-smoothing:antialiased}
+.abs{position:absolute}.pill{position:absolute;display:flex;align-items:center;justify-content:center;white-space:nowrap;border-radius:999px;background:rgba(255,255,255,.97);box-shadow:0 14px 30px -14px rgba(0,0,0,.5);transform:translate(-50%,-50%)}
+.card{position:absolute;border-radius:44px;background:#fff;box-shadow:0 34px 70px -24px rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center}
+.back{background:linear-gradient(145deg,#3b8cff,#1f5fd0);border:10px solid #fff}
+</style></head><body>
+<canvas id="glc" width="1080" height="1920" class="abs" style="left:0;top:0;filter:blur(14px) brightness(.75) saturate(1.1);opacity:.85"></canvas>
+<div class="abs" style="inset:0;background:radial-gradient(circle at 50% 40%,rgba(20,70,140,.15),rgba(5,20,45,.75) 75%)"></div>
+<div id="ui" class="abs" style="inset:0"></div>
+<script src="lib/d3-array.min.js"></script><script src="lib/d3-geo.min.js"></script><script src="tex/globe_tex.js"></script><script src="balls/meta.js"></script><script src="balls/eyes.js"></script><script src="balls2/meta.js"></script><script src="balls4/meta.js"></script><script src="voice_ep6.js"></script>
+<script>
+const BLUE='#2f7bf5',$=id=>document.getElementById(id),DUR=97.5;
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),seg=(t,a,b)=>clamp((t-a)/(b-a)),lerp=(a,b,t)=>a+(b-a)*t;
+const eo=p=>1-Math.pow(1-p,3),eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2,eb=p=>{const c1=1.7,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)};
+const mk=h=>{const d=document.createElement('div');d.innerHTML=h.trim();const e=d.firstChild;$('ui').appendChild(e);return e};
+const vis=(el,o)=>{el.style.opacity=o;el.style.visibility=o<=.003?'hidden':'visible'};
+const shine=`<div class="shn abs" style="inset:0;border-radius:inherit;overflow:hidden;pointer-events:none"><div class="abs" style="top:-20%;bottom:-20%;width:38%;left:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,0) 20%,rgba(160,200,255,.55) 50%,rgba(255,255,255,0) 80%,transparent);transform:translateX(-160%) skewX(-18deg)"></div></div>`;
+const setShine=(el,u)=>{const s=el.querySelector('.shn>div');if(s)s.style.transform=`translateX(${lerp(-160,360,u).toFixed(1)}%) skewX(-18deg)`};
+// blurred globe background (static, simple sphere render)
+const GL=$('glc').getContext('webgl',{preserveDrawingBuffer:true});
+const VS=`attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`,FS=`precision highp float;uniform sampler2D tex;uniform vec2 C;uniform float R;uniform vec2 L;
+void main(){vec2 q=(gl_FragCoord.xy-C)/R;float r2=dot(q,q);if(r2>1.){float d=sqrt(r2)-1.;gl_FragColor=vec4(vec3(.04,.16,.32)+vec3(.35,.6,1.)*exp(-d*R/60.)*.5,1.);return;}
+vec3 v=vec3(q.x,q.y,sqrt(1.-r2));float cl=cos(L.y),sl=sin(L.y);vec3 w=vec3(v.x,v.y*cl+v.z*sl,-v.y*sl+v.z*cl);float lon=atan(w.x,w.z)+L.x,lat=asin(w.y);
+vec3 c=texture2D(tex,vec2(fract(lon/6.2831853+.5),.5-lat/3.1415927)).rgb;gl_FragColor=vec4(c*(.55+.45*pow(v.z,.35)),1.);}`;
+const sh=(t,s)=>{const o=GL.createShader(t);GL.shaderSource(o,s);GL.compileShader(o);return o};const PG=GL.createProgram();GL.attachShader(PG,sh(GL.VERTEX_SHADER,VS));GL.attachShader(PG,sh(GL.FRAGMENT_SHADER,FS));GL.linkProgram(PG);GL.useProgram(PG);
+GL.bindBuffer(GL.ARRAY_BUFFER,GL.createBuffer());GL.bufferData(GL.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),GL.STATIC_DRAW);const aP=GL.getAttribLocation(PG,'p');GL.enableVertexAttribArray(aP);GL.vertexAttribPointer(aP,2,GL.FLOAT,false,0,0);
+const TEX=new Image();TEX.src=GLOBE_SRC;TEX.onload=()=>{const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,TEX);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_MIN_FILTER,GL.LINEAR);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_S,GL.CLAMP_TO_EDGE);GL.texParameteri(GL.TEXTURE_2D,GL.TEXTURE_WRAP_T,GL.CLAMP_TO_EDGE)};
+function globe(lon){GL.viewport(0,0,1080,1920);GL.uniform2f(GL.getUniformLocation(PG,'C'),540,1920-820);GL.uniform1f(GL.getUniformLocation(PG,'R'),620);GL.uniform2f(GL.getUniformLocation(PG,'L'),lon*Math.PI/180,.3);GL.drawArrays(GL.TRIANGLE_STRIP,0,4)}
+</script>
+<script>
+// ───────── rounds (voice-placed schedule; each thinking window = 300 frames)
+const RD=[
+ {f:'es',name:"SPAIN",S:7.2,lv:0,enter:'rise',react:[["A", 0.35], ["B", 0.55]]},
+ {f:'kr',name:"SOUTH KOREA",S:16.1,lv:0,enter:'right',react:[["A", 0.1], ["C", 0.14], ["D", 0.12], ["B", 0.54]]},
+ {f:'be',name:"BELGIUM",S:25.5,lv:1,enter:'flip',react:[["A", 0.35], ["B", 0.55]]},
+ {f:'il',name:"ISRAEL",S:34.4,lv:1,enter:'up',react:[["A", 0.45], ["B", 0.45]]},
+ {f:'cl',name:"CHILE",S:46.3,lv:2,enter:'flip',react:[["A", 0.2], ["C", 0.45], ["A", 0.25]]},
+ {f:'id',name:"INDONESIA",S:55.2,lv:2,enter:'book',react:[["A", 0.35], ["B", 0.55]]},
+ {f:'gh',name:"GHANA",S:64.1,lv:2,enter:'right',react:[["A", 0.35], ["B", 0.55]]},
+ {f:'eg',name:"EGYPT",S:74.5,lv:3,enter:'flip',react:[["A", 0.3], ["C", 0.6]]},
+ {f:'me',name:null,S:83.9,lv:3,enter:'slowflip'}];
+RD.forEach((r,i)=>{r.T0=r.S+.4;r.R=r.S+5.4;r.E=r.S+6.4;r.inDur=r.enter==='slowflip'?1.6:.75;r.in0=r.S-r.inDur+.05;r.out0=i===3?44.15:r.E+.05;r.out1=r.out0+.6});
+const LV=[['EASY','#30c060'],['MEDIUM','#f2b705'],['HARD','#ff8a1f'],['EXPERT','#ff3b30']];
+const UNLOCK=[[5.2,7.2,0,'LEVEL 1 · EASY','CORRECT = +1'],[22.5,25.5,1,'MEDIUM UNLOCKED','TAKE A CLOSER LOOK'],[44.2,46.3,2,'HARD UNLOCKED','STAY FOCUSED'],[70.5,74.5,3,'EXPERT UNLOCKED','TWO LEFT'],[80.9,83.9,3,'FINAL BOSS','NO REVEAL']];
+const CX=540,CYc=775,STX=150,STY=1395;
+const wt=(b,w)=>{const m=WV.find(x=>x[0]===b&&x[1].replace(/[.,?!]/g,'').toLowerCase()===w);return m?m[2]:BV[b][0]};
+
+// ───────── UI
+const TITLE=mk(`<div class="pill" style="left:540px;top:230px;height:106px;padding:0 54px;border-radius:38px;font-weight:900;font-size:66px;letter-spacing:-.01em">BEAT THE <span style="color:${BLUE};margin-left:.28em">FLAGS</span>${shine}</div>`);
+const BADGES=mk(`<div class="abs" style="left:110px;top:300px;display:flex;gap:12px"></div>`);
+const ROUND=mk(`<div class="pill" style="left:868px;top:332px;height:62px;padding:0 24px;font-weight:900;font-size:28px;color:${BLUE};overflow:hidden"></div>`);
+const lockI=open=>`<svg width="22" height="22" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 ${open?'7.6-1.8':'8 0V11'}" stroke="currentColor" stroke-width="2.6" fill="none"/></svg>`;
+const FRAME=mk(`<div class="abs" style="left:96px;top:416px;width:888px;height:718px;border-radius:52px;border:5px solid transparent;pointer-events:none"></div>`);
+const BACKFACE=`<div class="abs" style="inset:0;border-radius:inherit;background:linear-gradient(145deg,#3b8cff,#1f5fd0);border:12px solid #fff;display:flex;align-items:center;justify-content:center"><span style="font-weight:900;font-size:300px;color:#fff;text-shadow:0 10px 30px rgba(0,0,0,.25)">?</span></div>`;
+const CARD=mk(`<div class="card" style="left:110px;top:430px;width:860px;height:690px;transform-origin:50% 50%"><img id="flag" style="max-width:760px;max-height:520px;box-shadow:0 0 0 3px rgba(20,30,50,.24);border-radius:6px"><div id="cback" class="abs" style="inset:0;border-radius:44px">${BACKFACE}</div></div>`);
+const STACK=mk(`<div class="abs" style="left:${STX}px;top:${STY}px;width:0;height:0"></div>`);
+const FAN=mk(`<div class="abs" style="left:${CX}px;top:${CYc}px;width:0;height:0">${[0,1,2].map(i=>`<div class="card fanc" style="left:-175px;top:-240px;width:350px;height:480px;transform-origin:50% 90%">${BACKFACE}</div>`).join('')}</div>`);
+const HOOKT=mk(`<div class="pill" style="left:540px;top:1110px;height:110px;padding:0 50px;border-radius:38px;font-weight:900;font-size:58px"></div>`);
+const PLATE=mk(`<div class="abs" style="left:540px;top:775px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:22px"><div id="plk" class="abs" style="left:50%;top:-150px;transform:translateX(-50%)"></div><div id="pl1" class="pill" style="position:relative;transform:none;height:130px;padding:0 60px;border-radius:44px;font-weight:900;font-size:62px;gap:18px">${shine}</div><div id="pl2" class="pill" style="position:relative;transform:none;height:72px;padding:0 34px;font-weight:800;font-size:30px;letter-spacing:.06em;color:#5b6475"></div></div>`);
+const SCORE=mk(`<div class="abs" style="left:540px;top:775px;width:0;height:0"><div class="card" style="left:-380px;top:-230px;width:760px;height:300px;flex-direction:column;gap:6px"><div style="font-weight:800;font-size:34px;letter-spacing:.08em;color:#7d8597">SCORE CHECK</div><div style="font-weight:900;font-size:120px;line-height:1">__ <span style="color:${BLUE}">/ 4</span></div></div></div>`);
+const FOL=mk(`<div class="pill" style="left:540px;top:975px;height:110px;padding:0 54px 0 40px;border-radius:36px;background:${BLUE};color:#fff;font-weight:900;font-size:54px;gap:18px;letter-spacing:.04em"><span style="font-size:62px;line-height:1">+</span>FOLLOW${shine}</div>`);
+const RES=mk(`<div class="abs" style="left:540px;top:760px;width:0;height:0"></div>`);
+const RING=mk(`<svg class="abs" style="left:350px;top:1200px;overflow:visible" width="380" height="400" viewBox="-190 -200 380 400"></svg>`);
+const BALL=mk(`<div class="abs" style="left:540px;top:1400px;width:0;height:0"><div id="bsh" class="abs" style="left:-100px;top:112px;width:200px;height:28px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.45),rgba(0,0,0,0))"></div><div id="bm" class="abs" style="left:0;top:0;width:0;height:0"><img id="bw" class="abs"><img id="bf" class="abs"><div id="bl" class="abs" style="height:6px;background:#fff;border-radius:3px;box-shadow:0 0 14px #fff"></div></div><svg id="bfx" class="abs" style="left:-200px;top:-200px;overflow:visible" width="400" height="400"></svg></div>`);
+const ANS=mk(`<div class="pill" style="left:540px;top:1175px;height:104px;padding:0 16px 0 34px;border-radius:38px;gap:20px"></div>`);
+const SUB=mk(`<div class="pill" style="left:540px;top:1655px;padding:16px 36px;font-weight:600;font-size:40px;white-space:pre;display:block"></div>`);
+const pillT=(el,o,s=1,dy=0)=>{el.style.transform=`translate(-50%,-50%) translateY(${dy}px) scale(${s})`;vis(el,o)};
+// sprites
+const SRC=k=>BM4[k]?['balls4',BM4[k]]:BM2[k]?['balls2',BM2[k]]:['balls',BM[k]];const IMGC=[];Object.keys(BM4).concat(Object.keys(BM2)).concat(['white_02','white_05','white_06','white_09','white_10','white_14','white_15','white_16','white_17','white_18','white_19','white_20','white_21']).forEach(k=>{const [d]=SRC(k);const i=new Image();i.src=`${d}/${k}.png`;IMGC.push(i)});
+function put(el,k,D=236){const [d,m]=SRC(k),kk=D/Math.max(m.w,m.h*.98),w=m.w*kk,h=m.h*kk;if(el.dataset.k!==k){el.src=`${d}/${k}.png`;el.dataset.k=k}el.style.cssText=`position:absolute;width:${w}px;left:${-w/2}px;top:${118-h}px`;return h}
+const ring=(n,frac,col,r=158)=>{const a2=-Math.PI/2+frac*2*Math.PI,large=frac>.5?1:0;return `<circle r="${r}" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="14"/>${frac>.001?`<path d="M0 ${-r} A${r} ${r} 0 ${large} 1 ${(r*Math.cos(a2)).toFixed(1)} ${(r*Math.sin(a2)).toFixed(1)}" fill="none" stroke="${col}" stroke-width="14" stroke-linecap="round"/>`:''}`};
+const star=(x,y,sc,c,o)=>`<path d="M${x} ${y-sc} L${x+sc*.28} ${y-sc*.28} L${x+sc} ${y} L${x+sc*.28} ${y+sc*.28} L${x} ${y+sc} L${x-sc*.28} ${y+sc*.28} L${x-sc} ${y} L${x-sc*.28} ${y-sc*.28}Z" fill="${c}" opacity="${o}"/>`;
+// subtitles
+const KEY=/^(Spain!|Korea!|Belgium!|Israel!|Chile!|Indonesia!|Ghana!|Egypt!|South|Turkey!|easy\.|four|score!|Medium|Follow|Hard|focused\.|Expert|strong\?|boss\.|flag\.\?|guess\?|legend\?|perfect\?|score|it\?|country\?)/i;
+const WORDS=WV.map(([li,txt,t])=>({txt,t,li,key:KEY.test(txt)}));
+const CH=[];{let cur=[];WORDS.forEach((w,i)=>{cur.push(w);const nx=WORDS[i+1],len=cur.reduce((s,x)=>s+x.txt.length+1,0);if(/[.?!]$/.test(w.txt)||len>=30||!nx||nx.li!==w.li){CH.push(cur);cur=[]}})}
+CH.forEach((c,i)=>{const nx=CH[i+1];c.t0=c[0].t;c.t1=nx&&nx[0].li===c[0].li?nx[0].t-.02:BV[c[0].li][1]+.3});
+const lc=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t)),LB=[157,182,234],NV=[43,58,103],BK=[17,18,24],BLc=[47,123,245],GR=[150,156,170];
+function renderSub(t){const c=CH.find(c=>t>=c.t0-.01&&t<c.t1+.15);if(!c){vis(SUB,0);return}const ex=clamp((t-c.t1)/.15),inn=eb(clamp((t-c.t0)/.2));vis(SUB,1-ex*.9);SUB.style.transform=`translate(-50%,-50%) scale(${(.92+.08*inn).toFixed(3)})`;
+  SUB.innerHTML=c.filter(w=>t>=w.t).map(w=>{const p=clamp((t-w.t)/.28),q=clamp((t-w.t-.28)/.25);let col=w.key?lc(LB,BLc,p):p<1?lc(LB,NV,p):lc(NV,BK,q);if(ex>0)col=lc(col,GR,ex);
+    return `<span style="display:inline-block;color:rgb(${col});opacity:${Math.min(1,p*1.6)};filter:blur(${((1-p)*8+ex*5).toFixed(2)}px);transform:translateY(${((1-p)*16).toFixed(1)}px);${w.key?'font-weight:800':''}">${w.txt}</span>`}).join(' ')}
+
+// ───────── card transform for the active round
+function cardState(t){
+  let r=null;for(const x of RD)if(t>=x.in0&&t<x.out1+(x===RD[8]?99:0))r=x;if(!r)return null;
+  let tx=0,ty=0,sc=1,rot=0,ry=0,origin='50% 50%',op=1,back=false;
+  if(t<r.S+.05){const u=eio(seg(t,r.in0,r.S+.05));
+    if(r.enter==='rise'){ty=lerp(560,0,eo(u));sc=lerp(.25,1,eb(seg(t,r.in0,r.S+.05)));op=clamp(u*4)}
+    if(r.enter==='right'){tx=lerp(1150,0,u);rot=lerp(10,0,u)}
+    if(r.enter==='up'){ty=lerp(1200,0,u)}
+    if(r.enter==='flip'||r.enter==='slowflip'){ry=lerp(180,0,u);back=ry>90;sc=lerp(.9,1,u)}
+    if(r.enter==='book'){ry=lerp(-110,0,eo(u));origin='0% 50%';back=ry<-90;op=clamp(u*3)}}
+  if(r===RD[3]&&t>=r.E+.05&&t<44.15){const u=eio(seg(t,r.E+.05,r.E+.6));sc=lerp(1,.78,u);op=lerp(1,.25,u);ty=-40*u}
+  if(r!==RD[8]&&t>=r.out0){const u=eio(seg(t,r.out0,r.out1));const sx0=r===RD[3]?.78:1;tx=lerp(0,STX-CX,u);ty=lerp(r===RD[3]?-40:0,STY-CYc-60,u);sc=lerp(sx0,.18,u);rot=lerp(0,-8+((RD.indexOf(r))%3)*5,u);op=r===RD[3]?lerp(.25,1,seg(u,0,.3)):1;if(u>=1)return null}
+  if(r===RD[8]&&t>=95.6){const u=eio(seg(t,95.6,96.3));ry=lerp(0,180,u);back=ry>90;sc=lerp(1,.62,eio(seg(t,96.1,97.2)))}
+  return {r,tx,ty,sc,rot,ry,origin,op,back}}
+function stackCount(t){return RD.filter(x=>x!==RD[8]&&t>=x.out1).length}
+
+// ───────── ball
+const HOP=[['white_14',.06],['white_15',.07],['white_16',.08],['white_17',.12],['white_18',.12],['white_19',.08],['white_20',.07],['white_21',.08]];
+const seq=(t,t0,list)=>{let a=t0;for(const [k,d] of list){if(t<a+d)return k;a+=d}return list[list.length-1][0]};
+const BLINKS=[];for(let b=2.1;b<96;b+=2.8)BLINKS.push(b);
+function ballState(t){let white='W1',flag=null,sweep=0,dy=0,rot=0,dx=0,sx=1,sy=1;
+  if(t<1.3){white=t<.9?'W3':'W4'}else if(t<4.6){white=t<2.6?'W1':t<3.6?'W2':'W1'}
+  // follow card motions
+  RD.forEach((r,i)=>{if(t>=r.in0&&t<r.S){white=r.enter==='right'?'W4':r.enter==='up'?'W5':'W1'}if(i!==8&&t>=r.out0&&t<r.out1)white='W3'});
+  // unlock plates
+  UNLOCK.forEach(([a,b,lv])=>{if(t>=a&&t<b-.8)white=lv>=2?'W6':'W1'});
+  if(t>=5.3&&t<5.98){white=seq(t,5.3,HOP);dy=-46*Math.sin(seg(t,5.42,5.88)*Math.PI)}
+  if(t>=5.98&&t<7.0){white='white_05';rot+=7*Math.sin(seg(t,6.1,6.4)*Math.PI)}
+  const cur=RD.find(r=>t>=r.S&&t<r.E+.4);
+  if(cur){const e=t-cur.T0;
+    if(t>=cur.T0&&t<cur.R){white='W1';if(cur.lv>=2&&e>1.5&&e<3.5)white='W6';if(cur===RD[3])white=e<2.5?'W2':'W1';if(cur===RD[5])white=e<2.2?'W2':'W1';if(cur===RD[2])white='W6';if(cur===RD[6]){white='W6';rot+=5*Math.sin(seg(e,0,.5)*Math.PI/2)}if(cur===RD[7]||cur===RD[8])rot+=4;
+      if(cur===RD[1]&&e>3.5){white='W6';rot+=5}if(cur===RD[8]&&e>2.6)white='white_09';if(cur===RD[8]&&e>4.4)white='white_05'}
+    if(t>=cur.R){const r=t-cur.R;white='white_05';
+      if(cur.name){flag=cur.f+'_A';sweep=eio(seg(r,0,.2))*(1-eio(seg(t,cur.E,cur.E+.35)));
+        if(r>.2&&r<1.0)flag=seq(r,.2,cur.react.map(([a,d])=>[cur.f+'_'+a,d]));
+        if(cur===RD[1]&&r>.2&&r<.6)dy=-34*Math.sin(seg(r,.2,.52)*Math.PI);if(cur===RD[5]&&r>.3)rot+=-6*Math.sin(seg(r,.3,.8)*Math.PI);if(cur===RD[7]&&r>.2)rot+=-3*seg(r,.2,.5);
+        if(r<.32){const k=.07*Math.sin(seg(r,0,.32)*Math.PI);sx+=k;sy-=k}}}}
+  if(t>=40.8&&t<44.2){white='white_05';rot+=7*Math.sin(seg(t,42.3,42.6)*Math.PI)}
+  if(t>=89.3&&t<95.6)white=t<92.5?'white_05':t<94?'W4':'white_05';
+  if(white==='W1'&&!flag&&BLINKS.some(b=>t>=b&&t<b+.1))white='white_02';
+  return {white,flag,sweep,dy,rot,dx,sx,sy}}
+
+function badges(t){BADGES.innerHTML=LV.map(([nm,c],i)=>{const u=UNLOCK.find(x=>x[2]===i);const on=t>=u[0]+.25;const shake=t>=u[0]&&t<u[0]+.25?Math.sin((t-u[0])*60)*4:0;const pop=on?eb(seg(t,u[0]+.25,u[0]+.55)):0;
+  return `<div style="height:62px;padding:0 18px 0 14px;border-radius:999px;background:${on?'#fff':'rgba(255,255,255,.18)'};display:flex;align-items:center;gap:8px;color:${on?c:'rgba(255,255,255,.75)'};font-weight:900;font-size:21px;letter-spacing:.05em;transform:translateX(${shake.toFixed(1)}px) scale(${on?(.85+.15*pop).toFixed(3):1});box-shadow:${on?'0 10px 24px -12px rgba(0,0,0,.5)':'none'}">${on?`<span style="width:14px;height:14px;border-radius:50%;background:${c};box-shadow:0 0 10px ${c}"></span>`:lockI(0)}<span style="color:${on?(c==='#f2b705'?'#c99400':c):'rgba(255,255,255,.75)'}">${nm}</span></div>`}).join('')}
+
+function renderAt(t){
+  t=Math.min(t,DUR-1e-6);globe(20+t*2.2);
+  pillT(TITLE,eo(seg(t,.2,.5)),.9+.1*eb(seg(t,.2,.6)));setShine(TITLE,seg(t,.8,1.6));badges(t);
+  const ri=RD.filter(r=>t>=r.in0).length;ROUND.textContent=ri?`ROUND ${ri}/9`:'PART 6';pillT(ROUND,seg(t,.3,.6),1+.1*Math.sin(seg(t,(RD[ri-1]||{in0:-9}).in0,(RD[ri-1]||{in0:-9}).in0+.35)*Math.PI));
+  // hook fan: three back cards open into a fan, then gather into one (which becomes the first card's back)
+  const fo=t<5.3?1:0;if(fo&&t<5.3){vis(FAN,1-seg(t,4.6,4.95));const sp=eb(seg(t,.25,.9))*(1-eio(seg(t,3.9,4.6)));
+    [...FAN.children].forEach((e,i)=>{const k=i-1;e.style.transform=`translateX(${(k*150*sp).toFixed(1)}px) rotate(${(k*14*sp).toFixed(1)}deg) scale(${(.6+.4*eb(seg(t,.1+i*.06,.5+i*.06))).toFixed(3)})`;e.style.opacity=clamp(seg(t,.1+i*.06,.25+i*.06))})}
+  else if(t>=95.9){vis(FAN,seg(t,96.2,96.4));const sp=eb(seg(t,96.5,97.3));[...FAN.children].forEach((e,i)=>{const k=i-1;const fly=i===1?0:1-eo(seg(t,96.2,96.9));e.style.transform=`translateX(${(k*150*sp+k*700*fly).toFixed(1)}px) rotate(${(k*14*sp).toFixed(1)}deg)`;e.style.opacity=1})}
+  else vis(FAN,0);
+  const h0=BV[0][0],h1=BV[0][1],hq=(h1-h0)/3;const hw=[[h0,h0+hq,'9 FLAGS'],[h0+hq,h0+2*hq,'4 LEVELS'],[h0+2*hq,5.15,`BEAT THE <span style="color:${BLUE};margin-left:.28em">FLAGS</span>&nbsp;· PART 6`]].find(h=>t>=h[0]-.05&&t<h[1]-.05);
+  if(hw){HOOKT.innerHTML=hw[2];pillT(HOOKT,clamp(seg(t,hw[0]-.05,hw[0]+.05))*(1-seg(t,4.9,5.15)),.75+.25*eb(seg(t,hw[0]-.05,hw[0]+.3)))}else vis(HOOKT,0);
+  // card
+  const cs=cardState(t);
+  if(cs){vis(CARD,cs.op);$('flag').src=`flags/${cs.r.f}.svg`;CARD.style.transformOrigin=cs.origin;CARD.style.transform=`translate(${cs.tx.toFixed(1)}px,${cs.ty.toFixed(1)}px) perspective(1800px) rotateY(${cs.ry.toFixed(1)}deg) rotate(${cs.rot.toFixed(2)}deg) scale(${cs.sc.toFixed(4)})`;
+    $('cback').style.display=cs.back?'block':'none';$('cback').style.transform=cs.back?'scaleX(-1)':'none';$('flag').style.visibility=cs.back?'hidden':'visible'}else vis(CARD,0);
+  // stack of solved cards
+  const n=stackCount(t);const done=RD.filter(x=>x!==RD[8]&&t>=x.out1);const bump=Math.max(...UNLOCK.map(([a])=>Math.sin(seg(t,a,a+.35)*Math.PI)*(t>=a?1:0)),0);
+  STACK.innerHTML=done.map((x,i)=>`<div class="card" style="left:${-80+i*4}px;top:${-56-i*6-bump*16}px;width:160px;height:118px;border-radius:18px;transform:rotate(${-8+(i%3)*5}deg);box-shadow:0 12px 24px -10px rgba(0,0,0,.6)"><img src="flags/${x.f}.svg" style="max-width:128px;max-height:86px;border-radius:3px"></div>`).join('')+(n?`<div class="abs" style="left:52px;top:-${92+n*6+bump*16}px;width:46px;height:46px;border-radius:50%;background:${BLUE};color:#fff;font-weight:900;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px -8px rgba(0,0,0,.6);transform:scale(${(1+.25*Math.sin(seg(t,(done[n-1]||{out1:-9}).out1,(done[n-1]||{out1:-9}).out1+.3)*Math.PI)).toFixed(3)})">${n}</div>`:'');
+  vis(STACK,1-seg(t,95.5,96));
+  // unlock plates (+ coloured sheen around the frame)
+  const U=UNLOCK.find(u=>t>=u[0]&&t<u[1]-.0);
+  if(U){const d=U[2]===0&&U[0]<6?.1:.62,nx=RD.find(r=>r.in0>=U[0]),nIn=nx?nx.in0:U[1];const col=LV[U[2]][1],o=seg(t,U[0]+d,U[0]+d+.15)*(1-seg(t,nIn-.25,nIn));vis(PLATE,o);U.d=d;
+    $('pl1').innerHTML=`<span style="width:30px;height:30px;border-radius:50%;background:${col};box-shadow:0 0 18px ${col}"></span>${U[3].replace(/(UNLOCKED|EASY|BOSS)$/,`<span style="color:${col==='#f2b705'?'#c99400':col};margin-left:.25em">$1</span>`)}`+shine;
+    $('pl1').style.transform=`scale(${(.7+.3*eb(seg(t,U[0]+d,U[0]+d+.35))).toFixed(3)})`;setShine($('pl1'),seg(t,U[0]+d+.3,U[0]+d+1));$('pl2').textContent=U[4];$('pl2').style.opacity=seg(t,U[0]+d+.3,U[0]+d+.5);
+    const lk=seg(t,U[0]+d,U[0]+d+.4);$('plk').innerHTML=`<div style="width:110px;height:110px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;color:${col};transform:scale(${(.6+.4*eb(lk)).toFixed(3)}) rotate(${(Math.sin(seg(t,U[0]+d+.05,U[0]+d+.35)*Math.PI*4)*8).toFixed(1)}deg);box-shadow:0 14px 30px -12px rgba(0,0,0,.6)"><svg width="60" height="60" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0" stroke="currentColor" stroke-width="2.6" fill="none" transform="translate(${(seg(t,U[0]+d+.35,U[0]+d+.6)*5).toFixed(1)} ${(-seg(t,U[0]+d+.35,U[0]+d+.6)*4).toFixed(1)})"/></svg></div>`}else vis(PLATE,0);
+  const hs=UNLOCK.find(u=>t>=u[0]&&t<u[0]+1.2);FRAME.style.borderColor=hs?`rgba(${hs[2]===2?'255,138,31':hs[2]===3?'255,59,48':'47,123,245'},${(Math.sin(seg(t,hs[0],hs[0]+1.2)*Math.PI)*.9).toFixed(2)})`:'transparent';FRAME.style.boxShadow=hs?`0 0 40px rgba(255,160,60,${(Math.sin(seg(t,hs[0],hs[0]+1.2)*Math.PI)*.5).toFixed(2)})`:'none';
+  // score check + follow
+  const so=seg(t,40.95,41.15)*(1-seg(t,43.95,44.15));vis(SCORE,so);SCORE.style.transform=`scale(${(.7+.3*eb(seg(t,40.95,41.3))).toFixed(3)})`;
+  const fo2=(t>=41.6&&t<44.1)?seg(t,41.6,41.75)*(1-seg(t,43.9,44.1)):(t>=92.5&&t<95.5)?seg(t,92.5,92.65)*(1-seg(t,95.3,95.5)):0;
+  if(fo2>0){const t0=t<50?41.6:92.5;FOL.style.top=t<50?'975px':'1175px';pillT(FOL,fo2,(.6+.4*eb(seg(t,t0,t0+.35)))*(1+.06*Math.sin(seg(t,t0+.5,t0+.8)*Math.PI)));setShine(FOL,seg(t,t0+.6,t0+1.2))}else vis(FOL,0);
+  // results
+  if(t>=90.2&&t<95.6){const ranks=[['0–2','EXPLORER'],['3–5','NAVIGATOR'],['6–7','WORLD MASTER'],['8/8','GEOGRAPHY LEGEND']];
+    RES.innerHTML=`<div class="card" style="left:-400px;top:-330px;width:800px;height:640px;flex-direction:column;justify-content:flex-start;padding:36px 44px;gap:14px">
+     <div style="display:flex;align-items:center;gap:22px;width:100%;opacity:${seg(t,90.3,90.5)}"><img src="flags/me.svg" style="height:120px;border-radius:6px;box-shadow:0 0 0 3px rgba(20,30,50,.24)"><div><div style="font-weight:800;font-size:26px;letter-spacing:.08em;color:#7d8597">FINAL COUNTRY</div><div style="font-weight:900;font-size:60px;color:${BLUE}">?</div></div></div>
+     <div style="font-weight:900;font-size:64px;align-self:flex-start;opacity:${seg(t,90.5,90.7)}">YOUR SCORE: <span style="color:${BLUE}">__ / 8</span></div>
+     ${ranks.map(([s,n],i)=>{const p=eb(seg(t,90.9+i*.18,91.25+i*.18));return `<div style="width:100%;height:66px;border-radius:20px;background:#f2f5fa;display:flex;align-items:center;gap:18px;padding:0 22px;opacity:${clamp(p)};transform:translateX(${((1-p)*-40).toFixed(1)}px)"><span style="width:96px;font-weight:900;font-size:28px;color:${LV[i][1]==='#f2b705'?'#c99400':LV[i][1]}">${s}</span><span style="font-weight:900;font-size:32px">${n}</span></div>`}).join('')}</div>`;
+    vis(RES,seg(t,90.2,90.35)*(1-seg(t,95.3,95.6)));RES.style.transform=`scale(${(.8+.2*eb(seg(t,90.2,90.55))).toFixed(3)})`}else vis(RES,0);
+  // ring + answer
+  const b=ballState(t);const th=RD.find(r=>t>=r.T0&&t<r.R);
+  if(th){const e=t-th.T0,nn=5-Math.floor(e),col=nn>=4?'#30c060':nn>=2?'#f2b705':'#ff3b30',pop=eb(seg(e%1,0,.25));RING.innerHTML=ring(nn,1-e/5,col)+`<g transform="translate(118 -118) scale(${(.8+.2*pop).toFixed(3)})"><circle r="40" fill="#fff"/><text y="17" text-anchor="middle" font-family="Inter Display,Inter" font-weight="900" font-size="48" fill="${col==='#f2b705'?'#c99400':col}">${nn}</text></g>`;vis(RING,seg(t,th.T0-.25,th.T0))}
+  else{const r=RD.find(x=>t>=x.R&&t<x.R+.25);if(r){RING.innerHTML=ring(0,0,'#fff');vis(RING,1-seg(t,r.R,r.R+.2))}else{const s=RD.find(x=>t>=x.S&&t<x.T0);if(s){RING.innerHTML=ring(0,0,'#fff');vis(RING,seg(t,s.S,s.T0)*.6)}else vis(RING,0)}}
+  const rv=RD.find(r=>r.name&&t>=r.R&&t<r.E+.3);
+  if(rv){const pp=eb(seg(t,rv.R+.05,rv.R+.35))*(1-seg(t,rv.E+.05,rv.E+.3));ANS.innerHTML=`<span style="font-weight:900;font-size:58px">${rv.name}</span><span style="height:72px;padding:0 22px;border-radius:999px;background:#30c060;color:#fff;font-weight:900;font-size:30px;display:flex;align-items:center;transform:scale(${(.5+.5*eb(seg(t,rv.R+.3,rv.R+.6))).toFixed(3)})">GOT IT? +1</span>`;pillT(ANS,clamp(pp*2),.6+.4*pp)}
+  else if(t>=89.3&&t<90.2){ANS.innerHTML=`<span style="font-weight:900;font-size:58px;padding-right:18px">WHICH <span style="color:${BLUE}">COUNTRY?</span></span>`;pillT(ANS,seg(t,89.3,89.4)*(1-seg(t,90.05,90.2)),.6+.4*eb(seg(t,89.3,89.6)))}else vis(ANS,0);
+  put($('bw'),b.white);let fh=236;if(b.flag){fh=put($('bf'),b.flag);$('bf').style.clipPath=`inset(${((1-b.sweep)*100).toFixed(1)}% 0 0 0)`;$('bf').style.display=b.sweep>0?'block':'none'}else $('bf').style.display='none';
+  const on=b.flag&&b.sweep>0&&b.sweep<1;$('bl').style.display=on?'block':'none';if(on){$('bl').style.left='-118px';$('bl').style.width='236px';$('bl').style.top=(118-fh*b.sweep-3)+'px'}
+  const idle=3*Math.sin(t*2*Math.PI/1.7);$('bm').style.transform=`translateY(${(b.dy+idle).toFixed(1)}px) rotate(${b.rot.toFixed(2)}deg) scale(${b.sx.toFixed(3)},${b.sy.toFixed(3)})`;vis(BALL,seg(t,.15,.4));
+  let fx='';RD.forEach(x=>{if(!x.name)return;const u=(t-x.R-.18)/.55;if(u<0||u>=1)return;for(let i=0;i<8;i++){const a=i/8*6.283+.3,r=170+u*70;fx+=star(200+Math.cos(a)*r,200+Math.sin(a)*r*.9,(1-u)*(i%2?10:15),i%2?'#ffd34d':'#fff',(1-u).toFixed(2))}});$('bfx').innerHTML=fx;
+  renderSub(t);
+}
+// ───────── sound events
+const SFX=[];const sx=(t,type,g=1,d=0)=>SFX.push({t:+t.toFixed(4),type,g,d});
+sx(.25,'swish',.4,.5);sx(.3,'pop',.3);sx(.4,'pop',.3);sx(.5,'pop',.3);[0,1,2].forEach(k=>sx(BV[0][0]+k*(BV[0][1]-BV[0][0])/3-.05,'pop',.35));sx(3.9,'swish',.35,.6);sx(4.6,'click',.4);
+UNLOCK.forEach((u,i)=>{sx(u[0]+.1,'click',.55);sx(u[0]+.45,'chime',.35);sx(u[0],'air',.3,.9);if(i>=2)sx(u[0],'impact',.4)});sx(5.3,'boing',.3);
+RD.forEach((r,i)=>{for(let k=0;k<5;k++)sx(r.T0+k,'tick',i===8&&k===4?.45:.55);sx(r.in0,'paper',.4,r.inDur);sx(r.S,'click',.3);if(r.name){sx(r.R,'chime',.55);sx(r.R+.05,'pop',.4);sx(r.R,'swish',.4,.3);sx(r.R+.3,'pop',.3)}if(i<8){sx(r.out0,'whoosh',.3,.6);sx(r.out1,'click',.25)}});
+sx(40.95,'pop',.45);sx(41.6,'pop',.4);sx(42.1,'click',.5);sx(89.3,'pop',.4);sx(90.2,'pop',.4);for(let i=0;i<4;i++)sx(90.9+i*.18,'pop',.25);sx(92.5,'pop',.4);sx(93,'click',.5);sx(95.6,'paper',.4,.7);sx(96.2,'whoosh',.35,.7);
+window.SFX=SFX;window.SCN={dur:DUR,vo:BV,duck:[[80.9,81.0,.3],[84.3,89.3,.6]]};window.renderAt=renderAt;window.DUR=DUR;
+TEX.decode().then(()=>Promise.all(IMGC.map(i=>i.complete?1:new Promise(r=>{i.onload=r;i.onerror=r})))).then(()=>document.fonts.ready).then(()=>{renderAt(0);window.ready=true});
+</script></body></html>
