@@ -119,7 +119,7 @@ function camera(t){
 const ZC={'-10':[150,160,182],'-9':[196,156,255],'-8':[255,122,180],'-7':[255,214,74],'-6':[86,214,146],'-5':[64,204,214],'-4':[168,140,255],'-3.5':[214,219,230],'-3':[214,219,230],'-2.5':[214,219,230]};
 const mixc=(a,b,u)=>a.map((v,i)=>Math.round(v+(b[i]-v)*u));
 // 0 = summer clocks (Oct 2026 / spring 2027), 1 = winter clocks after 1 Nov 2026
-function phase(t){if(t<10.8)return 0;if(t<12.4)return eio(seg(t,10.8,12.4));if(t<47.2)return 1;if(t<48.2)return 1-eio(seg(t,47.2,48.2));if(t<52)return 0;if(t<53.6)return eio(seg(t,52,53.6));if(t<58.8)return 1;return 1-eio(seg(t,58.8,60.4))}
+function phase(t){if(t<10.8)return 0;if(t<12.4)return eio(seg(t,10.8,12.4));if(t<47.2)return 1;if(t<48.2)return 1-eio(seg(t,47.2,48.2));if(t<A.moved)return 0;if(t<A.moved+1.6)return eio(seg(t,A.moved,A.moved+1.6));if(t<A.fwd)return 1;return 1-eio(seg(t,A.fwd,A.fwd+1.6))}
 const usChange=f=>f.properties.s!==f.properties.w;
 // d3 wants clockwise exteriors and counter-clockwise holes: fix any ring that would cover the rest of the sphere
 const ringA=r=>d3.geoArea({type:'Polygon',coordinates:[r]});
@@ -136,6 +136,11 @@ CH.forEach((c,i)=>{const nx=CH[i+1];c.t0=c[0].t;c.t1=nx&&nx[0].li===c[0].li?nx[0
 const lc=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t)),LB=[157,182,234],NV=[43,58,103],BK=[17,18,24],BLc=[47,123,245],GR=[150,156,170];
 const wt=(b,w)=>{const m=WV.find(x=>x[0]===b&&x[1].replace(/[.,?!—:]/g,'').toLowerCase()===w);return m?m[2]:BV[b][0]};
 
+// ───────── visual beats locked to the recorded words
+const A={travel:wt(0,'travel'),west:wt(0,'west'),nov:wt(1,'november'),parts:wt(1,'parts'),cal:wt(2,'calgary'),des:wt(2,'destin'),far:wt(3,'far'),both:wt(4,'both'),ten:wt(4,'ten'),
+ van:wt(5,'vancouver'),sea:wt(5,'seattle'),b6:BV[6][0],hour:wt(6,'hour'),b7:BV[7][0],leave:wt(8,'leave'),three:wt(8,'three'),rev:wt(9,'reverse'),five:wt(9,'five'),b10:BV[10][0],
+ bc:wt(11,'british'),ab:wt(11,'alberta'),mb:wt(11,'manitoba'),nt:wt(11,'northwest'),kept:wt(11,'kept'),moved:wt(11,'moved'),e11:BV[11][1],
+ b12:BV[12][0],fwd:wt(12,'forward'),mis:wt(12,'mismatches'),dis:wt(12,'disappear'),b13:BV[13][0],clocks:wt(13,'clocks')};
 // ───────── UI elements
 const TITLE=mk('ui',`<div class="pill" style="height:110px;padding:0 54px;border-radius:38px;font-weight:900;font-size:66px;letter-spacing:-.01em">TIME&nbsp;<span style="color:${BLUE}">ZONES</span>${shine}</div>`);
 const CAP=mk('ui',`<div class="pill" style="height:96px;padding:0 44px;border-radius:34px;font-weight:900;font-size:52px;letter-spacing:.01em;gap:16px">${shine}</div>`);
@@ -168,8 +173,8 @@ const polyl=(pts,u)=>{const n=pts.length;const k=Math.max(1,Math.floor((n-1)*cla
 const pp=p=>({o:p.o,s:p.s});
 // sound + scene log for the audio script
 const SFX=[],SCN=[];const ev=(t,type)=>SFX.push([t,type]);
-[[1,'air'],[2.6,'whoosh'],[6.4,'tick'],[6.75,'tick'],[7.1,'tick'],[8.3,'pop'],[9.8,'clock'],[10.0,'lock'],[10.8,'swell'],[12.4,'accent'],[14.2,'whoosh'],[16,'pin'],[16.5,'pin'],[17,'draw'],[19,'flip'],[20,'chime'],[25.2,'whoosh'],[27,'pin'],[27.5,'pin'],[28,'draw'],[29,'flip'],[30,'accent'],
- [34.2,'pop'],[35,'train'],[37.8,'flip'],[38.2,'accent'],[39.5,'train'],[42.3,'flip'],[42.7,'accent'],[43.6,'chime'],[47.2,'whoosh'],[48.4,'hl'],[48.8,'hl'],[49.2,'hl'],[49.6,'hl'],[50.2,'lock'],[52,'clockback'],[56,'accent'],[58.3,'pop'],[58.8,'rise'],[60.6,'flip'],[61.4,'chime'],[66,'pop'],[67,'accent'],[67.9,'whoosh']].forEach(([a,b])=>ev(a,b));
+[[1,'air'],[2.6,'whoosh'],[A.travel,'tick'],[A.travel+.35,'tick'],[A.travel+.7,'tick'],[A.nov-.15,'pop'],[9.8,'clock'],[10.0,'lock'],[10.8,'swell'],[12.4,'accent'],[14.1,'whoosh'],[A.cal,'pin'],[A.des,'pin'],[A.des+.4,'draw'],[A.both,'flip'],[A.ten,'chime'],[25.1,'whoosh'],[A.van,'pin'],[A.sea,'pin'],[A.sea+.4,'draw'],[A.b6,'flip'],[A.hour,'accent'],
+ [A.b7,'pop'],[A.leave,'train'],[A.three,'flip'],[A.three+.35,'accent'],[A.rev,'train'],[A.five,'flip'],[A.five+.35,'accent'],[A.b10,'chime'],[47.1,'whoosh'],[A.bc,'hl'],[A.ab,'hl'],[A.mb,'hl'],[A.nt,'hl'],[A.kept,'lock'],[A.moved,'clockback'],[A.e11+.1,'accent'],[A.b12,'pop'],[A.fwd,'rise'],[A.dis,'flip'],[A.dis+.3,'chime'],[A.b13,'pop'],[A.clocks,'accent'],[67.9,'whoosh']].forEach(([a,b])=>ev(a,b));
 
 function renderSub(t){const c=CH.find(c=>t>=c.t0-.01&&t<c.t1+.15);if(!c){vis(SUB,0);return}const ex=clamp((t-c.t1)/.15),inn=eb(clamp((t-c.t0)/.2));vis(SUB,1-ex*.9);SUB.style.transform=`translate(-50%,-50%) scale(${(.92+.08*inn).toFixed(3)})`;
   SUB.innerHTML=c.filter(w=>t>=w.t).map(w=>{const p=clamp((t-w.t)/.28),q=clamp((t-w.t-.28)/.25);let col=w.key?lc(LB,BLc,p):p<1?lc(LB,NV,p):lc(NV,BK,q);if(ex>0)col=lc(col,GR,ex);
@@ -189,7 +194,7 @@ function renderAt(t){
   g+=`<path d="${GPATH(STL)||''}" fill="none" stroke="#fff" stroke-width="1" stroke-opacity="${(.22*seg(c.R,700,1100)).toFixed(3)}"/>`;
   g+=`<path d="${GPATH(MESH10)||''}" fill="none" stroke="#fff" stroke-width="1.8" stroke-opacity=".6"/>`;
   // reason scene: four provinces light up one after another
-  const PR4=[['BC',48.4,'BRITISH COLUMBIA',[-126.6,52.6]],['AB',48.8,'ALBERTA',[-114.6,55.6]],['MB',49.2,'MANITOBA',[-98.2,55.3]],['NT',49.6,'NWT',[-118,65.2]]];
+  const PR4=[['BC',A.bc,'BRITISH COLUMBIA',[-126.6,52.6]],['AB',A.ab,'ALBERTA',[-114.6,55.6]],['MB',A.mb,'MANITOBA',[-98.2,55.3]],['NT',A.nt,'NWT',[-118,65.2]]];
   let fxMap='';
   if(t>=48.3&&t<62.6){const out=seg(t,62.1,62.6);
     PR4.forEach(([k,t0])=>{const o=seg(t,t0,t0+.3)*(1-out);if(o<=0)return;const d=GPATH(PROVF[k]);g+=`<g opacity="${o}"><path d="${d}" fill="${BLUE}" fill-opacity=".28"/><path d="${d}" fill="none" stroke="#7fb2ff" stroke-width="12" stroke-opacity=".45" stroke-linejoin="round" style="filter:blur(5px)"/><path d="${d}" fill="none" stroke="#fff" stroke-width="3.4" stroke-linejoin="round"/></g>`})}
@@ -204,17 +209,17 @@ function renderAt(t){
   // title
   {const p=plate(t,.2,5.6,.3);place(TITLE,540,250,p);setShine(TITLE,seg(t,.9,1.7))}
   // 6–8 s: three schematic boards east → west + arrow, WEST = EARLIER
-  {const out=seg(t,8,8.3);const xs=[[820,'10 AM',6.3],[540,'9 AM',6.65],[260,'8 AM',7.0]];
+  {const out=seg(t,8,8.3);const xs=[[820,'10 AM',A.travel],[540,'9 AM',A.travel+.35],[260,'8 AM',A.travel+.7]];
     xs.forEach(([x,txt,t0],i)=>{const p=plate(t,t0,0);p.o*=1-out;board(BD[i],x,760,p,i===0?'EAST':i===2?'WEST':'',null,txt,txt)});
-    const ao=seg(t,6.4,6.6)*(1-out);if(ao>0){const u=eo(seg(t,6.4,7.3));const x1=900,x0=lerp(900,180,u);fx+=`<g opacity="${ao}"><path d="M${x1} 880 L${x0} 880" stroke="#fff" stroke-width="6" stroke-linecap="round"/><path d="M${x0+26} 862 L${x0} 880 L${x0+26} 898" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g>`}
+    const ao=seg(t,A.west-.1,A.west+.1)*(1-out);if(ao>0){const u=eo(seg(t,A.west-.1,A.west+.8));const x1=900,x0=lerp(900,180,u);fx+=`<g opacity="${ao}"><path d="M${x1} 880 L${x0} 880" stroke="#fff" stroke-width="6" stroke-linecap="round"/><path d="M${x0+26} 862 L${x0} 880 L${x0+26} 898" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g>`}
   }
   // captions
-  const caps=[[6.5,8.0,`WEST&nbsp;=&nbsp;<span style="color:${BLUE}">EARLIER</span>`],[12.4,14.0,`SAME MAP.&nbsp;<span style="color:${BLUE}">DIFFERENT CLOCKS.</span>`],[18,25,null],[34.2,47,`<span style="color:${BLUE}">4-HOUR</span>&nbsp;TRIP EXAMPLE`],[58.3,62.6,`<span style="color:#e0a400">☀</span>&nbsp;SPRING`],[66,69,`GEOGRAPHY DIDN’T MOVE.`]];
-  {const k=caps.find(x=>x[2]&&t>=x[0]&&t<x[1]);if(k){CAP.innerHTML=k[2]+shine;const p=plate(t,k[0],k[1]);place(CAP,540,k[0]===66?820:290,p);setShine(CAP,seg(t,k[0]+.3,k[0]+1.1))}else vis(CAP,0)}
-  {const k=[[18,20,`FAR&nbsp;<span style="color:${BLUE}">APART</span>`],[20,25,`SAME&nbsp;<span style="color:${BLUE}">TIME</span>`],[30,34,`<span style="color:${BLUE}">1 HOUR</span>&nbsp;DIFFERENCE`],[56,62,null],[61.4,62.6,`SAME&nbsp;<span style="color:${BLUE}">TIME</span>`],[67,69,`THE CLOCKS&nbsp;<span style="color:${BLUE}">DID.</span>`]].find(x=>x[2]&&t>=x[0]&&t<x[1]);
-   if(k){CAP2.innerHTML=k[2];const p=plate(t,k[0],k[1]);let y=290;if(k[0]===30)y=1180;if(k[0]===61.4)y=1265;if(k[0]===67)y=930;if(k[0]===18||k[0]===20)y=300;place(CAP2,540,y,p)}else vis(CAP2,0)}
+  const caps=[[A.west,8.0,`WEST&nbsp;=&nbsp;<span style="color:${BLUE}">EARLIER</span>`],[12.4,14.0,`SAME MAP.&nbsp;<span style="color:${BLUE}">DIFFERENT CLOCKS.</span>`],[18,25,null],[A.b7,47,`<span style="color:${BLUE}">4-HOUR</span>&nbsp;TRIP EXAMPLE`],[A.b12,62.6,`<span style="color:#e0a400">☀</span>&nbsp;SPRING`],[A.b13,69,`GEOGRAPHY DIDN’T MOVE.`]];
+  {const k=caps.find(x=>x[2]&&t>=x[0]&&t<x[1]);if(k){CAP.innerHTML=k[2]+shine;const p=plate(t,k[0],k[1]);place(CAP,540,k[0]===A.b13?820:290,p);setShine(CAP,seg(t,k[0]+.3,k[0]+1.1))}else vis(CAP,0)}
+  {const k=[[A.far,A.ten,`FAR&nbsp;<span style="color:${BLUE}">APART</span>`],[A.ten,25,`SAME&nbsp;<span style="color:${BLUE}">TIME</span>`],[A.hour,34,`<span style="color:${BLUE}">1 HOUR</span>&nbsp;DIFFERENCE`],[56,62,null],[A.dis+.3,62.6,`SAME&nbsp;<span style="color:${BLUE}">TIME</span>`],[A.clocks,69,`THE CLOCKS&nbsp;<span style="color:${BLUE}">DID.</span>`]].find(x=>x[2]&&t>=x[0]&&t<x[1]);
+   if(k){CAP2.innerHTML=k[2];const p=plate(t,k[0],k[1]);let y=290;if(k[0]===A.hour)y=1180;if(k[0]===A.dis+.3)y=1265;if(k[0]===A.clocks)y=930;if(k[0]===A.far||k[0]===A.ten)y=300;place(CAP2,540,y,p)}else vis(CAP2,0)}
   // 8–14 s: date card + two dials
-  {const p=plate(t,8.3,12.4);place(DATE,540,300,p)
+  {const p=plate(t,A.nov-.15,12.4);place(DATE,540,300,p)
    const o=plate(t,8.8,12.4).o;if(o>0){const back=t<9.8?0:eb(seg(t,9.8,10.15));const hl=60-30*back;
      fx+=dial(330,1220,92,hl,0,o)+dial(750,1220,92,60,0,o,seg(t,10,10.25));
      fx+=chip(330,1365,'CLOCKS BACK',ORNG,o,1,30)+chip(750,1365,'NO CHANGE',BLUE,o,1,30)}}
@@ -223,55 +228,55 @@ function renderAt(t){
     L.forEach(([ll,a,b,col],i)=>{const p=P(ll);const u=seg(t,11+i*.12,11.25+i*.12);const v=a===b?a:(u<.5?a:b);fx+=chip(p[0],p[1],fmtU(v),col,o*(a===b||u<.35||u>.65?1:.6),1,30)})}}
   // 14–25 s: Calgary & Destin
   {const out=seg(t,24.6,25.2);const pc=P(CITY.cal),pd=P(CITY.des);
-   const r1=seg(t,16,16.17),r2=seg(t,16.5,16.67);
-   if(t>=16&&t<25.2){const mo=seg(t,17,17.3)*(1-out);if(mo>0){[CITY.cal,CITY.des].forEach(ll=>{const pts=[];for(let la=24;la<=58;la+=.5)pts.push(P([ll[0],la]));fx+=`<path d="${polyl(pts,1)}" fill="none" stroke="#fff" stroke-width="2.4" stroke-dasharray="3 9" stroke-linecap="round" opacity="${.55*mo}"/>`})}
-     const au=eo(seg(t,17,17.6));if(au>0){const gi=d3.geoInterpolate(CITY.cal,CITY.des);const pts=[];for(let i=0;i<=60;i++){const q=P(gi(i/60));pts.push([q[0],q[1]-Math.sin(Math.PI*i/60)*90])}fx+=`<path d="${polyl(pts,au)}" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="14 12" stroke-linecap="round" opacity="${1-out}"/>`}
+   const r1=seg(t,A.cal,A.cal+.17),r2=seg(t,A.des,A.des+.17);
+   if(t>=A.cal&&t<25.2){const mo=seg(t,A.far,A.far+.3)*(1-out);if(mo>0){[CITY.cal,CITY.des].forEach(ll=>{const pts=[];for(let la=24;la<=58;la+=.5)pts.push(P([ll[0],la]));fx+=`<path d="${polyl(pts,1)}" fill="none" stroke="#fff" stroke-width="2.4" stroke-dasharray="3 9" stroke-linecap="round" opacity="${.55*mo}"/>`})}
+     const au=eo(seg(t,A.des+.4,A.des+1.0));if(au>0){const gi=d3.geoInterpolate(CITY.cal,CITY.des);const pts=[];for(let i=0;i<=60;i++){const q=P(gi(i/60));pts.push([q[0],q[1]-Math.sin(Math.PI*i/60)*90])}fx+=`<path d="${polyl(pts,au)}" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="14 12" stroke-linecap="round" opacity="${1-out}"/>`}
      fx+=pinSvg(pc[0],pc[1],BLUE,eb(r1),r1>0?'CALGARY':'','r',r1*(1-out))+pinSvg(pd[0],pd[1],ORNG,eb(r2),r2>0?'DESTIN, FL':'','l',r2*(1-out))}
-   const bo=plate(t,19,25.2);const pulse=t>=20&&t<20.5?1+.06*Math.sin(seg(t,20,20.5)*Math.PI):1;
-   if(t>=19&&t<25.2){board(BD[0],pc[0],pc[1]-170,{o:bo.o,s:bo.s*pulse},'CALGARY',BLUE,'10:00 AM','10:00 AM');board(BD[1],pd[0]-10,pd[1]-170,{o:bo.o,s:bo.s*pulse},'DESTIN, FL',ORNG,'10:00 AM','10:00 AM');
-     if(t>=20&&t<20.8){const u=seg(t,20,20.8);[[pc[0],pc[1]-170],[pd[0]-10,pd[1]-170]].forEach(([x,y])=>fx+=`<rect x="${x-150-30*u}" y="${y-70-20*u}" width="${300+60*u}" height="${140+40*u}" rx="${36+10*u}" fill="none" stroke="${BLUE}" stroke-width="6" opacity="${1-u}"/>`)}}
+   const bo=plate(t,A.both,25.2);const pulse=t>=A.ten&&t<A.ten+.5?1+.06*Math.sin(seg(t,A.ten,A.ten+.5)*Math.PI):1;
+   if(t>=A.both&&t<25.2){board(BD[0],pc[0],pc[1]-170,{o:bo.o,s:bo.s*pulse},'CALGARY',BLUE,'10:00 AM','10:00 AM');board(BD[1],pd[0]-10,pd[1]-170,{o:bo.o,s:bo.s*pulse},'DESTIN, FL',ORNG,'10:00 AM','10:00 AM');
+     if(t>=A.ten&&t<A.ten+.8){const u=seg(t,A.ten,A.ten+.8);[[pc[0],pc[1]-170],[pd[0]-10,pd[1]-170]].forEach(([x,y])=>fx+=`<rect x="${x-150-30*u}" y="${y-70-20*u}" width="${300+60*u}" height="${140+40*u}" rx="${36+10*u}" fill="none" stroke="${BLUE}" stroke-width="6" opacity="${1-u}"/>`)}}
    if(t>=14&&t<19){if(t<8.3||t>=14)BD.forEach(b=>{if(t>=14&&t<19)vis(b,0)})}}
   // 25–47 s: Vancouver & Seattle, then the 4-hour trip
   {const pv=P(CITY.van),ps=P(CITY.sea);const out=seg(t,46.6,47.2);
-   if(t>=27&&t<47.2){const r1=seg(t,27,27.17),r2=seg(t,27.5,27.67);
-     const lu=eo(seg(t,28,28.5));if(lu>0)fx+=`<path d="M${pv[0]} ${pv[1]} L${lerp(pv[0],ps[0],lu)} ${lerp(pv[1],ps[1],lu)}" stroke="#fff" stroke-width="5" stroke-dasharray="14 12" stroke-linecap="round" opacity="${1-out}"/>`;
+   if(t>=A.van&&t<47.2){const r1=seg(t,A.van,A.van+.17),r2=seg(t,A.sea,A.sea+.17);
+     const lu=eo(seg(t,A.sea+.4,A.sea+.9));if(lu>0)fx+=`<path d="M${pv[0]} ${pv[1]} L${lerp(pv[0],ps[0],lu)} ${lerp(pv[1],ps[1],lu)}" stroke="#fff" stroke-width="5" stroke-dasharray="14 12" stroke-linecap="round" opacity="${1-out}"/>`;
      // train runs the line (34–47)
-     let tr=null;if(t>=35&&t<39.3)tr=eio(seg(t,35,38));if(t>=39.5&&t<47.2)tr=1-eio(seg(t,39.5,42.5));
+     let tr=null;if(t>=A.b7+.6&&t<A.rev-.3)tr=eio(seg(t,A.leave,A.three));if(t>=A.rev-.1&&t<47.2)tr=1-eio(seg(t,A.rev,A.five));
      fx+=pinSvg(pv[0],pv[1],BLUE,eb(r1),r1>0?'VANCOUVER':'','l',r1*(1-out))+pinSvg(ps[0],ps[1],ORNG,eb(r2),r2>0?'SEATTLE':'','l',r2*(1-out));
-     if(tr!==null){const o=seg(t,35,35.2)*(1-out)*(t>=39.3&&t<39.5?0:1);fx+=trainSvg(lerp(pv[0],ps[0],tr),lerp(pv[1],ps[1],tr)-40,o)}}
+     if(tr!==null){const o=seg(t,A.b7+.6,A.b7+.8)*(1-out)*(t>=A.rev-.3&&t<A.rev-.1?0:1);fx+=trainSvg(lerp(pv[0],ps[0],tr),lerp(pv[1],ps[1],tr)-40,o)}}
    // boards beside the pins (29–34), back in spring (60.4–62.6)
-   const bo=plate(t,29,34.2);if(t>=29&&t<34.2){board(BD[0],835,pv[1]-40,bo,'VANCOUVER',BLUE,'10:00 AM','10:00 AM');board(BD[1],835,ps[1]+10,bo,'SEATTLE',ORNG,'9:00 AM','9:00 AM');
-     const d=plate(t,30,34.2);fx+=chip(835,pv[1]-148,'+1 HOUR',BLUE,d.o,d.s,30)}
+   const bo=plate(t,A.b6,34.2);if(t>=A.b6&&t<34.2){board(BD[0],835,pv[1]-40,bo,'VANCOUVER',BLUE,'10:00 AM','10:00 AM');board(BD[1],835,ps[1]+10,bo,'SEATTLE',ORNG,'9:00 AM','9:00 AM');
+     const d=plate(t,A.hour,34.2);fx+=chip(835,pv[1]-148,'+1 HOUR',BLUE,d.o,d.s,30)}
    if(t>=34&&t<35)BD.forEach(b=>vis(b,0))
   }
   // trip panel
-  {const p=plate(t,34.5,47.2);if(p.o>0){const row=(from,to,arr,t0,res,col)=>{const u=seg(t,t0+.5,t0+3.5),h=Math.floor(4*u+1e-6),fl=seg(t,t0+3.3,t0+3.5),r=plate(t,t0+3.7,0);
+  {const p=plate(t,A.b7+.2,47.2);if(p.o>0){const row=(from,to,arr,ta,tb,res,col)=>{const u=seg(t,ta,tb),h=Math.floor(4*u+1e-6),fl=seg(t,tb-.1,tb+.1),r=plate(t,tb+.35,0);
        return `<div style="display:flex;align-items:center;gap:18px;font-weight:800;font-size:30px;letter-spacing:.02em"><span style="color:${from==='VANCOUVER'?BLUE:ORNG}">${from}</span><span style="color:#8a90a0">→</span><span style="color:${to==='VANCOUVER'?BLUE:ORNG}">${to}</span></div>
        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:8px"><div><div style="font-size:22px;font-weight:800;color:#8a90a0;letter-spacing:.1em">DEPART</div><div style="font-size:56px;font-weight:900">12:00 PM</div></div>
        <div style="flex:1;margin:0 26px 18px"><div style="font-size:22px;font-weight:800;color:#8a90a0;letter-spacing:.1em;text-align:center">ELAPSED&nbsp;<span style="color:#111218">${(4*u).toFixed(1)}h</span></div><div style="height:14px;border-radius:7px;background:#e6eaf2;margin-top:8px;overflow:hidden"><div style="height:100%;width:${(100*u).toFixed(1)}%;background:#111218;border-radius:7px"></div></div></div>
        <div style="text-align:right"><div style="font-size:22px;font-weight:800;color:#8a90a0;letter-spacing:.1em">ARRIVE</div><div style="position:relative;height:66px;overflow:hidden;font-size:56px;font-weight:900;min-width:230px;color:${col}"><span style="position:absolute;right:0;top:${-66*eio(fl)}px;opacity:${fl<1?1-fl:0}">…</span><span style="position:absolute;right:0;top:${66*(1-eio(fl))}px">${arr}</span></div></div></div>
        <div style="margin-top:6px;height:46px;display:flex;align-items:center;gap:16px;opacity:${r.o};transform:scale(${r.s});transform-origin:left center"><span style="font-weight:900;font-size:36px;color:${col}">${res}</span><span style="font-weight:800;font-size:26px;color:#8a90a0">ACTUAL:&nbsp;<span style="color:#111218">4 HOURS</span></span></div>`};
-     let h=row('VANCOUVER','SEATTLE','3:00 PM',34.5,'3 HOURS ON THE CLOCK',BLUE);
-     if(t>=39.3){const u=eio(seg(t,39.3,39.6));h=`<div style="opacity:${1-.45*u};transform:scale(${1-.12*u});transform-origin:left top;margin-bottom:${-40*u}px">${h}</div><div style="height:2px;background:#eef1f6;margin:14px 0"></div><div style="opacity:${u}">${row('SEATTLE','VANCOUVER','5:00 PM',39.0,'5 HOURS ON THE CLOCK',ORNG)}</div>`}
-     TRIP.innerHTML=h;place(TRIP,540,t>=39.3?1185:1250,p)}else vis(TRIP,0)
-   const so=plate(t,43.6,47.2);if(so.o>0){CAP2.innerHTML=`SAME&nbsp;<span style="color:${BLUE}">4-HOUR</span>&nbsp;JOURNEY`;place(CAP2,540,400,so)}}
+     let h=row('VANCOUVER','SEATTLE','3:00 PM',A.leave,A.three,'3 HOURS ON THE CLOCK',BLUE);
+     if(t>=A.rev-.4){const u=eio(seg(t,A.rev-.4,A.rev-.1));h=`<div style="opacity:${1-.45*u};transform:scale(${1-.12*u});transform-origin:left top;margin-bottom:${-40*u}px">${h}</div><div style="height:2px;background:#eef1f6;margin:14px 0"></div><div style="opacity:${u}">${row('SEATTLE','VANCOUVER','5:00 PM',A.rev,A.five,'5 HOURS ON THE CLOCK',ORNG)}</div>`}
+     TRIP.innerHTML=h;place(TRIP,540,t>=A.rev-.4?1185:1250,p)}else vis(TRIP,0)
+   const so=plate(t,A.b10,47.2);if(so.o>0){CAP2.innerHTML=`SAME&nbsp;<span style="color:${BLUE}">4-HOUR</span>&nbsp;JOURNEY`;place(CAP2,540,400,so)}}
   // 47–62 s: the reason
   if(t>=48.3&&t<62.6){const out=seg(t,62.1,62.6);
     PR4.forEach(([k,t0,name,ll])=>{const o=seg(t,t0,t0+.3)*(1-out);if(o<=0)return;const p=P(ll);fx+=chip(p[0],p[1],name,BLUE,o,.9+.1*eb(seg(t,t0,t0+.3)),k==='BC'?24:26);
-      fx+=lockSvg(p[0],p[1]-62,seg(t,50.2+PR4.findIndex(x=>x[0]===k)*.12,50.5+PR4.findIndex(x=>x[0]===k)*.12)*(1-out),.8)});
-    const ny=plate(t,50.4,62.6);const pS=P([-106,51.6]),pY=P([-135.8,61.2]);fx+=chip(pS[0],pS[1],'SK · ALREADY YEAR-ROUND','#7d8494',ny.o*.95,ny.s,19)+chip(pY[0],pY[1],'YUKON · ALREADY YEAR-ROUND','#7d8494',ny.o*.95,ny.s,19);
+      fx+=lockSvg(p[0],p[1]-62,seg(t,A.kept+PR4.findIndex(x=>x[0]===k)*.12,A.kept+.3+PR4.findIndex(x=>x[0]===k)*.12)*(1-out),.8)});
+    const ny=plate(t,A.kept+.5,62.6);const pS=P([-106,51.6]),pY=P([-135.8,61.2]);fx+=chip(pS[0],pS[1],'SK · ALREADY YEAR-ROUND','#7d8494',ny.o*.95,ny.s,19)+chip(pY[0],pY[1],'YUKON · ALREADY YEAR-ROUND','#7d8494',ny.o*.95,ny.s,19);
     // neighbours: dials roll back an hour (52) and forward again in spring (58.8)
-    [[-120.4,46.0],[-109.2,45.6],[-100.2,45.9]].forEach((ll,i)=>{const p=P(ll),o=seg(t,51.6+i*.1,51.9+i*.1)*(1-out);if(o<=0)return;const back=eb(seg(t,52+i*.12,52.4+i*.12)),fwd=eb(seg(t,58.8+i*.12,59.2+i*.12));
-      fx+=dial(p[0],p[1]+10,40,90-30*back+30*fwd,0,o,0);const lab=t<58.8?(back>.5?'−1h':''):(fwd>.5?'+1h':'−1h');if(lab)fx+=chip(p[0],p[1]+86,lab,ORNG,o*seg(t,52.2+i*.12,52.4+i*.12),1,24)});
+    [[-120.4,46.0],[-109.2,45.6],[-100.2,45.9]].forEach((ll,i)=>{const p=P(ll),o=seg(t,A.moved-.5+i*.1,A.moved-.2+i*.1)*(1-out);if(o<=0)return;const back=eb(seg(t,A.moved+i*.12,A.moved+.4+i*.12)),fwd=eb(seg(t,A.fwd+i*.12,A.fwd+.4+i*.12));
+      fx+=dial(p[0],p[1]+10,40,90-30*back+30*fwd,0,o,0);const lab=t<A.fwd?(back>.5?'−1h':''):(fwd>.5?'+1h':'−1h');if(lab)fx+=chip(p[0],p[1]+86,lab,ORNG,o*seg(t,A.moved+.2+i*.12,A.moved+.4+i*.12),1,24)});
     // same before → apart after
-    [[-118.5,49],[-106,49],[-97.4,49]].forEach((ll,i)=>{const p=P(ll),o=seg(t,54.2+i*.15,54.5+i*.15)*(1-seg(t,58.8,59.2));fx+=chip(p[0],p[1]-6,'1H APART',BLUE,o,.9+.1*eb(seg(t,54.2+i*.15,54.5+i*.15)),20)});
+    [[-118.5,49],[-106,49],[-97.4,49]].forEach((ll,i)=>{const p=P(ll),o=seg(t,A.moved+1.4+i*.15,A.moved+1.7+i*.15)*(1-seg(t,A.fwd,A.fwd+.4));fx+=chip(p[0],p[1]-6,'1H APART',BLUE,o,.9+.1*eb(seg(t,A.moved+1.4+i*.15,A.moved+1.7+i*.15)),20)});
     // legend
-    {const p=plate(t,56,58.4);if(p.o>0){fx+=`<g opacity="${p.o}" transform="translate(540 1290) scale(${p.s})"><rect x="-430" y="-52" width="860" height="104" rx="52" fill="#fff"/>${lockSvg(-370,0,1,.75)}<text x="-322" y="12" font-size="34" font-weight="900" fill="${BLUE}" font-family="Inter Display,Inter">KEPT THEIR CLOCKS</text><circle cx="90" cy="0" r="26" fill="${ORNG}"/><path d="M100 -8 A13 13 0 1 0 103 6" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/><path d="M96 -15 L102 -8 L94 -3" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><text x="132" y="12" font-size="34" font-weight="900" fill="${ORNG}" font-family="Inter Display,Inter">MOVED BACK</text></g>`}}
+    {const p=plate(t,A.e11+.1,A.b12+.1);if(p.o>0){fx+=`<g opacity="${p.o}" transform="translate(540 1290) scale(${p.s})"><rect x="-430" y="-52" width="860" height="104" rx="52" fill="#fff"/>${lockSvg(-370,0,1,.75)}<text x="-322" y="12" font-size="34" font-weight="900" fill="${BLUE}" font-family="Inter Display,Inter">KEPT THEIR CLOCKS</text><circle cx="90" cy="0" r="26" fill="${ORNG}"/><path d="M100 -8 A13 13 0 1 0 103 6" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/><path d="M96 -15 L102 -8 L94 -3" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><text x="132" y="12" font-size="34" font-weight="900" fill="${ORNG}" font-family="Inter Display,Inter">MOVED BACK</text></g>`}}
   }
   // spring boards: Vancouver and Seattle match again
-  {const p=plate(t,60.4,62.6);if(p.o>0&&t<62.6){board(BD[0],300,1400,p,'VANCOUVER',BLUE,'10:00 AM','10:00 AM');board(BD[1],780,1400,p,'SEATTLE',ORNG,'9:00 AM','10:00 AM',seg(t,60.6,60.8))}}
+  {const p=plate(t,A.mis,62.6);if(p.o>0&&t<62.6){board(BD[0],300,1400,p,'VANCOUVER',BLUE,'10:00 AM','10:00 AM');board(BD[1],780,1400,p,'SEATTLE',ORNG,'9:00 AM','10:00 AM',seg(t,A.dis,A.dis+.2))}}
   // hide boards that no scene is using
-  const used=(t>=6.3&&t<8.3)||(t>=19&&t<25.2)||(t>=29&&t<34.2)||(t>=60.4&&t<62.6);if(!used)BD.forEach(b=>vis(b,0));else if(!(t>=6.3&&t<8.3))vis(BD[2],0);
+  const used=(t>=6.3&&t<8.3)||(t>=A.both&&t<25.2)||(t>=A.b6&&t<34.2)||(t>=A.mis&&t<62.6);if(!used)BD.forEach(b=>vis(b,0));else if(!(t>=6.3&&t<8.3))vis(BD[2],0);
   $('fx').innerHTML=fx;
   renderSub(t);
 }

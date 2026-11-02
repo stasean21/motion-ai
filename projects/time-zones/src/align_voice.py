@@ -3,9 +3,14 @@
 import re, subprocess, json, sys
 import numpy as np
 SRC = sys.argv[1]
-BLOCKS = ['Nine countries. Four levels. Five seconds each. Can you reach expert?', 'Let’s start easy.', 'Mexico!', 'India!', 'Now, a little harder.', 'Germany!', 'Thailand!',
- 'Halfway there! Follow for a new challenge every day.', 'Hard level. Stay focused.', 'Chile!', 'Finland!', 'Morocco!', 'Expert level. Only true geography fans get these.', 'Malawi!',
- 'Final country. No reveal.', 'What’s your guess?', 'Score out of eight? Comment your score and your final guess. Follow for the next challenge!']
+BLOCKS = ["Across Canada and America, time usually follows a familiar pattern: travel west, and the clocks move back.",
+ "But after November first, twenty twenty-six, parts of this map stopped lining up the way you’d expect.",
+ "Take Calgary and Destin, Florida.", "One sits far to the northwest of the other.", "Yet in winter, both clocks can show ten in the morning.",
+ "Now compare Vancouver and Seattle.", "They’re almost directly north and south of each other — but Vancouver is an hour ahead.",
+ "Imagine a four-hour journey between them.", "Leave Vancouver at noon, arrive in Seattle at three.", "Reverse the journey, and noon becomes five.", "Same travel time. Different local clocks.",
+ "The explanation? British Columbia, Alberta, Manitoba and the Northwest Territories kept their summer clock settings, while many neighbours moved back an hour.",
+ "When those neighbours spring forward again, these winter mismatches disappear — unless the rules change again.",
+ "Geography didn’t move. The clocks did."]
 def syl(w):
     w = w.lower(); w = re.sub(r'[^a-z]', '', w)
     if not w: return 0
