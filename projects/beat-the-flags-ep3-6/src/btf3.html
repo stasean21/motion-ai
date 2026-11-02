@@ -138,7 +138,7 @@ function renderAt(t){
   if(hw){HOOKT.innerHTML=hw[2];pillT(HOOKT,clamp(seg(t,hw[0]-.05,hw[0]+.05))*(1-seg(t,4.9,5.15)),.75+.25*eb(seg(t,hw[0]-.05,hw[0]+.3)))}else vis(HOOKT,0);
   // card
   const cs=cardState(t);
-  if(cs){vis(CARD,cs.op);$('flag').src=`flags/${cs.r.f}.svg`;CARD.style.transformOrigin=cs.origin;CARD.style.transform=`translate(${cs.tx.toFixed(1)}px,${cs.ty.toFixed(1)}px) perspective(1800px) rotateY(${cs.ry.toFixed(1)}deg) rotate(${cs.rot.toFixed(2)}deg) scale(${cs.sc.toFixed(4)})`;
+  if(cs){vis(CARD,cs.op);$('flag').src=`flags/${cs.r.f}.svg`;$('flag').style.boxShadow=cs.r.f==='np'?'none':'';$('flag').style.filter=cs.r.f==='np'?'drop-shadow(0 0 1.5px rgba(20,30,50,.35))':'';CARD.style.transformOrigin=cs.origin;CARD.style.transform=`translate(${cs.tx.toFixed(1)}px,${cs.ty.toFixed(1)}px) perspective(1800px) rotateY(${cs.ry.toFixed(1)}deg) rotate(${cs.rot.toFixed(2)}deg) scale(${cs.sc.toFixed(4)})`;
     $('cback').style.display=cs.back?'block':'none';$('cback').style.transform=cs.back?'scaleX(-1)':'none';$('flag').style.visibility=cs.back?'hidden':'visible'}else vis(CARD,0);
   // stack of solved cards
   const n=stackCount(t);const done=RD.filter(x=>x!==RD[8]&&t>=x.out1);const bump=Math.max(...UNLOCK.map(([a])=>Math.sin(seg(t,a,a+.35)*Math.PI)*(t>=a?1:0)),0);

@@ -48,5 +48,6 @@ if __name__ == '__main__':
     keys = [x[1].split()[-1].title() + '!' for x in fl[:8]] + [x[1].split()[0].title() for x in fl[:8] if ' ' in x[1]]
     s = re.sub(r'const KEY=/\^\(.*?\)/i;', 'const KEY=/^(' + '|'.join(re.escape(k) for k in keys + ['Turkey!', 'easy\\.', 'four', 'score!', 'Medium', 'Follow', 'Hard', 'focused\\.', 'Expert', 'strong\\?', 'boss\\.', 'flag\\.?', 'guess\\?', 'legend\\?', 'perfect\\?', 'score', 'it\\?', 'country\\?']).replace('\\\\', '\\') + ')/i;', s)
     s = s.replace('box-shadow:0 0 0 2px rgba(0,0,0,.08)', 'box-shadow:0 0 0 3px rgba(20,30,50,.24)')   # white-field flags (Indonesia, Japan…) keep a visible edge on the white card
+    s = s.replace("$('flag').src=`flags/${cs.r.f}.svg`;", "$('flag').src=`flags/${cs.r.f}.svg`;$('flag').style.boxShadow=cs.r.f==='np'?'none':'';$('flag').style.filter=cs.r.f==='np'?'drop-shadow(0 0 1.5px rgba(20,30,50,.35))':'';")   # Nepal is not a rectangle: no box edge
     assert 'BM3' not in s and "'kh'" not in s, [m.start() for m in re.finditer('BM3|kh', s)][:5]
     open(f'btf{n}.html', 'w', encoding='utf-8').write(s); print('wrote', f'btf{n}.html')
