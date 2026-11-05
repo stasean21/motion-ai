@@ -4,28 +4,29 @@
 <meta charset="utf-8">
 <title>A Day in Japan</title>
 <style>
+@font-face{font-family:'LockSerif';src:url(fonts/source-serif-4-latin-opsz-normal.woff2) format('woff2');font-weight:200 900}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:1080px;height:1920px;overflow:hidden;background:#000}
 body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#fff}
 .abs{position:absolute}
 .ctr{position:absolute;left:540px;transform:translate(-50%,-50%);white-space:nowrap;text-align:center}
-.clock{position:absolute;left:540px;top:400px;transform:translate(-50%,-50%);height:230px;overflow:hidden;display:flex;font-weight:800;font-size:236px;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:230px}
-.slot{position:relative;width:.6em;height:230px;overflow:hidden}
+.clock{position:absolute;left:540px;top:392px;transform:translate(-50%,-50%);height:250px;overflow:hidden;display:flex;font-family:'LockSerif',serif;font-variation-settings:'opsz' 60;font-weight:640;font-size:252px;letter-spacing:-.01em;font-variant-numeric:tabular-nums lining-nums;line-height:250px;color:#ececf1}
+.slot{position:relative;width:.53em;height:250px;overflow:hidden}
 .slot span{position:absolute;left:0;right:0;text-align:center}
-.colon{width:.32em;text-align:center;position:relative;top:-14px}
+.colon{width:.26em;text-align:center;position:relative;top:-10px}
 </style>
 </head>
 <body>
 <canvas id="glc" width="1080" height="1920" class="abs" style="left:0;top:0"></canvas>
 <svg id="gls" class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"></svg>
 <div id="ui" class="abs" style="inset:0">
- <div id="title" class="ctr" style="top:212px;font-weight:700;font-size:40px;letter-spacing:.22em;color:rgba(255,255,255,.88)">A DAY IN JAPAN 🇯🇵</div>
+ <div id="title" class="ctr" style="top:228px;font-family:'Inter Display';font-weight:600;font-size:40px;letter-spacing:.03em;color:rgba(235,235,245,.72)">A DAY IN JAPAN 🇯🇵</div>
  <div id="clock" class="clock"><div class="slot" id="h1"></div><div class="slot" id="h2"></div><div class="colon">:</div><div class="slot" id="m1"></div><div class="slot" id="m2"></div></div>
- <div id="cap" class="ctr" style="top:580px;font-weight:600;font-size:58px"></div>
- <div id="icon" class="ctr" style="top:676px;font-size:72px"></div>
- <div id="cta" class="ctr" style="top:420px">
-  <div style="font-weight:900;font-size:104px;letter-spacing:-.01em">WHERE NEXT? 🌍</div>
-  <div style="margin-top:28px;font-weight:600;font-size:60px;line-height:1.25;color:rgba(255,255,255,.92)">Comment your<br>city or country 👇</div>
+ <div id="cap" class="ctr" style="top:572px;font-family:'Inter Display';font-weight:600;font-size:48px;color:rgba(255,255,255,.9)"></div>
+ <div id="icon" class="ctr" style="top:652px;font-size:60px"></div>
+ <div id="cta" class="ctr" style="top:430px">
+  <div style="font-family:'LockSerif',serif;font-variation-settings:'opsz' 60;font-weight:640;font-size:112px;color:#ececf1">WHERE NEXT? 🌍</div>
+  <div style="margin-top:26px;font-family:'Inter Display';font-weight:600;font-size:52px;line-height:1.25;color:rgba(255,255,255,.88)">Comment your<br>city or country 👇</div>
  </div>
 </div>
 <script src="lib/d3-array.min.js"></script>
@@ -34,6 +35,8 @@ body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antia
 <script src="lib/world10m.js"></script>
 <script src="tex/globe_tex.js"></script>
 <script src="tex/tex_extra.js"></script>
+<script>const DET_SRC={};const DET_REF={"japan":{"z":7,"X0":107,"Y0":45,"W":2816,"H":2816}};</script>
+<script src="sat/det_japan.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),seg=(t,a,b)=>clamp((t-a)/(b-a)),lerp=(a,b,t)=>a+(b-a)*t;
@@ -48,13 +51,13 @@ const pchip=(()=>{const x=LK.map(k=>k[0]),y=LK.map(k=>k[1]),n=x.length,h=[],d=[]
 const DECL=16.3,EOT=3.3/60;   // solar declination and equation of time for 5 May
 const sunAt=t=>{const L=pchip(t);return [15*(21-L)+EOT*15,DECL]};   // subsolar lon/lat for JST
 // ───────── camera: small periodic arc + gentle zoom; returns to frame 1 exactly
-const R0=351,CY=1105;
+const R0=378,CY=1150;
 function camera(t){const p=TAU*t/DUR;const z=eio(seg(t,0,8))-1.04*eio(seg(t,9,17.5))+.04*eio(seg(t,17.5,20));
   return {lon:137.5+7*Math.sin(p),lat:29+2.5*Math.sin(p+1.1),R:R0*(1+.05*z),tx:540+6*Math.sin(p),ty:CY}}
 // ───────── WebGL globe: day texture, night lights, real clouds, twilight, atmosphere
 const GL=$('glc').getContext('webgl',{preserveDrawingBuffer:true,antialias:true});
 const VS=`attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
-const FS=`precision highp float;uniform sampler2D tDay;uniform sampler2D tNight;uniform sampler2D tCloud;uniform vec2 C;uniform float R;uniform vec2 L;uniform vec3 S;uniform float CD;
+const FS=`precision highp float;uniform sampler2D tDay;uniform sampler2D tNight;uniform sampler2D tCloud;uniform sampler2D tDet;uniform vec3 DG;uniform vec2 DS;uniform vec2 C;uniform float R;uniform vec2 L;uniform vec3 S;uniform float CD;
 vec3 ll2v(float lo,float la){return vec3(cos(la)*cos(lo),cos(la)*sin(lo),sin(la));}
 void main(){vec2 q=(gl_FragCoord.xy-C)/R;float r2=dot(q,q);
   // view-space sun direction for the rim glow
@@ -65,8 +68,9 @@ void main(){vec2 q=(gl_FragCoord.xy-C)/R;float r2=dot(q,q);
   vec3 v=vec3(q.x,q.y,sqrt(1.-r2));vec3 w=vec3(v.x,v.y*cl+v.z*sl,-v.y*sl+v.z*cl);
   float lon=atan(w.x,w.z)+L.x,lat=asin(clamp(w.y,-1.,1.));float fx=fract(lon/6.2831853+.5);vec2 uv=vec2(fx,.5-lat/3.1415927);
   vec3 n=ll2v(lon,lat);float mu=dot(n,S);
-  vec3 day=texture2D(tDay,uv).rgb*1.1;vec3 nl=texture2D(tNight,uv).rgb;
-  float cld=texture2D(tCloud,vec2(fract(fx+CD),uv.y)).r*.82;
+  vec3 day=texture2D(tDay,uv).rgb;{float ym=log(tan(.78539816+clamp(lat,-1.47,1.47)*.5));vec2 dd=vec2((fx*DG.x-DG.y)/DS.x,((1.-ym/3.1415927)*.5*DG.x-DG.z)/DS.y);
+    float wg=smoothstep(0.,.04,dd.x)*smoothstep(0.,.04,1.-dd.x)*smoothstep(0.,.04,dd.y)*smoothstep(0.,.04,1.-dd.y);day=mix(day,texture2D(tDet,dd).rgb,wg);}day*=1.08;vec3 nl=texture2D(tNight,uv).rgb;
+  float cld=texture2D(tCloud,vec2(fract(fx+CD),uv.y)).r*0.;
   float dl=smoothstep(-.1,.18,mu);                 // day amount (soft terminator)
   float tw=exp(-pow((mu-.005)/.035,2.));             // twilight band
   vec3 sunCol=mix(vec3(1.,.72,.5),vec3(1.),smoothstep(.0,.2,mu));
@@ -84,12 +88,12 @@ const sh=(t,src)=>{const o=GL.createShader(t);GL.shaderSource(o,src);GL.compileS
 const PG=GL.createProgram();GL.attachShader(PG,sh(GL.VERTEX_SHADER,VS));GL.attachShader(PG,sh(GL.FRAGMENT_SHADER,FS));GL.linkProgram(PG);GL.useProgram(PG);
 GL.bindBuffer(GL.ARRAY_BUFFER,GL.createBuffer());GL.bufferData(GL.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),GL.STATIC_DRAW);
 const aP=GL.getAttribLocation(PG,'p');GL.enableVertexAttribArray(aP);GL.vertexAttribPointer(aP,2,GL.FLOAT,false,0,0);
-const U={};['C','R','L','S','CD','tDay','tNight','tCloud'].forEach(n=>U[n]=GL.getUniformLocation(PG,n));
+const U={};['C','R','L','S','CD','tDay','tNight','tCloud','tDet','DG','DS'].forEach(n=>U[n]=GL.getUniformLocation(PG,n));
 let nLoad=0;
 function loadTex(src,unit,uni){const im=new Image();im.onload=()=>{GL.activeTexture(GL.TEXTURE0+unit);const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,im);
   [GL.TEXTURE_MIN_FILTER,GL.TEXTURE_MAG_FILTER].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.LINEAR));[GL.TEXTURE_WRAP_S,GL.TEXTURE_WRAP_T].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.CLAMP_TO_EDGE));GL.uniform1i(U[uni],unit);
-  if(++nLoad===3)document.fonts.ready.then(()=>{renderAt(0);window.ready=true})};im.src=src}
-loadTex(GLOBE_SRC,0,'tDay');loadTex(TEX.night,1,'tNight');loadTex(TEX.clouds,2,'tCloud');
+  if(++nLoad===4)document.fonts.ready.then(()=>{renderAt(0);window.ready=true})};im.src=src}
+loadTex(GLOBE_SRC,0,'tDay');loadTex(TEX.night,1,'tNight');loadTex(TEX.clouds,2,'tCloud');loadTex(DET_SRC.japan,3,'tDet');{const d=DET_REF.japan;GL.uniform3f(U.DG,256*2**d.z,d.X0*256,d.Y0*256);GL.uniform2f(U.DS,d.W,d.H)}
 const JP=topojson.feature(WORLD10,WORLD10.objects.countries).features.find(f=>f.id==='392');
 const GPR=d3.geoOrthographic().clipAngle(90).precision(.2),GPATH=d3.geoPath(GPR);
 const TOKYO=[139.69,35.69];
@@ -111,7 +115,7 @@ function renderAt(t){t=((t%DUR)+DUR)%DUR;
   GL.drawArrays(GL.TRIANGLE_STRIP,0,4);
   GPR.rotate([-c.lon,-c.lat]).scale(c.R).translate([c.tx,c.ty]);
   const d=GPATH(JP)||'',tp=GPR(TOKYO);const pul=Math.sin(seg(t,LIGHT,LIGHT+.6)*Math.PI);const br=.75+.25*Math.sin(TAU*t/2.5);
-  $('gls').innerHTML=`<path d="${d}" fill="none" stroke="#bfe0ff" stroke-width="5" stroke-opacity=".25" stroke-linejoin="round" style="filter:blur(3px)"/><path d="${d}" fill="none" stroke="#fff" stroke-width="1.6" stroke-opacity=".8" stroke-linejoin="round"/>
+  $('gls').innerHTML=`<path d="${d}" fill="#2f7bf5" fill-opacity=".22"/><path d="${d}" fill="none" stroke="#7fb2ff" stroke-width="9" stroke-opacity=".4" stroke-linejoin="round" style="filter:blur(4px)"/><path d="${d}" fill="none" stroke="#fff" stroke-width="2" stroke-opacity=".9" stroke-linejoin="round"/>
    <circle cx="${tp[0]}" cy="${tp[1]}" r="${(18+26*pul).toFixed(1)}" fill="#8fd0ff" opacity="${(.22*br+.35*pul).toFixed(3)}" style="filter:blur(6px)"/><circle cx="${tp[0]}" cy="${tp[1]}" r="${(26*pul+6).toFixed(1)}" fill="none" stroke="#fff" stroke-width="2.5" opacity="${(.8*pul).toFixed(3)}"/><circle cx="${tp[0]}" cy="${tp[1]}" r="6.5" fill="#fff"/>`;
   // ui: clock block lives 0–15.6 and returns in the last 10 frames; CTA 16.5–19.67
   const back=seg(t,DUR-5/30,DUR),clk=Math.max(1-seg(t,15,15.6),back);
