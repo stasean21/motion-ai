@@ -36,3 +36,7 @@ projects/time-zones/out/audio/mix_voice_music_sfx.wav
 projects/time-zones/out/time_zones_70s_voice.mp4
 projects/beat-the-flags-ep3-6/mockups/ep*/
 projects/beat-the-flags-ep3-6/out/
+projects/day-in-japan/out/render.log
+projects/day-in-japan/out/*_muted.mp4
+projects/day-in-japan/out/*.part*.mp4
+projects/day-in-japan/out/audio/mix.wav
