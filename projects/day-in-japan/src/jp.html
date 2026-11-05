@@ -49,7 +49,7 @@ const pchip=(()=>{const x=LK.map(k=>k[0]),y=LK.map(k=>k[1]),n=x.length,h=[],d=[]
   const dEnd=(d[0]+d[n-2])/2;m[0]=m[n-1]=dEnd;for(let i=1;i<n-1;i++){m[i]=d[i-1]*d[i]<=0?0:3*(h[i-1]+h[i])/((2*h[i]+h[i-1])/d[i-1]+(h[i]+2*h[i-1])/d[i])}
   return t=>{let i=0;while(i<n-2&&t>x[i+1])i++;const s=(t-x[i])/h[i],s2=s*s,s3=s2*s;return (2*s3-3*s2+1)*y[i]+(s3-2*s2+s)*h[i]*m[i]+(-2*s3+3*s2)*y[i+1]+(s3-s2)*h[i]*m[i+1]}})();
 const DECL=16.3,EOT=3.3/60;   // solar declination and equation of time for 5 May
-const sunAt=t=>{const L=pchip(t);return [15*(21-L)+EOT*15,DECL]};   // subsolar lon/lat for JST
+const sunAt=t=>{const L=pchip(t);return [15*(21-L)-EOT*15,DECL]};   // sun runs 3.3 min fast on 5 May → slightly further west   // subsolar lon/lat for JST
 // ───────── camera: small periodic arc + gentle zoom; returns to frame 1 exactly
 const R0=378,CY=1150;
 function camera(t){const p=TAU*t/DUR;const z=eio(seg(t,0,8))-1.04*eio(seg(t,9,17.5))+.04*eio(seg(t,17.5,20));
