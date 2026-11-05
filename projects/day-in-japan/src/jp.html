@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A Day in Japan</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#000}
+body{font-family:'Inter Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;color:#fff}
+.abs{position:absolute}
+.ctr{position:absolute;left:540px;transform:translate(-50%,-50%);white-space:nowrap;text-align:center}
+.clock{position:absolute;left:540px;top:400px;transform:translate(-50%,-50%);height:230px;overflow:hidden;display:flex;font-weight:800;font-size:236px;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:230px}
+.slot{position:relative;width:.6em;height:230px;overflow:hidden}
+.slot span{position:absolute;left:0;right:0;text-align:center}
+.colon{width:.32em;text-align:center;position:relative;top:-14px}
+</style>
+</head>
+<body>
+<canvas id="glc" width="1080" height="1920" class="abs" style="left:0;top:0"></canvas>
+<svg id="gls" class="abs" style="left:0;top:0;overflow:visible" width="1080" height="1920"></svg>
+<div id="ui" class="abs" style="inset:0">
+ <div id="title" class="ctr" style="top:212px;font-weight:700;font-size:40px;letter-spacing:.22em;color:rgba(255,255,255,.88)">A DAY IN JAPAN 🇯🇵</div>
+ <div id="clock" class="clock"><div class="slot" id="h1"></div><div class="slot" id="h2"></div><div class="colon">:</div><div class="slot" id="m1"></div><div class="slot" id="m2"></div></div>
+ <div id="cap" class="ctr" style="top:580px;font-weight:600;font-size:58px"></div>
+ <div id="icon" class="ctr" style="top:676px;font-size:72px"></div>
+ <div id="cta" class="ctr" style="top:420px">
+  <div style="font-weight:900;font-size:104px;letter-spacing:-.01em">WHERE NEXT? 🌍</div>
+  <div style="margin-top:28px;font-weight:600;font-size:60px;line-height:1.25;color:rgba(255,255,255,.92)">Comment your<br>city or country 👇</div>
+ </div>
+</div>
+<script src="lib/d3-array.min.js"></script>
+<script src="lib/d3-geo.min.js"></script>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/world10m.js"></script>
+<script src="tex/globe_tex.js"></script>
+<script src="tex/tex_extra.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)),seg=(t,a,b)=>clamp((t-a)/(b-a)),lerp=(a,b,t)=>a+(b-a)*t;
+const eo=p=>1-Math.pow(1-p,3),eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2,eb=p=>{const c1=1.7,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)};
+const DUR=20,TAU=Math.PI*2;
+// ───────── Japan local time driving the light (Tokyo, 5 May 2026): monotone curve through the scene beats, 03:00 → 03:00 next day
+const LK=[[0,3],[1.5,4.2],[4,7.5],[6.5,10.5],[9,13.5],[11.5,17.2],[14,20.5],[16.5,23.5],[20,27]];
+const pchip=(()=>{const x=LK.map(k=>k[0]),y=LK.map(k=>k[1]),n=x.length,h=[],d=[],m=[];for(let i=0;i<n-1;i++){h[i]=x[i+1]-x[i];d[i]=(y[i+1]-y[i])/h[i]}
+  // periodic end slopes so the loop is seamless
+  const dEnd=(d[0]+d[n-2])/2;m[0]=m[n-1]=dEnd;for(let i=1;i<n-1;i++){m[i]=d[i-1]*d[i]<=0?0:3*(h[i-1]+h[i])/((2*h[i]+h[i-1])/d[i-1]+(h[i]+2*h[i-1])/d[i])}
+  return t=>{let i=0;while(i<n-2&&t>x[i+1])i++;const s=(t-x[i])/h[i],s2=s*s,s3=s2*s;return (2*s3-3*s2+1)*y[i]+(s3-2*s2+s)*h[i]*m[i]+(-2*s3+3*s2)*y[i+1]+(s3-s2)*h[i]*m[i+1]}})();
+const DECL=16.3,EOT=3.3/60;   // solar declination and equation of time for 5 May
+const sunAt=t=>{const L=pchip(t);return [15*(21-L)+EOT*15,DECL]};   // subsolar lon/lat for JST
+// ───────── camera: small periodic arc + gentle zoom; returns to frame 1 exactly
+const R0=351,CY=1105;
+function camera(t){const p=TAU*t/DUR;const z=eio(seg(t,0,8))-1.04*eio(seg(t,9,17.5))+.04*eio(seg(t,17.5,20));
+  return {lon:137.5+7*Math.sin(p),lat:29+2.5*Math.sin(p+1.1),R:R0*(1+.05*z),tx:540+6*Math.sin(p),ty:CY}}
+// ───────── WebGL globe: day texture, night lights, real clouds, twilight, atmosphere
+const GL=$('glc').getContext('webgl',{preserveDrawingBuffer:true,antialias:true});
+const VS=`attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
+const FS=`precision highp float;uniform sampler2D tDay;uniform sampler2D tNight;uniform sampler2D tCloud;uniform vec2 C;uniform float R;uniform vec2 L;uniform vec3 S;uniform float CD;
+vec3 ll2v(float lo,float la){return vec3(cos(la)*cos(lo),cos(la)*sin(lo),sin(la));}
+void main(){vec2 q=(gl_FragCoord.xy-C)/R;float r2=dot(q,q);
+  // view-space sun direction for the rim glow
+  float cl=cos(L.y),sl=sin(L.y);
+  vec3 sv;{float lo=atan(S.y,S.x)-L.x;vec3 s=vec3(sqrt(S.x*S.x+S.y*S.y)*sin(lo),S.z,sqrt(S.x*S.x+S.y*S.y)*cos(lo));sv=vec3(s.x,s.y*cl-s.z*sl,s.y*sl+s.z*cl);}
+  if(r2>1.){float d=sqrt(r2)-1.;vec2 dir=normalize(q);float lit=clamp(dot(dir,normalize(sv.xy+1e-4))*.5+.5,0.,1.)*clamp(sv.z*.6+.7,0.,1.);
+    float g=exp(-d*R/16.)*.75+exp(-d*R/60.)*.22;vec3 col=mix(vec3(.05,.12,.3),vec3(.35,.62,1.),lit)*g*(.25+.85*lit);gl_FragColor=vec4(col,1.);return;}
+  vec3 v=vec3(q.x,q.y,sqrt(1.-r2));vec3 w=vec3(v.x,v.y*cl+v.z*sl,-v.y*sl+v.z*cl);
+  float lon=atan(w.x,w.z)+L.x,lat=asin(clamp(w.y,-1.,1.));float fx=fract(lon/6.2831853+.5);vec2 uv=vec2(fx,.5-lat/3.1415927);
+  vec3 n=ll2v(lon,lat);float mu=dot(n,S);
+  vec3 day=texture2D(tDay,uv).rgb*1.1;vec3 nl=texture2D(tNight,uv).rgb;
+  float cld=texture2D(tCloud,vec2(fract(fx+CD),uv.y)).r*.82;
+  float dl=smoothstep(-.1,.18,mu);                 // day amount (soft terminator)
+  float tw=exp(-pow((mu-.005)/.035,2.));             // twilight band
+  vec3 sunCol=mix(vec3(1.,.72,.5),vec3(1.),smoothstep(.0,.2,mu));
+  vec3 lit=day*(.08+1.05*pow(max(mu,0.),.65))*sunCol;
+  vec3 col=mix(day*.025,lit,dl);
+  float lum=dot(nl,vec3(.33));float night=1.-smoothstep(-.12,.06,mu);
+  col+=vec3(1.,.74,.42)*pow(lum,1.6)*2.1*night*(1.-cld*.75);
+  vec3 cc=mix(vec3(.025,.03,.045),vec3(1.)*(.12+1.0*pow(max(mu,0.),.6))*sunCol,dl);
+  col=mix(col,cc,cld);
+  col+=vec3(1.,.62,.32)*tw*.12;
+  float limb=pow(v.z,.4);col=col*(.6+.4*limb);
+  float rim=pow(1.-v.z,3.);col+=mix(vec3(.02,.05,.12),vec3(.3,.55,1.),smoothstep(-.25,.25,mu))*rim*.9;
+  gl_FragColor=vec4(col,1.);}`;
+const sh=(t,src)=>{const o=GL.createShader(t);GL.shaderSource(o,src);GL.compileShader(o);if(!GL.getShaderParameter(o,GL.COMPILE_STATUS))throw new Error(GL.getShaderInfoLog(o));return o};
+const PG=GL.createProgram();GL.attachShader(PG,sh(GL.VERTEX_SHADER,VS));GL.attachShader(PG,sh(GL.FRAGMENT_SHADER,FS));GL.linkProgram(PG);GL.useProgram(PG);
+GL.bindBuffer(GL.ARRAY_BUFFER,GL.createBuffer());GL.bufferData(GL.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),GL.STATIC_DRAW);
+const aP=GL.getAttribLocation(PG,'p');GL.enableVertexAttribArray(aP);GL.vertexAttribPointer(aP,2,GL.FLOAT,false,0,0);
+const U={};['C','R','L','S','CD','tDay','tNight','tCloud'].forEach(n=>U[n]=GL.getUniformLocation(PG,n));
+let nLoad=0;
+function loadTex(src,unit,uni){const im=new Image();im.onload=()=>{GL.activeTexture(GL.TEXTURE0+unit);const t=GL.createTexture();GL.bindTexture(GL.TEXTURE_2D,t);GL.texImage2D(GL.TEXTURE_2D,0,GL.RGB,GL.RGB,GL.UNSIGNED_BYTE,im);
+  [GL.TEXTURE_MIN_FILTER,GL.TEXTURE_MAG_FILTER].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.LINEAR));[GL.TEXTURE_WRAP_S,GL.TEXTURE_WRAP_T].forEach(p=>GL.texParameteri(GL.TEXTURE_2D,p,GL.CLAMP_TO_EDGE));GL.uniform1i(U[uni],unit);
+  if(++nLoad===3)document.fonts.ready.then(()=>{renderAt(0);window.ready=true})};im.src=src}
+loadTex(GLOBE_SRC,0,'tDay');loadTex(TEX.night,1,'tNight');loadTex(TEX.clouds,2,'tCloud');
+const JP=topojson.feature(WORLD10,WORLD10.objects.countries).features.find(f=>f.id==='392');
+const GPR=d3.geoOrthographic().clipAngle(90).precision(.2),GPATH=d3.geoPath(GPR);
+const TOKYO=[139.69,35.69];
+// ───────── text beats
+const BEATS=[[0,'03:00','Still dreaming… 💤'],[1.5,'06:00','A new day begins ☀️'],[4,'09:00','Time to get moving 🚆'],[6.5,'12:00','Lunch break 🍱'],[9,'16:00','The afternoon flies by<span class="dots"></span>'],[11.5,'19:00','The cities light up ✨'],[14,'23:00','Good night, Japan 🌙']];
+const ROLL=[[1.5,'04:00'],[1.67,'05:00'],[1.84,'06:00']];   // 03 → 06 rolls through the hours quickly
+const FL=9/30;   // one flip = 9 frames
+function digitsAt(t){let cur='03:00',prev=null,u=1;const ev=[...ROLL,...BEATS.filter(b=>b[0]!==1.5&&b[0]>0).map(b=>[b[0],b[1]])].sort((a,b)=>a[0]-b[0]);
+  for(const [a,s] of ev){if(t>=a){prev=cur;cur=s;u=seg(t,a,a+FL)}}return {cur,prev,u}}
+const slots=['h1','h2','m1','m2'].map($);
+function setClock(t){const {cur,prev,u}=digitsAt(t);const c=cur.replace(':',''),p=(prev||cur).replace(':','');
+  slots.forEach((el,i)=>{const a=p[i],b=c[i];if(a===b||u>=1){el.innerHTML=`<span style="top:0">${b}</span>`;return}const e=eio(u);
+    el.innerHTML=`<span style="top:${(-230*e).toFixed(1)}px;opacity:${(1-e).toFixed(3)}">${a}</span><span style="top:${(230*(1-e)).toFixed(1)}px;opacity:${e.toFixed(3)}">${b}</span>`})}
+function capAt(t){let k=0;BEATS.forEach((b,i)=>{if(t>=b[0])k=i});return k}
+const LIGHT=12.05;   // the word "light" lands on the screen
+function renderAt(t){t=((t%DUR)+DUR)%DUR;
+  const c=camera(t),s=sunAt(t),r=Math.PI/180;const S=[Math.cos(s[1]*r)*Math.cos(s[0]*r),Math.cos(s[1]*r)*Math.sin(s[0]*r),Math.sin(s[1]*r)];
+  GL.viewport(0,0,1080,1920);GL.uniform2f(U.C,c.tx,1920-c.ty);GL.uniform1f(U.R,c.R);GL.uniform2f(U.L,c.lon*r,c.lat*r);GL.uniform3f(U.S,S[0],S[1],S[2]);GL.uniform1f(U.CD,.0022*Math.sin(TAU*t/DUR));
+  GL.drawArrays(GL.TRIANGLE_STRIP,0,4);
+  GPR.rotate([-c.lon,-c.lat]).scale(c.R).translate([c.tx,c.ty]);
+  const d=GPATH(JP)||'',tp=GPR(TOKYO);const pul=Math.sin(seg(t,LIGHT,LIGHT+.6)*Math.PI);const br=.75+.25*Math.sin(TAU*t/2.5);
+  $('gls').innerHTML=`<path d="${d}" fill="none" stroke="#bfe0ff" stroke-width="5" stroke-opacity=".25" stroke-linejoin="round" style="filter:blur(3px)"/><path d="${d}" fill="none" stroke="#fff" stroke-width="1.6" stroke-opacity=".8" stroke-linejoin="round"/>
+   <circle cx="${tp[0]}" cy="${tp[1]}" r="${(18+26*pul).toFixed(1)}" fill="#8fd0ff" opacity="${(.22*br+.35*pul).toFixed(3)}" style="filter:blur(6px)"/><circle cx="${tp[0]}" cy="${tp[1]}" r="${(26*pul+6).toFixed(1)}" fill="none" stroke="#fff" stroke-width="2.5" opacity="${(.8*pul).toFixed(3)}"/><circle cx="${tp[0]}" cy="${tp[1]}" r="6.5" fill="#fff"/>`;
+  // ui: clock block lives 0–15.6 and returns in the last 10 frames; CTA 16.5–19.67
+  const back=seg(t,DUR-5/30,DUR),clk=Math.max(1-seg(t,15,15.6),back);
+  $('clock').style.opacity=clk;$('cap').style.opacity=clk;$('icon').style.opacity=clk;
+  setClock(t>=DUR-10/30?0:t);
+  const k=t>=DUR-10/30?0:capAt(t),b=BEATS[k];const cf=k===0&&t<1?1:seg(t,b[0],b[0]+.25);   // caption dissolves in with the flip
+  let txt=b[2];if(k===4){const n=Math.floor(seg(t,9.25,10.4)*3.999);txt=txt.replace('<span class="dots"></span>','<span>'+'.'.repeat(n)+'<span style="opacity:0">'+'.'.repeat(3-n)+'</span></span>')}
+  $('cap').innerHTML=txt;$('cap').style.filter=`blur(${((1-cf)*6).toFixed(2)}px)`;$('cap').style.opacity=clk*cf;
+  const ic=$('icon');ic.innerHTML='';ic.style.transform='translate(-50%,-50%)';
+  if(k===2){const u=eo(seg(t,4.15,5.2));ic.innerHTML='🚆';ic.style.transform=`translate(-50%,-50%) translateX(${lerp(-150,0,u).toFixed(1)}px)`;ic.style.opacity=clk*seg(t,4.1,4.3)}
+  if(k===3){const u=seg(t,6.6,6.95);ic.innerHTML='🍱';ic.style.transform=`translate(-50%,-50%) scale(${(.9+.1*eo(u)).toFixed(3)})`;ic.style.opacity=clk*seg(t,6.6,6.8)}
+  $('title').style.opacity=1;
+  const co=seg(t,16.5,16.8)*(1-seg(t,DUR-10/30,DUR-5/30));$('cta').style.opacity=co;$('cta').style.transform=`translate(-50%,-50%) scale(${(.96+.04*eo(seg(t,16.5,16.9))).toFixed(3)})`;$('cta').style.visibility=co>0?'visible':'hidden';
+}
+window.renderAt=renderAt;window.DUR=DUR;
+window.SFX=[[0,'hit'],[1.5,'flip'],[1.67,'flip'],[1.84,'flip'],[1.6,'rise'],[4,'flip'],[4.15,'whoosh'],[6.5,'flip'],[6.6,'pop'],[9,'flip'],[9,'accent'],[11.5,'flip'],[LIGHT,'shimmer'],[14,'flip'],[14.1,'low'],[16.5,'accent']];window.SCN={dur:DUR};
+</script>
+</body>
+</html>
